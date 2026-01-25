@@ -1,0 +1,1183 @@
+# EDLYA - Documentation pour API Mobile
+# ========================================
+# Application de gestion d'États des Lieux immobiliers
+# Stack cible: Symfony API Platform + MySQL + GraphQL
+
+## 1. CONTEXTE PROJET
+
+Edlya (GEST'IMMO) est une application web Laravel pour la gestion complète
+d'États des Lieux (EDL) immobiliers. L'objectif est de créer une API
+backend Symfony pour une application mobile.
+
+### Application actuelle:
+- Framework: Laravel 12 (PHP 8.2+)
+- Frontend: Blade + Tailwind CSS 4 + Livewire
+- Base de données: MySQL (nom: edlya)
+- Authentification: Session-based
+- IA: Anthropic Claude (claude-sonnet-4-20250514)
+- Génération PDF: DomPDF
+
+### API cible:
+- Framework: Symfony 7+
+- API Platform: GraphQL + REST
+- Base de données: MySQL (même schéma)
+- Authentification: JWT (LexikJWTAuthenticationBundle)
+- Documentation: GraphQL Playground + Swagger
+
+---
+
+## 2. SCHÉMA BASE DE DONNÉES
+
+### Table: users
+```sql
+CREATE TABLE users (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,          -- Hash bcrypt
+    role ENUM('admin', 'agent', 'bailleur') DEFAULT 'bailleur',
+    telephone VARCHAR(255) NULL,
+    entreprise VARCHAR(255) NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+```
+
+### Table: logements
+```sql
+CREATE TABLE logements (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,        -- FK -> users (CASCADE DELETE)
+    nom VARCHAR(255) NOT NULL,
+    adresse VARCHAR(255) NOT NULL,
+    code_postal VARCHAR(10) NOT NULL,
+    ville VARCHAR(255) NOT NULL,
+    type ENUM('appartement', 'maison', 'studio', 'local_commercial') NOT NULL,
+    surface DECIMAL(8,2) NULL,
+    nb_pieces INT NULL,
+    description TEXT NULL,
+    photo_principale VARCHAR(255) NULL,      -- Chemin fichier
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+### Table: etats_des_lieux
+```sql
+CREATE TABLE etats_des_lieux (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    logement_id BIGINT UNSIGNED NOT NULL,    -- FK -> logements (CASCADE)
+    user_id BIGINT UNSIGNED NOT NULL,        -- FK -> users (CASCADE)
+    type ENUM('entree', 'sortie') NOT NULL,
+    date_realisation DATE NOT NULL,
+    locataire_nom VARCHAR(255) NOT NULL,
+    locataire_email VARCHAR(255) NULL,
+    locataire_telephone VARCHAR(255) NULL,
+    observations_generales TEXT NULL,
+    statut ENUM('brouillon', 'en_cours', 'termine', 'signe') DEFAULT 'brouillon',
+
+    -- Signature bailleur
+    signature_bailleur TEXT NULL,            -- SVG encodé base64
+    date_signature_bailleur TIMESTAMP NULL,
+
+    -- Signature locataire
+    signature_locataire TEXT NULL,           -- SVG encodé base64
+    date_signature_locataire TIMESTAMP NULL,
+
+    -- Validation OTP locataire
+    code_validation VARCHAR(6) NULL,         -- Code 6 chiffres
+    code_validation_expire_at TIMESTAMP NULL,-- Expire 15 min
+    code_validation_verifie_at TIMESTAMP NULL,
+
+    -- Token lien signature locataire
+    signature_token VARCHAR(64) UNIQUE NULL, -- 64 chars random
+    signature_token_expire_at TIMESTAMP NULL,-- Expire 48h
+
+    -- Tracking signature
+    signature_ip VARCHAR(255) NULL,
+    signature_user_agent TEXT NULL,
+
+    -- Legacy
+    date_signature TIMESTAMP NULL,
+
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+
+    FOREIGN KEY (logement_id) REFERENCES logements(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+### Table: pieces
+```sql
+CREATE TABLE pieces (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    etat_des_lieux_id BIGINT UNSIGNED NOT NULL, -- FK -> etats_des_lieux (CASCADE)
+    nom VARCHAR(255) NOT NULL,
+    ordre INT DEFAULT 0,
+    observations TEXT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (etat_des_lieux_id) REFERENCES etats_des_lieux(id) ON DELETE CASCADE
+);
+```
+
+### Table: elements
+```sql
+CREATE TABLE elements (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    piece_id BIGINT UNSIGNED NOT NULL,       -- FK -> pieces (CASCADE)
+    type VARCHAR(255) NOT NULL,              -- sol, mur, plafond, menuiserie,
+                                             -- electricite, plomberie, chauffage,
+                                             -- equipement, mobilier, electromenager, autre
+    nom VARCHAR(255) NOT NULL,
+    etat ENUM('neuf', 'tres_bon', 'bon', 'usage', 'mauvais', 'hors_service') DEFAULT 'bon',
+    observations TEXT NULL,
+    degradations JSON NULL,                  -- Array de strings ["Trou(s)", "Fissure(s)"]
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (piece_id) REFERENCES pieces(id) ON DELETE CASCADE
+);
+```
+
+### Table: photos
+```sql
+CREATE TABLE photos (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    element_id BIGINT UNSIGNED NOT NULL,     -- FK -> elements (CASCADE)
+    chemin VARCHAR(255) NOT NULL,            -- Chemin fichier storage
+    legende VARCHAR(255) NULL,
+    latitude DECIMAL(10,8) NULL,             -- Géolocalisation
+    longitude DECIMAL(11,8) NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (element_id) REFERENCES elements(id) ON DELETE CASCADE
+);
+```
+
+### Table: compteurs
+```sql
+CREATE TABLE compteurs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    etat_des_lieux_id BIGINT UNSIGNED NOT NULL, -- FK -> etats_des_lieux (CASCADE)
+    type ENUM('electricite', 'eau_froide', 'eau_chaude', 'gaz') NOT NULL,
+    numero VARCHAR(255) NULL,
+    `index` VARCHAR(255) NULL,               -- Valeur compteur
+    photos JSON NULL,                        -- Array de chemins ["path1", "path2"]
+    commentaire TEXT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (etat_des_lieux_id) REFERENCES etats_des_lieux(id) ON DELETE CASCADE
+);
+-- Note: Un seul compteur par type par EDL
+```
+
+### Table: cles
+```sql
+CREATE TABLE cles (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    etat_des_lieux_id BIGINT UNSIGNED NOT NULL, -- FK -> etats_des_lieux (CASCADE)
+    type VARCHAR(255) NOT NULL,              -- Porte d'entrée, Cave, Garage, etc.
+    nombre INT DEFAULT 1,
+    commentaire VARCHAR(255) NULL,
+    photo VARCHAR(255) NULL,                 -- Chemin fichier
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (etat_des_lieux_id) REFERENCES etats_des_lieux(id) ON DELETE CASCADE
+);
+```
+
+### Table: partages
+```sql
+CREATE TABLE partages (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    etat_des_lieux_id BIGINT UNSIGNED NOT NULL, -- FK -> etats_des_lieux (CASCADE)
+    token VARCHAR(64) UNIQUE NOT NULL,       -- 48 chars random
+    email VARCHAR(255) NULL,
+    type ENUM('email', 'lien') DEFAULT 'lien',
+    expire_at TIMESTAMP NOT NULL,
+    consulte_at TIMESTAMP NULL,              -- Première consultation
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (etat_des_lieux_id) REFERENCES etats_des_lieux(id) ON DELETE CASCADE
+);
+```
+
+### Table: couts_reparations (catalogue devis)
+```sql
+CREATE TABLE couts_reparations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    type_element VARCHAR(255) NOT NULL,      -- sol, mur, plafond, etc.
+    nom VARCHAR(255) NOT NULL,
+    description VARCHAR(255) NULL,
+    unite ENUM('m²', 'ml', 'unité', 'forfait') NOT NULL,
+    prix_unitaire DECIMAL(10,2) NOT NULL,
+    actif BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+```
+
+---
+
+## 3. RELATIONS ENTITÉS
+
+```
+User (1) -----> (N) Logement
+User (1) -----> (N) EtatDesLieux
+
+Logement (1) -----> (N) EtatDesLieux
+
+EtatDesLieux (1) -----> (N) Piece
+EtatDesLieux (1) -----> (N) Compteur
+EtatDesLieux (1) -----> (N) Cle
+EtatDesLieux (1) -----> (N) Partage
+
+Piece (1) -----> (N) Element
+
+Element (1) -----> (N) Photo
+```
+
+### Hiérarchie EDL:
+```
+EtatDesLieux
+├── Pieces[]
+│   └── Elements[]
+│       └── Photos[]
+├── Compteurs[]
+├── Cles[]
+└── Partages[]
+```
+
+---
+
+## 4. ENUMS ET VALEURS CONSTANTES
+
+### Roles utilisateur:
+- admin
+- agent
+- bailleur (défaut)
+
+### Types logement:
+- appartement
+- maison
+- studio
+- local_commercial
+
+### Types EDL:
+- entree (État des lieux d'entrée)
+- sortie (État des lieux de sortie)
+
+### Statuts EDL:
+- brouillon (défaut)
+- en_cours
+- termine
+- signe
+
+### États éléments (ordre qualité décroissante):
+- neuf (6)
+- tres_bon (5)
+- bon (4) - défaut
+- usage (3)
+- mauvais (2)
+- hors_service (1)
+
+### Types éléments:
+- sol
+- mur
+- plafond
+- menuiserie
+- electricite
+- plomberie
+- chauffage
+- equipement
+- mobilier
+- electromenager
+- autre
+
+### Types compteurs:
+- electricite
+- eau_froide
+- eau_chaude
+- gaz
+
+### Types clés communs:
+- Porte d'entrée
+- Boîte aux lettres
+- Cave
+- Garage
+- Portail
+- Portillon
+- Local vélo
+- Local poubelle
+- Interphone
+- Autre
+
+### Unités prix:
+- m²
+- ml (mètre linéaire)
+- unité
+- forfait
+
+---
+
+## 5. DÉGRADATIONS PAR TYPE D'ÉLÉMENT
+
+### mur:
+Trou(s), Fissure(s), Tache(s), Éclats de peinture, Humidité,
+Moisissures, Papier décollé, Griffures, Salissures, Impacts
+
+### plafond:
+Fissure(s), Tache(s), Humidité, Moisissures, Éclats de peinture,
+Affaissement, Décollement
+
+### sol:
+Rayure(s), Tache(s), Usure, Décollement, Carreaux cassés,
+Joints abîmés, Gondolement, Éclats, Brûlure(s)
+
+### menuiserie:
+Vitre fêlée, Vitre cassée, Joint défectueux, Poignée cassée,
+Fermeture défectueuse, Bois abîmé, Peinture écaillée,
+Volet bloqué, Gonds défectueux
+
+### electricite:
+Prise cassée, Cache manquant, Interrupteur cassé, Ampoule grillée,
+Ne fonctionne pas, Fil apparent, Détecteur absent
+
+### plomberie:
+Fuite, Évacuation bouchée, Joint défectueux, Robinet fuit,
+Calcaire, Tuyau abîmé, Siphon bouché, Chasse d'eau défectueuse
+
+### chauffage:
+Ne chauffe pas, Fuite, Thermostat défectueux, Rouille,
+Bruit anormal, Vanne bloquée, Purge nécessaire
+
+### equipement:
+Cassé, Manquant, Usé, Sale, Incomplet, Rayé, Fissuré
+
+### mobilier:
+Cassé, Rayé, Taché, Usé, Porte cassée, Tiroir cassé,
+Charnière défectueuse
+
+### electromenager:
+Ne fonctionne pas, Bruit anormal, Fuite, Sale, Joint usé,
+Vitre cassée, Bouton cassé
+
+### autre:
+Défectueux, Manquant, Cassé, Usé
+
+---
+
+## 6. TYPOLOGIES LOGEMENTS (Génération auto pièces)
+
+### studio:
+- Entrée (ordre 0)
+- Pièce principale (ordre 1)
+- Coin cuisine (ordre 2)
+- Salle de bain/WC (ordre 3)
+
+### f1 / t1:
+- Entrée (0)
+- Séjour (1)
+- Cuisine (2)
+- Salle de bain (3)
+- WC (4)
+
+### f2 / t2:
+- Entrée (0)
+- Séjour (1)
+- Cuisine (2)
+- Chambre (3)
+- Salle de bain (4)
+- WC (5)
+
+### f3 / t3:
+- Entrée (0)
+- Séjour (1)
+- Cuisine (2)
+- Chambre 1 (3)
+- Chambre 2 (4)
+- Salle de bain (5)
+- WC (6)
+
+### f4 / t4:
+F3 + Chambre 3 (5), décalage suivants
+
+### f5 / t5:
+F4 + Chambre 4 + Salle de bain 2
+
+### maison_t3 à maison_t6+:
+Versions maisons avec garage, jardin, etc.
+
+---
+
+## 7. FONCTIONNALITÉS API IMPLÉMENTÉES ✅
+
+### Authentification:
+- ✅ POST /api/login (email, password) -> JWT token
+- ✅ POST /api/register (name, email, password)
+- ✅ GET /api/me (profil utilisateur)
+
+### Logements (GraphQL + REST):
+- ✅ GraphQL: Query logements, logement(id)
+- ✅ GraphQL: Mutation createLogement, updateLogement, deleteLogement
+
+### États des Lieux (GraphQL + REST):
+- ✅ GraphQL: Query etatDesLieuxes, etatDesLieux(id)
+- ✅ GraphQL: Mutation createEtatDesLieux, updateEtatDesLieux, deleteEtatDesLieux
+- ✅ POST /api/edl/{id}/generer-pieces (génération auto par typologie)
+
+### Pièces (GraphQL):
+- ✅ GraphQL: Mutation createPiece, updatePiece, deletePiece
+
+### Éléments (GraphQL):
+- ✅ GraphQL: Mutation createElement, updateElement, deleteElement
+
+### Photos:
+- ✅ POST /api/upload/photo (upload avec géolocalisation)
+- ✅ DELETE /api/upload/photo/{id} (suppression)
+
+### Compteurs (GraphQL):
+- ✅ GraphQL: Mutation createCompteur, updateCompteur, deleteCompteur
+
+### Clés (GraphQL):
+- ✅ GraphQL: Mutation createCle, updateCle, deleteCle
+
+### Signature Électronique:
+- ✅ GET /api/edl/{id}/signature (statut signature)
+- ✅ POST /api/edl/{id}/signature/bailleur (signer bailleur)
+- ✅ POST /api/edl/{id}/signature/envoyer-lien (envoyer au locataire)
+
+### Signature publique locataire:
+- ✅ GET /api/signature/{token} (page signature locataire)
+- ✅ POST /api/signature/{token}/envoyer-code (envoyer OTP email)
+- ✅ POST /api/signature/{token}/verifier-code (valider OTP)
+- ✅ POST /api/signature/{token}/signer (signer)
+
+### Partage:
+- ✅ POST /api/edl/{id}/partages (créer partage)
+- ✅ GET /api/edl/{id}/partages (liste partages)
+- ✅ DELETE /api/partages/{id} (révoquer)
+
+### Partage public:
+- ✅ GET /api/partage/{token} (accès EDL public)
+- ✅ GET /api/partage/{token}/pdf (download PDF)
+
+### Comparatif:
+- ✅ GET /api/logements/{id}/comparatif (comparaison entrée/sortie)
+
+### Estimation (Grille tarifaire):
+- ✅ GET /api/logements/{id}/estimations (dégradations + grille)
+
+### PDF:
+- ✅ GET /api/edl/{id}/pdf (télécharger PDF)
+- ✅ GET /api/edl/{id}/pdf/preview (prévisualiser PDF)
+
+### Utilitaires:
+- ✅ GET /api/typologies (liste typologies disponibles)
+- ✅ GET /api/degradations (liste dégradations par type)
+
+### Intelligence Artificielle (OpenAI GPT-4 Vision):
+- ✅ GET /api/ai/status (vérifier si IA configurée)
+- ✅ POST /api/ai/analyser-piece (analyser photo pièce → détecter éléments)
+- ✅ POST /api/ai/edl/{edlId}/piece/{pieceId}/auto-remplir (analyser + créer éléments)
+- ✅ POST /api/ai/analyser-degradation (analyser photo → détecter dégradations)
+- ✅ POST /api/ai/import-pdf (parser PDF EDL existant)
+- ✅ POST /api/ai/import-pdf/creer-edl (import PDF + créer EDL pré-rempli)
+- ✅ GET /api/ai/logements/{id}/estimations (estimations IA détaillées)
+
+---
+
+## 8. GRAPHQL SCHEMA (Suggestions)
+
+```graphql
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  role: UserRole!
+  telephone: String
+  entreprise: String
+  logements: [Logement!]!
+  etatsDesLieux: [EtatDesLieux!]!
+  createdAt: DateTime!
+}
+
+enum UserRole {
+  ADMIN
+  AGENT
+  BAILLEUR
+}
+
+type Logement {
+  id: ID!
+  user: User!
+  nom: String!
+  adresse: String!
+  codePostal: String!
+  ville: String!
+  adresseComplete: String!
+  type: LogementType!
+  surface: Float
+  nbPieces: Int
+  description: String
+  photoPrincipale: String
+  etatsDesLieux: [EtatDesLieux!]!
+  createdAt: DateTime!
+}
+
+enum LogementType {
+  APPARTEMENT
+  MAISON
+  STUDIO
+  LOCAL_COMMERCIAL
+}
+
+type EtatDesLieux {
+  id: ID!
+  logement: Logement!
+  user: User!
+  type: EdlType!
+  dateRealisation: Date!
+  locataireNom: String!
+  locataireEmail: String
+  locataireTelephone: String
+  observationsGenerales: String
+  statut: EdlStatut!
+  statutLibelle: String!
+  pieces: [Piece!]!
+  compteurs: [Compteur!]!
+  cles: [Cle!]!
+  partages: [Partage!]!
+  signatureBailleur: String
+  signatureLocataire: String
+  dateSignatureBailleur: DateTime
+  dateSignatureLocataire: DateTime
+  signatureUrl: String
+  etapeSignature: Int!
+  createdAt: DateTime!
+}
+
+enum EdlType {
+  ENTREE
+  SORTIE
+}
+
+enum EdlStatut {
+  BROUILLON
+  EN_COURS
+  TERMINE
+  SIGNE
+}
+
+type Piece {
+  id: ID!
+  etatDesLieux: EtatDesLieux!
+  nom: String!
+  ordre: Int!
+  observations: String
+  elements: [Element!]!
+}
+
+type Element {
+  id: ID!
+  piece: Piece!
+  type: String!
+  typeLibelle: String!
+  nom: String!
+  etat: ElementEtat!
+  etatLibelle: String!
+  observations: String
+  degradations: [String!]
+  degradationsFormatees: String
+  photos: [Photo!]!
+}
+
+enum ElementEtat {
+  NEUF
+  TRES_BON
+  BON
+  USAGE
+  MAUVAIS
+  HORS_SERVICE
+}
+
+type Photo {
+  id: ID!
+  element: Element!
+  chemin: String!
+  url: String!
+  legende: String
+  latitude: Float
+  longitude: Float
+}
+
+type Compteur {
+  id: ID!
+  etatDesLieux: EtatDesLieux!
+  type: CompteurType!
+  typeLabel: String!
+  numero: String
+  index: String
+  photos: [String!]
+  photosUrls: [String!]
+  commentaire: String
+}
+
+enum CompteurType {
+  ELECTRICITE
+  EAU_FROIDE
+  EAU_CHAUDE
+  GAZ
+}
+
+type Cle {
+  id: ID!
+  etatDesLieux: EtatDesLieux!
+  type: String!
+  nombre: Int!
+  commentaire: String
+  photo: String
+  photoUrl: String
+}
+
+type Partage {
+  id: ID!
+  etatDesLieux: EtatDesLieux!
+  token: String!
+  email: String
+  type: PartageType!
+  expireAt: DateTime!
+  consulteAt: DateTime
+  url: String!
+  isExpired: Boolean!
+}
+
+enum PartageType {
+  EMAIL
+  LIEN
+}
+
+type CoutReparation {
+  id: ID!
+  typeElement: String!
+  nom: String!
+  description: String
+  unite: Unite!
+  uniteLibelle: String!
+  prixUnitaire: Float!
+  prixFormat: String!
+  actif: Boolean!
+}
+
+enum Unite {
+  M2
+  ML
+  UNITE
+  FORFAIT
+}
+
+# Queries
+type Query {
+  me: User!
+  logements(page: Int, limit: Int): LogementConnection!
+  logement(id: ID!): Logement
+  etatsDesLieux(page: Int, limit: Int, logementId: ID, type: EdlType, statut: EdlStatut): EtatDesLieuxConnection!
+  etatDesLieux(id: ID!): EtatDesLieux
+  piece(id: ID!): Piece
+  element(id: ID!): Element
+  typologies: [Typologie!]!
+  degradations: DegradationsConfig!
+  coutsReparations(typeElement: String, actif: Boolean): [CoutReparation!]!
+  comparatif(edlSortieId: ID!): Comparatif
+  partagePublic(token: String!): EtatDesLieux
+  signaturePublic(token: String!): SignatureInfo
+}
+
+# Mutations
+type Mutation {
+  # Auth
+  login(email: String!, password: String!): AuthPayload!
+  register(input: RegisterInput!): AuthPayload!
+  logout: Boolean!
+  updateProfile(input: UpdateProfileInput!): User!
+
+  # Logements
+  createLogement(input: CreateLogementInput!): Logement!
+  updateLogement(id: ID!, input: UpdateLogementInput!): Logement!
+  deleteLogement(id: ID!): Boolean!
+  uploadLogementPhoto(id: ID!, file: Upload!): Logement!
+
+  # EDL
+  createEtatDesLieux(input: CreateEdlInput!): EtatDesLieux!
+  updateEtatDesLieux(id: ID!, input: UpdateEdlInput!): EtatDesLieux!
+  deleteEtatDesLieux(id: ID!): Boolean!
+  genererPieces(id: ID!, typologie: String!): EtatDesLieux!
+
+  # Pieces
+  createPiece(edlId: ID!, input: CreatePieceInput!): Piece!
+  updatePiece(id: ID!, input: UpdatePieceInput!): Piece!
+  deletePiece(id: ID!): Boolean!
+  reorderPieces(edlId: ID!, ordre: [PieceOrdre!]!): [Piece!]!
+
+  # Elements
+  createElement(pieceId: ID!, input: CreateElementInput!): Element!
+  updateElement(id: ID!, input: UpdateElementInput!): Element!
+  deleteElement(id: ID!): Boolean!
+
+  # Photos
+  uploadPhoto(elementId: ID!, file: Upload!, legende: String, latitude: Float, longitude: Float): Photo!
+  deletePhoto(id: ID!): Boolean!
+
+  # Compteurs
+  upsertCompteur(edlId: ID!, input: CompteurInput!): Compteur!
+  deleteCompteur(id: ID!): Boolean!
+  uploadCompteurPhoto(id: ID!, file: Upload!): Compteur!
+  deleteCompteurPhoto(id: ID!, index: Int!): Compteur!
+
+  # Cles
+  createCle(edlId: ID!, input: CreateCleInput!): Cle!
+  updateCle(id: ID!, input: UpdateCleInput!): Cle!
+  deleteCle(id: ID!): Boolean!
+  uploadClePhoto(id: ID!, file: Upload!): Cle!
+  deleteClePhoto(id: ID!): Cle!
+
+  # Signature
+  signerBailleur(edlId: ID!, signature: String!): EtatDesLieux!
+  envoyerLienSignature(edlId: ID!): EtatDesLieux!
+  envoyerCodeLocataire(token: String!): Boolean!
+  verifierCodeLocataire(token: String!, code: String!): Boolean!
+  signerLocataire(token: String!, signature: String!): EtatDesLieux!
+
+  # Partage
+  createPartage(edlId: ID!, input: CreatePartageInput!): Partage!
+  deletePartage(id: ID!): Boolean!
+
+  # Analyse IA
+  analyserPhoto(file: Upload!): AnalyseResult!
+  appliquerElements(pieceId: ID!, elements: [ElementSuggere!]!): [Element!]!
+  analyserDegradation(elementId: ID!, file: Upload!): DegradationResult!
+}
+
+# Input types
+input RegisterInput {
+  name: String!
+  email: String!
+  password: String!
+  passwordConfirmation: String!
+  telephone: String
+  entreprise: String
+}
+
+input CreateLogementInput {
+  nom: String!
+  adresse: String!
+  codePostal: String!
+  ville: String!
+  type: LogementType!
+  surface: Float
+  nbPieces: Int
+  description: String
+}
+
+input CreateEdlInput {
+  logementId: ID!
+  type: EdlType!
+  dateRealisation: Date!
+  locataireNom: String!
+  locataireEmail: String
+  locataireTelephone: String
+  observationsGenerales: String
+}
+
+input CreatePieceInput {
+  nom: String!
+  ordre: Int
+  observations: String
+}
+
+input CreateElementInput {
+  type: String!
+  nom: String!
+  etat: ElementEtat
+  observations: String
+  degradations: [String!]
+}
+
+input CompteurInput {
+  type: CompteurType!
+  numero: String
+  index: String
+  commentaire: String
+}
+
+input CreateCleInput {
+  type: String!
+  nombre: Int
+  commentaire: String
+}
+
+input CreatePartageInput {
+  email: String
+  type: PartageType
+  expireDays: Int
+}
+
+# Types de réponse
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+type AnalyseResult {
+  elements: [ElementSuggere!]!
+}
+
+type ElementSuggere {
+  type: String!
+  nom: String!
+  etat: ElementEtat!
+  observations: String
+}
+
+type DegradationResult {
+  degradations: [String!]!
+  observations: String
+}
+
+type Comparatif {
+  edlEntree: EtatDesLieux!
+  edlSortie: EtatDesLieux!
+  pieces: [PieceComparatif!]!
+  degradations: [DegradationDetail!]!
+}
+
+type SignatureInfo {
+  etatDesLieux: EtatDesLieux!
+  etape: Int!
+  codeEnvoye: Boolean!
+  codeVerifie: Boolean!
+}
+```
+
+---
+
+## 9. SÉCURITÉ API
+
+### Authentification JWT:
+- Access token: 1 heure
+- Refresh token: 7 jours
+- Rotation automatique
+
+### Authorization:
+- Toutes les ressources appartiennent à un user
+- Vérifier user_id === currentUser.id
+- Admin peut tout voir
+
+### Routes publiques:
+- /api/login
+- /api/register
+- /api/signature/{token}/*
+- /api/partage/{token}
+
+### Validation:
+- Email format
+- Password min 8 chars
+- Code postal: regex ^[0-9]{5}$
+- Telephone: optionnel, format français
+
+### Upload fichiers:
+- Images uniquement: jpeg, png, jpg, gif, webp
+- Taille max: 5MB
+- Stockage: local ou S3
+
+### Rate limiting:
+- Login: 5 tentatives / minute
+- OTP: 3 codes / 15 minutes
+- Upload: 20 / minute
+
+---
+
+## 10. INTÉGRATION IA (OPENAI GPT-4 VISION)
+
+### Configuration:
+- Model: gpt-4o
+- Max tokens: 2000-4000
+- Response format: JSON
+- Timeout: 60 secondes
+
+### Configuration requise:
+```env
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxx
+```
+
+### Endpoints IA disponibles:
+
+#### 1. Analyse photo de pièce
+```http
+POST /api/ai/analyser-piece
+Content-Type: multipart/form-data
+
+photo: <file>
+nom_piece: "Salon" (optionnel)
+```
+
+Réponse:
+```json
+{
+  "success": true,
+  "analyse": {
+    "piece_detectee": "Salon",
+    "elements": [
+      {
+        "nom": "Parquet chêne",
+        "type": "sol",
+        "etat": "bon",
+        "observations": "Quelques rayures légères",
+        "degradations": ["Rayure(s)"]
+      },
+      {
+        "nom": "Mur principal",
+        "type": "mur",
+        "etat": "tres_bon",
+        "observations": "Peinture blanche uniforme",
+        "degradations": []
+      }
+    ],
+    "observations_generales": "Pièce bien entretenue",
+    "confiance": 0.85
+  }
+}
+```
+
+#### 2. Auto-remplissage pièce
+```http
+POST /api/ai/edl/{edlId}/piece/{pieceId}/auto-remplir
+Content-Type: multipart/form-data
+
+photo: <file>
+```
+→ Analyse la photo ET crée automatiquement les éléments dans la BDD
+
+#### 3. Analyse dégradations
+```http
+POST /api/ai/analyser-degradation
+Content-Type: multipart/form-data
+
+photo: <file>
+type_element: "mur"
+nom_element: "Mur cuisine" (optionnel)
+```
+
+Réponse:
+```json
+{
+  "success": true,
+  "analyse": {
+    "etat_global": "mauvais",
+    "degradations_detectees": [
+      {
+        "type": "Fissure(s)",
+        "severite": "importante",
+        "localisation": "angle supérieur droit",
+        "description": "Fissure diagonale d'environ 30cm"
+      }
+    ],
+    "estimation_reparation": {
+      "necessaire": true,
+      "type_intervention": "reparation",
+      "cout_estime_min": 150,
+      "cout_estime_max": 300
+    },
+    "confiance": 0.9
+  }
+}
+```
+
+#### 4. Import PDF
+```http
+POST /api/ai/import-pdf
+Content-Type: multipart/form-data
+
+pdf: <file.pdf>
+```
+→ Parse le PDF et extrait les données structurées
+
+#### 5. Import PDF + Création EDL
+```http
+POST /api/ai/import-pdf/creer-edl
+Content-Type: multipart/form-data
+
+pdf: <file.pdf>
+logement_id: 1
+```
+→ Parse le PDF ET crée l'EDL pré-rempli
+
+#### 6. Estimations IA
+```http
+GET /api/ai/logements/{id}/estimations
+```
+→ Utilise GPT-4 pour des estimations de réparation détaillées et justifiées
+
+---
+
+## 11. EMAILS
+
+### Types d'emails:
+1. **Lien signature locataire**: Contient token + instructions
+2. **Code OTP**: 6 chiffres, expire 15 min
+3. **Confirmation signature**: Récapitulatif post-signature
+4. **Partage EDL**: Lien + durée validité
+
+### Expéditeur:
+- Email: gestimmo.presta@gmail.com
+- Nom: GEST'IMMO
+
+---
+
+## 12. CONFIGURATION SYMFONY RECOMMANDÉE
+
+### Bundles nécessaires:
+- api-platform/core (API Platform)
+- lexik/jwt-authentication-bundle (JWT)
+- nelmio/cors-bundle (CORS mobile)
+- vich/uploader-bundle (Upload fichiers)
+- symfony/mailer (Emails)
+- dompdf/dompdf (PDF)
+
+### Fichier .env:
+```env
+# Base de données
+DATABASE_URL="mysql://root:root@127.0.0.1:3306/edlya-mobile?serverVersion=8.0"
+
+# JWT
+JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
+JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
+JWT_PASSPHRASE=your_passphrase
+
+# OpenAI (pour fonctionnalités IA)
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxx
+
+# Email (pour signatures)
+MAILER_DSN=smtp://email:password@smtp.gmail.com:587
+MAILER_FROM_EMAIL=noreply@edlya.fr
+MAILER_FROM_NAME=Edlya
+
+# Application
+APP_NAME=Edlya
+APP_FRONTEND_URL=http://localhost:3000
+```
+
+### config/packages/api_platform.yaml:
+```yaml
+api_platform:
+    title: 'Edlya API'
+    version: '1.0.0'
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+    graphql:
+        enabled: true
+        graphiql:
+            enabled: true
+        graphql_playground:
+            enabled: true
+    defaults:
+        pagination_enabled: true
+        pagination_items_per_page: 20
+```
+
+---
+
+## 13. STRUCTURE PROJET SYMFONY SUGGÉRÉE
+
+```
+src/
+├── Entity/
+│   ├── User.php
+│   ├── Logement.php
+│   ├── EtatDesLieux.php
+│   ├── Piece.php
+│   ├── Element.php
+│   ├── Photo.php
+│   ├── Compteur.php
+│   ├── Cle.php
+│   ├── Partage.php
+│   └── CoutReparation.php
+├── Repository/
+│   └── [EntityRepository.php pour chaque entité]
+├── Controller/
+│   ├── AuthController.php
+│   ├── SignatureController.php
+│   ├── PartageController.php
+│   ├── AnalyseController.php
+│   └── PdfController.php
+├── Service/
+│   ├── AnthropicService.php
+│   ├── ComparatifService.php
+│   ├── PdfService.php
+│   ├── SignatureService.php
+│   └── PhotoCleanupService.php
+├── Resolver/
+│   ├── Query/
+│   │   └── [GraphQL Query Resolvers]
+│   └── Mutation/
+│       └── [GraphQL Mutation Resolvers]
+├── State/
+│   ├── Provider/
+│   └── Processor/
+├── Security/
+│   ├── Voter/
+│   │   ├── LogementVoter.php
+│   │   ├── EtatDesLieuxVoter.php
+│   │   └── [autres voters]
+│   └── UserChecker.php
+├── EventListener/
+│   └── PhotoDeleteListener.php
+└── DataFixtures/
+    └── AppFixtures.php
+```
+
+---
+
+## 14. NOTES IMPORTANTES
+
+### Cascade Delete:
+Toutes les suppressions sont en cascade:
+- User -> Logements -> EDL -> Pieces -> Elements -> Photos
+- EDL -> Compteurs, Cles, Partages
+
+### Photos:
+- Stockage dans storage/app/photos/ (ou S3)
+- Nettoyage automatique via listeners
+- Numérotation auto dans observations "(Photo X)"
+
+### Signature:
+- SVG stocké en base64 dans la DB
+- Token unique par EDL pour locataire
+- OTP email obligatoire pour locataire
+- Tracking IP + User Agent
+
+### Comparatif:
+- Ne fonctionne que pour EDL sortie
+- Compare avec dernier EDL entrée signé du même logement
+- Détecte dégradations par changement d'état
+
+### Performance:
+- Eager loading des relations
+- Pagination 20 items par défaut
+- Index sur foreign keys
+
+---
+
+## 15. CONTACT / INFOS
+
+Projet: Edlya (GEST'IMMO)
+Framework actuel: Laravel 12
+Base de données: MySQL (edlya)
+Localisation: Français (fr_FR)
+
+---
+
+FIN DU DOCUMENT

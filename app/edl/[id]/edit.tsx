@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useState, useEffect } from 'react';
 import { Plus, ChevronDown, ChevronUp, Trash2, Sparkles, Check, AlertTriangle, Camera, Scan } from 'lucide-react-native';
-import { Header, Card, Badge, Button, Input, Select } from '../../../components/ui';
+import { Header, Card, Badge, Button, Input, InputWithVoice, Select } from '../../../components/ui';
 import { PhotoGallery } from '../../../components/photo';
 import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
 import {
@@ -813,11 +813,11 @@ export default function EditEdlScreen() {
               value={formData.dateRealisation}
               onChangeText={(text) => setFormData(prev => ({ ...prev, dateRealisation: text }))}
             />
-            <Input
+            <InputWithVoice
               label="Observations generales"
               value={formData.observationsGenerales}
               onChangeText={(text) => setFormData(prev => ({ ...prev, observationsGenerales: text }))}
-              multiline
+              placeholder="Dictez ou saisissez vos observations..."
               numberOfLines={4}
             />
           </View>
@@ -1111,14 +1111,13 @@ export default function EditEdlScreen() {
 
                             {/* Observations */}
                             <View className="mt-3">
-                              <Input
+                              <InputWithVoice
                                 label="Observations"
                                 value={elementObservations[element.id] || ''}
                                 onChangeText={(text) =>
                                   setElementObservations(prev => ({ ...prev, [element.id]: text }))
                                 }
-                                placeholder="Remarques, détails..."
-                                multiline
+                                placeholder="Dictez ou saisissez..."
                                 numberOfLines={2}
                               />
                             </View>

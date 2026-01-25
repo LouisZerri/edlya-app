@@ -14,6 +14,7 @@ interface AuthState {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
+  updateProfile: (data: { name: string; telephone?: string }) => Promise<void>;
 }
 
 interface RegisterData {
@@ -113,5 +114,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await setUser(user);
       set({ user });
     }
+  },
+
+  updateProfile: async (data: { name: string; telephone?: string }) => {
+    const { token, user } = get();
+    if (!token) throw new Error('Non authentifié');
+
+    const response = await fetch(`${API_URL}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la mise à jour du profil');
+    }
+
+    const updatedUser = { ...user, ...data } as User;
+    await setUser(updatedUser);
+    set({ user: updatedUser });
   },
 }));

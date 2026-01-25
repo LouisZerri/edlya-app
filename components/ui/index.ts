@@ -4,5 +4,6 @@ export { Card } from './Card';
 export { Header } from './Header';
 export { IconButton } from './IconButton';
 export { Input } from './Input';
+export { InputWithVoice } from './InputWithVoice';
 export { Select } from './Select';
 export { ToastContainer } from './Toast';
