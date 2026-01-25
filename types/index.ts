@@ -19,7 +19,6 @@ export interface Logement {
   description?: string;
   photoPrincipale?: string;
   createdAt: string;
-  etatsDesLieux?: EtatDesLieux[];
 }
 
 export type EdlType = 'entree' | 'sortie';
@@ -91,6 +90,22 @@ export interface Photo {
   latitude?: number;
   longitude?: number;
   ordre: number;
+}
+
+export type PhotoUploadStatus = 'pending' | 'uploading' | 'uploaded' | 'error';
+
+export interface LocalPhoto {
+  id: string;                // UUID temporaire
+  localUri: string;          // file://...
+  remoteId?: string;         // ID API apres upload
+  remoteUrl?: string;        // URL API apres upload
+  legende?: string;
+  latitude?: number;
+  longitude?: number;
+  ordre: number;
+  uploadStatus: PhotoUploadStatus;
+  uploadProgress?: number;   // 0-100
+  errorMessage?: string;
 }
 
 export type CompteurType = 'electricite' | 'eau_froide' | 'eau_chaude' | 'gaz';

@@ -30,9 +30,11 @@ export default function LogementsScreen() {
     setRefreshing(false);
   }, []);
 
-  const renderItem = ({ item }: { item: Logement }) => (
+  const renderItem = ({ item }: { item: Logement }) => {
+    const logementId = item.id.split('/').pop();
+    return (
     <Card
-      onPress={() => router.push(`/logement/${item.id}`)}
+      onPress={() => router.push(`/logement/${logementId}`)}
       className="mb-3"
     >
       <View className="flex-row items-center">
@@ -54,14 +56,15 @@ export default function LogementsScreen() {
             <Text className="text-xs text-gray-500">📐 {formatSurface(item.surface)}</Text>
           )}
           <Text className="text-xs text-gray-400 mt-0.5">
-            📋 {item.etatsDesLieux?.length || 0} EDL
+            📋 EDL
           </Text>
         </View>
 
         <ChevronRight size={20} color={COLORS.gray[400]} />
       </View>
     </Card>
-  );
+    );
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>

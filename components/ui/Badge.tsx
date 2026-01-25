@@ -19,8 +19,8 @@ export function Badge({ label, variant = 'gray' }: BadgeProps) {
   const styles = variantStyles[variant];
 
   return (
-    <View className={`px-2.5 py-1 rounded-full ${styles.bg}`}>
-      <Text className={`text-xs font-medium ${styles.text}`}>{label}</Text>
+    <View className={`px-2.5 py-1 rounded-full ${styles.bg} items-center justify-center`}>
+      <Text className={`text-xs font-medium ${styles.text}`} style={{ lineHeight: 16 }}>{label}</Text>
     </View>
   );
 }

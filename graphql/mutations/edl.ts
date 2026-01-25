@@ -26,6 +26,10 @@ export const UPDATE_ETAT_DES_LIEUX = gql`
         locataireTelephone
         observationsGenerales
         statut
+        signatureBailleur
+        signatureLocataire
+        dateSignatureBailleur
+        dateSignatureLocataire
       }
     }
   }
@@ -129,6 +133,46 @@ export const UPDATE_CLE = gql`
         type
         nombre
         commentaire
+      }
+    }
+  }
+`;
+
+export const DELETE_PIECE = gql`
+  mutation DeletePiece($input: deletePieceInput!) {
+    deletePiece(input: $input) {
+      piece {
+        id
+      }
+    }
+  }
+`;
+
+export const DELETE_COMPTEUR = gql`
+  mutation DeleteCompteur($input: deleteCompteurInput!) {
+    deleteCompteur(input: $input) {
+      compteur {
+        id
+      }
+    }
+  }
+`;
+
+export const DELETE_CLE = gql`
+  mutation DeleteCle($input: deleteCleInput!) {
+    deleteCle(input: $input) {
+      cle {
+        id
+      }
+    }
+  }
+`;
+
+export const DELETE_ELEMENT = gql`
+  mutation DeleteElement($input: deleteElementInput!) {
+    deleteElement(input: $input) {
+      element {
+        id
       }
     }
   }

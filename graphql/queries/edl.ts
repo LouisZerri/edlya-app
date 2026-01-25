@@ -86,6 +86,7 @@ export const GET_ETAT_DES_LIEUX = gql`
             numero
             indexValue
             commentaire
+            photos
           }
         }
       }
@@ -105,7 +106,7 @@ export const GET_ETAT_DES_LIEUX = gql`
 
 export const GET_RECENT_EDL = gql`
   query GetRecentEdl {
-    etatDesLieuxes(first: 3, order: { createdAt: "DESC" }) {
+    etatDesLieuxes(first: 5) {
       edges {
         node {
           id

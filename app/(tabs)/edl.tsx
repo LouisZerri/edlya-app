@@ -53,10 +53,11 @@ export default function EdlScreen() {
   const renderItem = ({ item }: { item: EtatDesLieux }) => {
     const typeConfig = TYPE_CONFIG[item.type];
     const statutBadge = STATUT_BADGE[item.statut];
+    const edlId = item.id.split('/').pop();
 
     return (
       <Card
-        onPress={() => router.push(`/edl/${item.id}`)}
+        onPress={() => router.push(`/edl/${edlId}`)}
         className="mb-3"
       >
         <View className="flex-row">
@@ -64,9 +65,9 @@ export default function EdlScreen() {
             <Text className="text-2xl">{typeConfig.icon}</Text>
           </View>
 
-          <View className="flex-1 ml-3">
-            <View className="flex-row items-center justify-between">
-              <Text className="font-semibold text-gray-900">
+          <View className="flex-1 ml-3 mr-2">
+            <View className="flex-row items-center justify-between gap-2">
+              <Text className="font-semibold text-gray-900 flex-1" numberOfLines={1}>
                 {item.logement?.nom || 'Logement'}
               </Text>
               <Badge label={statutBadge.label} variant={statutBadge.variant} />
@@ -89,7 +90,7 @@ export default function EdlScreen() {
             </View>
           </View>
 
-          <ChevronRight size={20} color={COLORS.gray[400]} className="self-center ml-2" />
+          <ChevronRight size={20} color={COLORS.gray[400]} style={{ alignSelf: 'center' }} />
         </View>
       </Card>
     );

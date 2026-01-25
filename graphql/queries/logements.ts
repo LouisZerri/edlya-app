@@ -35,17 +35,6 @@ export const GET_LOGEMENT = gql`
       description
       photoPrincipale
       createdAt
-      etatsDesLieux {
-        edges {
-          node {
-            id
-            type
-            dateRealisation
-            locataireNom
-            statut
-          }
-        }
-      }
     }
   }
 `;

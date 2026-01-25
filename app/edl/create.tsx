@@ -11,6 +11,9 @@ import { GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { CREATE_ETAT_DES_LIEUX } from '../../graphql/mutations/edl';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
 import { useToastStore } from '../../stores/toastStore';
+import { apiDateToDisplay, displayDateToApi } from '../../utils/format';
+import { API_URL } from '../../utils/constants';
+import { useAuthStore } from '../../stores/authStore';
 
 interface LogementsData {
   logements?: {
@@ -51,6 +54,7 @@ export default function CreateEdlScreen() {
   const router = useRouter();
   const { logementId } = useLocalSearchParams<{ logementId?: string }>();
   const { success, error: showError } = useToastStore();
+  const { token } = useAuthStore();
   const [loading, setLoading] = useState(false);
 
   const { data: logementsData } = useQuery<LogementsData>(GET_LOGEMENTS);
@@ -68,7 +72,7 @@ export default function CreateEdlScreen() {
     defaultValues: {
       logement: logementId ? `/api/logements/${logementId}` : '',
       type: 'entree',
-      dateRealisation: new Date().toISOString().split('T')[0],
+      dateRealisation: apiDateToDisplay(new Date().toISOString().split('T')[0]),
       locataireNom: '',
       locataireEmail: '',
       locataireTelephone: '',
@@ -86,7 +90,7 @@ export default function CreateEdlScreen() {
           input: {
             logement: data.logement,
             type: data.type,
-            dateRealisation: data.dateRealisation,
+            dateRealisation: displayDateToApi(data.dateRealisation),
             locataireNom: data.locataireNom,
             locataireEmail: data.locataireEmail || null,
             locataireTelephone: data.locataireTelephone || null,
@@ -97,8 +101,25 @@ export default function CreateEdlScreen() {
 
       const newEdlId = result.data?.createEtatDesLieux?.etatDesLieux?.id;
       if (newEdlId) {
-        success('Etat des lieux cree avec succes !');
         const id = newEdlId.split('/').pop();
+
+        // Générer les pièces si une typologie est sélectionnée
+        if (data.typologie) {
+          try {
+            await fetch(`${API_URL}/edl/${id}/generer-pieces`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({ typologie: data.typologie }),
+            });
+          } catch (err) {
+            console.error('Erreur generation pieces:', err);
+          }
+        }
+
+        success('Etat des lieux cree avec succes !');
         router.replace(`/edl/${id}`);
       } else {
         router.back();
@@ -177,7 +198,7 @@ export default function CreateEdlScreen() {
                 label="Date *"
                 value={value}
                 onChangeText={onChange}
-                placeholder="2024-01-15"
+                placeholder="25/01/2024"
                 error={errors.dateRealisation?.message}
               />
             )}
