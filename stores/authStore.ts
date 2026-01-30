@@ -52,7 +52,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email: string, password: string) => {
     const response = await fetch(`${API_URL}/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+      },
       body: JSON.stringify({ email, password }),
     });
 
@@ -71,7 +74,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (data: RegisterData) => {
     const response = await fetch(`${API_URL}/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+      },
       body: JSON.stringify({
         ...data,
         role: data.role || 'bailleur',
@@ -106,7 +112,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!token) return;
 
     const response = await fetch(`${API_URL}/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': 'true',
+      },
     });
 
     if (response.ok) {
@@ -125,6 +134,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify(data),
     });

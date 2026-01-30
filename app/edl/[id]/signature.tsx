@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState, useEffect, useCallback, memo } from 'react';
 import { useQuery } from '@apollo/client/react';
 import SignatureScreen from 'react-native-signature-canvas';
@@ -10,6 +10,22 @@ import { COLORS, API_URL } from '../../../utils/constants';
 import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
 import { useToastStore } from '../../../stores/toastStore';
 import { useAuthStore } from '../../../stores/authStore';
+
+// Types GraphQL
+interface EtatDesLieuxData {
+  etatDesLieux: {
+    id: string;
+    type: string;
+    statut: string;
+    locataireNom: string;
+    locataireEmail?: string;
+    locataireTelephone?: string;
+    signatureBailleur?: string;
+    signatureLocataire?: string;
+    dateSignatureBailleur?: string;
+    dateSignatureLocataire?: string;
+  };
+}
 
 // Composant signature mémorisé pour éviter les re-renders
 const SignatureCanvas = memo(({
@@ -46,7 +62,6 @@ const SignatureCanvas = memo(({
 
 export default function SignatureEdlScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const { success, error: showError } = useToastStore();
   const token = useAuthStore(state => state.token);
   const [loading, setLoading] = useState(false);
@@ -54,7 +69,6 @@ export default function SignatureEdlScreen() {
   const isSigningRef = useRef(false);
 
   const bailleurRef = useRef<any>(null);
-  const locataireRef = useRef<any>(null);
 
   // Contrôle du scroll via ref (pas de re-render)
   const disableScroll = useCallback(() => {
@@ -73,7 +87,7 @@ export default function SignatureEdlScreen() {
   const [locataireSaved, setLocataireSaved] = useState(false);
 
   // Fetch existing EDL data
-  const { data, refetch } = useQuery(GET_ETAT_DES_LIEUX, {
+  const { data, refetch } = useQuery<EtatDesLieuxData>(GET_ETAT_DES_LIEUX, {
     variables: { id: `/api/etat_des_lieuxes/${id}` },
   });
 
@@ -109,6 +123,7 @@ export default function SignatureEdlScreen() {
       const response = await fetch(`${API_URL}/edl/${id}/signature/bailleur`, {
         method: 'POST',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
@@ -158,6 +173,7 @@ export default function SignatureEdlScreen() {
       const response = await fetch(`${API_URL}/edl/${id}/signature/envoyer-lien`, {
         method: 'POST',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },

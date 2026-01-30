@@ -51,9 +51,20 @@ export interface DonneesExtraites {
   cles?: CleExtraite[];
 }
 
+export interface ExtractedImage {
+  index: number;
+  page: number;
+  data: string;      // base64
+  mimeType: string;  // "image/jpeg" | "image/png" | ...
+  width: number | null;
+  height: number | null;
+  size: number;      // bytes
+}
+
 interface ImportResult {
   success: boolean;
   donnees_extraites?: DonneesExtraites;
+  images?: ExtractedImage[];
   message?: string;
 }
 
@@ -67,6 +78,7 @@ interface CreateEdlResult {
     nbPieces: number;
   };
   donnees_extraites?: DonneesExtraites;
+  images?: ExtractedImage[];
   message?: string;
 }
 
@@ -106,6 +118,7 @@ export function usePdfImport(): UsePdfImportReturn {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true',
         },
         body: formData,
       });
@@ -162,6 +175,7 @@ export function usePdfImport(): UsePdfImportReturn {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true',
         },
         body: formData,
       });

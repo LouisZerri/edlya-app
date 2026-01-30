@@ -1,7 +1,14 @@
 // Pour téléphone physique, utiliser l'IP locale du PC
 // Pour émulateur Android: 10.0.2.2
 // Pour simulateur iOS: 127.0.0.1
-export const BASE_URL = 'http://192.168.1.135:8000';
+// Pour test distant: utiliser ngrok
+
+// URL locale (développement)
+// export const BASE_URL = 'http://192.168.1.135:8000';
+
+// URL tunnel (test distant)
+export const BASE_URL = 'https://edlya-api.loca.lt';
+
 export const API_URL = `${BASE_URL}/api`;
 export const GRAPHQL_URL = `${API_URL}/graphql`;
 export const UPLOADS_URL = `${BASE_URL}/uploads`;

@@ -115,6 +115,7 @@ export function useComparatif(): UseComparatifReturn {
       const response = await fetch(`${API_URL}/edl/${numericId}/comparatif`, {
         method: 'GET',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },

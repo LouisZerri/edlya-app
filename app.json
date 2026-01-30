@@ -3,6 +3,7 @@
     "name": "Edlya",
     "slug": "edlya-app",
     "version": "1.0.0",
+    "scheme": "edlya",
     "orientation": "portrait",
     "icon": "./assets/edlya-icon.png",
     "userInterfaceStyle": "light",
@@ -27,7 +28,10 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.edlya.app"
+      "package": "com.edlya.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/edlya-icon.png"
@@ -35,6 +39,12 @@
     "plugins": [
       "expo-router",
       "expo-speech-recognition"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "82c0682d-ecb8-4de9-a17e-6dcb9613aca9"
+      }
+    }
   }
 }

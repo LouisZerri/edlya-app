@@ -53,7 +53,8 @@ export function usePdfExport(): UsePdfExportReturn {
         const response = await fetch(url, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true',
+          'Authorization': `Bearer ${token}`,
           },
         });
 
@@ -87,7 +88,8 @@ export function usePdfExport(): UsePdfExportReturn {
         fileUri,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true',
+          'Authorization': `Bearer ${token}`,
           },
         }
       );

@@ -44,6 +44,7 @@ export function useShareEdl(): UseShareEdlReturn {
       const response = await fetch(`${API_URL}/edl/${numericId}/partages`, {
         method: 'POST',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
@@ -91,6 +92,7 @@ export function useShareEdl(): UseShareEdlReturn {
       const response = await fetch(`${API_URL}/edl/${numericId}/signature/envoyer-lien`, {
         method: 'POST',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
@@ -126,7 +128,7 @@ export function useShareEdl(): UseShareEdlReturn {
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Envoyer',
-          onPress: (email) => {
+          onPress: (email?: string) => {
             if (email && email.includes('@')) {
               shareByEmail(edlId, email);
             } else {

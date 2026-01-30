@@ -79,6 +79,7 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
       const response = await fetch(`${API_URL}/ai/analyser-piece`, {
         method: 'POST',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
         },
         body: formData,
@@ -141,7 +142,8 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true',
+          'Authorization': `Bearer ${token}`,
           },
           body: formData,
         }

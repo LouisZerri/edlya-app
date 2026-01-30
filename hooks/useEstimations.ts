@@ -174,6 +174,7 @@ export function useEstimations(): UseEstimationsReturn {
       const response = await fetch(`${API_URL}/ai/estimations/${numericId}`, {
         method: 'POST',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
@@ -228,6 +229,7 @@ export function useEstimations(): UseEstimationsReturn {
       const response = await fetch(`${API_URL}/ai/estimations/${numericId}/refresh`, {
         method: 'POST',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },

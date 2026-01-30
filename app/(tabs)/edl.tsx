@@ -2,9 +2,9 @@ import { View, Text, FlatList, RefreshControl, TouchableOpacity, ScrollView } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@apollo/client/react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Plus, ChevronRight, Calendar, DoorOpen } from 'lucide-react-native';
-import { Header, Card, Badge } from '../../components/ui';
+import { Header, Card, Badge, SearchBar } from '../../components/ui';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
 import { EtatDesLieux, STATUT_BADGE, TYPE_CONFIG } from '../../types';
 import { COLORS } from '../../utils/constants';
@@ -22,14 +22,33 @@ export default function EdlScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>('tous');
+  const [search, setSearch] = useState('');
 
   const { data, refetch, loading } = useQuery<EdlData>(GET_ETATS_DES_LIEUX);
 
   const allEdls: EtatDesLieux[] = data?.etatDesLieuxes?.edges?.map((edge) => edge.node) || [];
 
-  const filteredEdls = filter === 'tous'
-    ? allEdls
-    : allEdls.filter(edl => edl.type === filter);
+  // Filtrer par type et recherche
+  const filteredEdls = useMemo(() => {
+    let result = allEdls;
+
+    // Filtre par type
+    if (filter !== 'tous') {
+      result = result.filter(edl => edl.type === filter);
+    }
+
+    // Filtre par recherche
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(edl =>
+        edl.logement?.nom?.toLowerCase().includes(searchLower) ||
+        edl.locataireNom?.toLowerCase().includes(searchLower) ||
+        edl.logement?.adresse?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return result;
+  }, [allEdls, filter, search]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -108,7 +127,12 @@ export default function EdlScreen() {
       />
 
       <View className="bg-white px-4 py-3 border-b border-gray-100">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Rechercher par logement ou locataire..."
+        />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
           <FilterPill type="tous" label="Tous" />
           <FilterPill type="entree" label="Entree" />
           <FilterPill type="sortie" label="Sortie" />
@@ -127,8 +151,9 @@ export default function EdlScreen() {
           !loading ? (
             <Card>
               <Text className="text-gray-500 text-center py-8">
-                Aucun etat des lieux pour le moment.{'\n'}
-                Creez votre premier EDL !
+                {search.trim()
+                  ? `Aucun EDL trouve pour "${search}"`
+                  : 'Aucun etat des lieux pour le moment.\nCreez votre premier EDL !'}
               </Text>
             </Card>
           ) : null

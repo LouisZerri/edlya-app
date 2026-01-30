@@ -9,6 +9,8 @@ const httpLink = new HttpLink({
     const headers = {
       ...((options?.headers as Record<string, string>) || {}),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
+      'ngrok-skip-browser-warning': 'true',
+      'Bypass-Tunnel-Reminder': 'true',
     };
     return fetch(uri, {
       ...options,

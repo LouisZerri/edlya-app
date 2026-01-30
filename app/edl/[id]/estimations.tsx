@@ -79,12 +79,13 @@ export default function EstimationsScreen() {
           <Text className="text-gray-500 text-center mt-2">
             Impossible de générer les estimations pour cet état des lieux
           </Text>
-          <Button
-            label="Réessayer"
-            onPress={() => id && generateEstimations(id)}
-            variant="primary"
-            className="mt-6"
-          />
+          <View className="mt-6">
+            <Button
+              label="Réessayer"
+              onPress={() => id && generateEstimations(id)}
+              variant="primary"
+            />
+          </View>
         </View>
       </SafeAreaView>
     );

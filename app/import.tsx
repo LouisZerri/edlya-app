@@ -1,18 +1,46 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Upload, FileText, Lightbulb, Check, Home, User, DoorOpen, Zap, Key, AlertCircle, Plus } from 'lucide-react-native';
+import { Upload, FileText, Lightbulb, Check, Home, User, DoorOpen, Zap, Key, AlertCircle, Plus, ImageIcon, Download, CheckCircle } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Header, Card, Button, Badge } from '../components/ui';
 import { COLORS } from '../utils/constants';
-import { usePdfImport, DonneesExtraites } from '../hooks/usePdfImport';
+import { usePdfImport, DonneesExtraites, ExtractedImage } from '../hooks/usePdfImport';
 import { GET_LOGEMENTS } from '../graphql/queries/logements';
 import { CREATE_LOGEMENT } from '../graphql/mutations/logements';
 import { useToastStore } from '../stores/toastStore';
 
 type Step = 'upload' | 'preview' | 'logement' | 'creating';
+
+// Types GraphQL
+interface LogementNode {
+  id: string;
+  nom: string;
+  adresse: string;
+  codePostal: string;
+  ville: string;
+  type?: string;
+  surface?: number;
+  nbPieces?: number;
+  photoPrincipale?: string;
+  createdAt: string;
+}
+
+interface GetLogementsData {
+  logements: {
+    edges: Array<{ node: LogementNode }>;
+  };
+}
+
+interface CreateLogementData {
+  createLogement: {
+    logement: LogementNode;
+  };
+}
 
 // Fonction pour calculer la similarité entre deux chaînes
 function similarity(s1: string, s2: string): number {
@@ -77,19 +105,23 @@ export default function ImportScreen() {
   const [step, setStep] = useState<Step>('upload');
   const [selectedFile, setSelectedFile] = useState<{ uri: string; name: string } | null>(null);
   const [extractedData, setExtractedData] = useState<DonneesExtraites | null>(null);
+  const [extractedImages, setExtractedImages] = useState<ExtractedImage[]>([]);
   const [selectedLogement, setSelectedLogement] = useState<any>(null);
   const [matchedLogement, setMatchedLogement] = useState<{ logement: any; score: number } | null>(null);
   const [creatingLogement, setCreatingLogement] = useState(false);
+  const [savingImages, setSavingImages] = useState(false);
+  const [savedImagesCount, setSavedImagesCount] = useState(0);
+  const isSavingRef = useRef(false); // Pour bloquer immédiatement les doubles appels
 
   const { isImporting, isCreating, importPdf, createEdlFromPdf } = usePdfImport();
 
-  const { data: logementsData, refetch: refetchLogements } = useQuery(GET_LOGEMENTS);
+  const { data: logementsData, refetch: refetchLogements } = useQuery<GetLogementsData>(GET_LOGEMENTS);
   const logements = useMemo(() =>
-    logementsData?.logements?.edges?.map((e: any) => e.node) || [],
+    logementsData?.logements?.edges?.map((e) => e.node) || [],
     [logementsData]
   );
 
-  const [createLogement] = useMutation(CREATE_LOGEMENT, {
+  const [createLogementMutation] = useMutation<CreateLogementData>(CREATE_LOGEMENT, {
     refetchQueries: [{ query: GET_LOGEMENTS }],
   });
 
@@ -121,6 +153,8 @@ export default function ImportScreen() {
           name: result.assets[0].name,
         });
         setExtractedData(null);
+        setExtractedImages([]);
+        setSavedImagesCount(0);
         setMatchedLogement(null);
         setSelectedLogement(null);
         hasMatchedRef.current = false;
@@ -137,7 +171,107 @@ export default function ImportScreen() {
     const result = await importPdf(selectedFile.uri, selectedFile.name);
     if (result?.success && result.donnees_extraites) {
       setExtractedData(result.donnees_extraites);
+      setExtractedImages(result.images || []);
+      setSavedImagesCount(0);
       setStep('preview');
+    }
+  };
+
+  const saveImagesToGallery = async () => {
+    // Éviter les doubles appels avec ref synchrone + vérifier si déjà sauvé
+    if (extractedImages.length === 0 || isSavingRef.current || savedImagesCount > 0) return;
+    isSavingRef.current = true;
+    setSavingImages(true);
+
+    try {
+      // Demander la permission
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        showError('Permission refusée pour accéder à la galerie');
+        return;
+      }
+
+      // Utiliser documentDirectory qui est plus fiable sur iOS
+      const docDir = FileSystemLegacy.documentDirectory;
+      if (!docDir) {
+        showError('Impossible d\'accéder au stockage');
+        return;
+      }
+
+      // Dédupliquer les images par contenu (les 100 premiers caractères du base64)
+      const seenHashes = new Set<string>();
+      const uniqueImages = extractedImages.filter((img) => {
+        // Créer un "hash" simple basé sur les premiers caractères du base64
+        const hash = img.data.substring(0, 100);
+        if (seenHashes.has(hash)) {
+          return false;
+        }
+        seenHashes.add(hash);
+        return true;
+      });
+
+      let saved = 0;
+      const timestamp = Date.now();
+
+      for (let i = 0; i < uniqueImages.length; i++) {
+        const image = uniqueImages[i];
+        try {
+          // Nom de fichier unique avec timestamp + index de boucle
+          const extension = image.mimeType.includes('png') ? 'png' : 'jpg';
+          const fileName = `edl_${timestamp}_${i}.${extension}`;
+          const fileUri = docDir + fileName;
+
+          // Nettoyer les données base64
+          let base64Data = image.data;
+          if (base64Data.includes(',')) {
+            base64Data = base64Data.split(',')[1];
+          }
+
+          // Écrire le fichier
+          await FileSystemLegacy.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystemLegacy.EncodingType.Base64,
+          });
+
+          // Vérifier que le fichier existe
+          const fileInfo = await FileSystemLegacy.getInfoAsync(fileUri);
+          if (!fileInfo.exists) {
+            console.warn('File not created:', fileName);
+            continue;
+          }
+
+          // Sauvegarder dans la galerie
+          try {
+            const asset = await MediaLibrary.createAssetAsync(fileUri);
+            if (asset) {
+              saved++;
+            }
+          } catch (saveErr) {
+            console.warn('Could not save to gallery:', saveErr);
+          }
+
+          // Nettoyer le fichier temporaire
+          try {
+            await FileSystemLegacy.deleteAsync(fileUri, { idempotent: true });
+          } catch {
+            // Ignorer les erreurs de suppression
+          }
+        } catch (err) {
+          console.warn('Error processing image:', image.index, err);
+        }
+      }
+
+      setSavedImagesCount(saved);
+      if (saved > 0) {
+        success(`${saved} photo${saved > 1 ? 's' : ''} enregistrée${saved > 1 ? 's' : ''}`);
+      } else {
+        showError('Aucune photo n\'a pu être sauvegardée');
+      }
+    } catch (err: any) {
+      console.error('Error saving images:', err);
+      showError('Erreur lors de la sauvegarde');
+    } finally {
+      setSavingImages(false);
+      isSavingRef.current = false;
     }
   };
 
@@ -147,7 +281,7 @@ export default function ImportScreen() {
     setCreatingLogement(true);
     try {
       const logementData = extractedData.logement;
-      const result = await createLogement({
+      const result = await createLogementMutation({
         variables: {
           input: {
             nom: logementData.adresse || 'Nouveau logement',
@@ -485,6 +619,92 @@ export default function ImportScreen() {
         </Card>
       )}
 
+      {/* Photos extraites */}
+      {extractedImages.length > 0 && (
+        <Card className="mb-4">
+          <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center">
+              <ImageIcon size={20} color={COLORS.primary[600]} />
+              <Text className="font-semibold text-gray-800 ml-2">
+                Photos extraites ({extractedImages.length})
+              </Text>
+            </View>
+            {savedImagesCount > 0 && (
+              <Badge label={`${savedImagesCount} sauvées`} variant="green" />
+            )}
+          </View>
+
+          {/* Grille de miniatures */}
+          <View className="flex-row flex-wrap -mx-1 mb-3">
+            {extractedImages.slice(0, 6).map((image, idx) => (
+              <View key={idx} className="w-1/3 p-1">
+                <View className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                  <Image
+                    source={{ uri: `data:${image.mimeType};base64,${image.data}` }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {extractedImages.length > 6 && (
+            <Text className="text-gray-500 text-sm text-center mb-3">
+              + {extractedImages.length - 6} autres photos
+            </Text>
+          )}
+
+          {/* Bouton sauvegarder */}
+          {savedImagesCount === 0 ? (
+            <TouchableOpacity
+              onPress={saveImagesToGallery}
+              disabled={savingImages}
+              className={`flex-row items-center justify-center py-3 rounded-xl ${
+                savingImages
+                  ? 'bg-gray-100 border border-gray-200'
+                  : 'bg-primary-50 border border-primary-200'
+              }`}
+              activeOpacity={savingImages ? 1 : 0.7}
+            >
+              {savingImages ? (
+                <>
+                  <ActivityIndicator size="small" color={COLORS.gray[400]} />
+                  <Text className="text-gray-500 font-medium ml-2">
+                    Sauvegarde en cours...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Download size={18} color={COLORS.primary[600]} />
+                  <Text className="text-primary-700 font-medium ml-2">
+                    Enregistrer dans la galerie
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View className="flex-row items-center justify-center py-3 bg-green-50 border border-green-200 rounded-xl">
+              <CheckCircle size={18} color={COLORS.green[600]} />
+              <Text className="text-green-700 font-medium ml-2">
+                Photos enregistrées dans votre galerie
+              </Text>
+            </View>
+          )}
+
+          {/* Message d'avertissement */}
+          <View className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <Text className="text-amber-700 text-xs text-center">
+              ⚠️ L'IA peut faire des erreurs et ne pas récupérer toutes les images du PDF. Vérifiez que toutes vos photos sont bien présentes.
+            </Text>
+          </View>
+
+          <Text className="text-gray-400 text-xs text-center mt-2">
+            Les photos seront disponibles dans votre galerie pour les ajouter lors de l'édition.
+          </Text>
+        </Card>
+      )}
+
       <View className="h-24" />
     </ScrollView>
   );
@@ -533,13 +753,14 @@ export default function ImportScreen() {
           <Text className="text-gray-600 text-sm mt-2">
             Créez d'abord un logement avant de pouvoir importer un EDL.
           </Text>
-          <Button
-            label="Créer un logement"
-            onPress={() => router.push('/logement/create')}
-            variant="secondary"
-            fullWidth
-            className="mt-3"
-          />
+          <View className="mt-3">
+            <Button
+              label="Créer un logement"
+              onPress={() => router.push('/logement/create')}
+              variant="secondary"
+              fullWidth
+            />
+          </View>
         </Card>
       ) : (
         <>
@@ -580,7 +801,9 @@ export default function ImportScreen() {
                         {logement.nom}
                       </Text>
                       {isMatched && (
-                        <Badge label="Suggéré" variant="blue" className="ml-2" />
+                        <View className="ml-2">
+                          <Badge label="Suggéré" variant="blue" />
+                        </View>
                       )}
                     </View>
                     <Text className="text-gray-500 text-sm">{logement.adresse}</Text>
@@ -641,6 +864,8 @@ export default function ImportScreen() {
               onPress={() => {
                 setStep('upload');
                 setExtractedData(null);
+                setExtractedImages([]);
+                setSavedImagesCount(0);
                 setSelectedLogement(null);
                 setMatchedLogement(null);
                 hasMatchedRef.current = false;

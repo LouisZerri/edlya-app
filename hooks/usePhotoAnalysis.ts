@@ -107,6 +107,7 @@ export function usePhotoAnalysis(): UsePhotoAnalysisReturn {
       const response = await fetch(`${API_URL}/ai/analyser-degradation`, {
         method: 'POST',
         headers: {
+          'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
         },
         body: formData,

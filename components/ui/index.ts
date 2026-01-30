@@ -5,5 +5,6 @@ export { Header } from './Header';
 export { IconButton } from './IconButton';
 export { Input } from './Input';
 export { InputWithVoice } from './InputWithVoice';
+export { SearchBar } from './SearchBar';
 export { Select } from './Select';
 export { ToastContainer } from './Toast';

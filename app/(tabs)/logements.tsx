@@ -2,9 +2,9 @@ import { View, Text, FlatList, RefreshControl, TouchableOpacity } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@apollo/client/react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Plus, ChevronRight, MapPin } from 'lucide-react-native';
-import { Header, Card } from '../../components/ui';
+import { Header, Card, SearchBar } from '../../components/ui';
 import { GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { Logement } from '../../types';
 import { COLORS } from '../../utils/constants';
@@ -19,10 +19,22 @@ interface LogementsData {
 export default function LogementsScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
 
   const { data, refetch, loading } = useQuery<LogementsData>(GET_LOGEMENTS);
 
   const logements: Logement[] = data?.logements?.edges?.map((edge) => edge.node) || [];
+
+  // Filtrer par recherche
+  const filteredLogements = useMemo(() => {
+    if (!search.trim()) return logements;
+    const searchLower = search.toLowerCase();
+    return logements.filter(l =>
+      l.nom?.toLowerCase().includes(searchLower) ||
+      l.adresse?.toLowerCase().includes(searchLower) ||
+      l.ville?.toLowerCase().includes(searchLower)
+    );
+  }, [logements, search]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -77,8 +89,16 @@ export default function LogementsScreen() {
         }
       />
 
+      <View className="px-4 py-3 bg-white border-b border-gray-100">
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Rechercher un logement..."
+        />
+      </View>
+
       <FlatList
-        data={logements}
+        data={filteredLogements}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 16 }}
@@ -89,8 +109,9 @@ export default function LogementsScreen() {
           !loading ? (
             <Card>
               <Text className="text-gray-500 text-center py-8">
-                Aucun logement pour le moment.{'\n'}
-                Creez votre premier logement !
+                {search.trim()
+                  ? `Aucun logement trouve pour "${search}"`
+                  : 'Aucun logement pour le moment.\nCreez votre premier logement !'}
               </Text>
             </Card>
           ) : null
