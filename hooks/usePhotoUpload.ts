@@ -37,7 +37,6 @@ async function compressPhoto(uri: string): Promise<string> {
 
     return saved.uri;
   } catch (err) {
-    console.warn('Photo compression failed, using original:', err);
     return uri;
   }
 }

@@ -23,6 +23,10 @@ export interface EdlInitializerState {
   setLocalCles: React.Dispatch<React.SetStateAction<CleNode[]>>;
   compteurValues: Record<string, string>;
   setCompteurValues: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  compteurNumeros: Record<string, string>;
+  setCompteurNumeros: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  compteurComments: Record<string, string>;
+  setCompteurComments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   cleValues: Record<string, number>;
   setCleValues: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   elementStates: Record<string, ElementEtat>;
@@ -56,6 +60,8 @@ export function useEdlInitializer(edl: EdlNode | undefined): EdlInitializerState
   const [localCompteurs, setLocalCompteurs] = useState<CompteurNode[]>([]);
   const [localCles, setLocalCles] = useState<CleNode[]>([]);
   const [compteurValues, setCompteurValues] = useState<Record<string, string>>({});
+  const [compteurNumeros, setCompteurNumeros] = useState<Record<string, string>>({});
+  const [compteurComments, setCompteurComments] = useState<Record<string, string>>({});
   const [cleValues, setCleValues] = useState<Record<string, number>>({});
   const [elementStates, setElementStates] = useState<Record<string, ElementEtat>>({});
   const [elementObservations, setElementObservations] = useState<Record<string, string>>({});
@@ -84,10 +90,16 @@ export function useEdlInitializer(edl: EdlNode | undefined): EdlInitializerState
 
     // Initialize compteur values
     const cValues: Record<string, string> = {};
+    const cNumeros: Record<string, string> = {};
+    const cComments: Record<string, string> = {};
     compteurs.forEach((c) => {
       cValues[c.id] = c.indexValue || '';
+      cNumeros[c.id] = c.numero || '';
+      cComments[c.id] = c.commentaire || '';
     });
     setCompteurValues(cValues);
+    setCompteurNumeros(cNumeros);
+    setCompteurComments(cComments);
 
     // Initialize cle values
     const clValues: Record<string, number> = {};
@@ -157,6 +169,8 @@ export function useEdlInitializer(edl: EdlNode | undefined): EdlInitializerState
     localCompteurs, setLocalCompteurs,
     localCles, setLocalCles,
     compteurValues, setCompteurValues,
+    compteurNumeros, setCompteurNumeros,
+    compteurComments, setCompteurComments,
     cleValues, setCleValues,
     elementStates, setElementStates,
     elementObservations, setElementObservations,

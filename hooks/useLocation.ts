@@ -26,7 +26,6 @@ export function useLocation(): UseLocationReturn {
       setPermission(status);
       return status === 'granted';
     } catch (err) {
-      console.error('Error requesting location permission:', err);
       setError('Impossible de demander la permission de localisation');
       return false;
     }
@@ -62,7 +61,6 @@ export function useLocation(): UseLocationReturn {
         longitude: location.coords.longitude,
       };
     } catch (err) {
-      console.error('Error getting location:', err);
       setError('Impossible de récupérer la position');
       return null;
     } finally {

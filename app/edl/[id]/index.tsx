@@ -3,8 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useState, useCallback } from 'react';
-import { Edit, Pen, BarChart3, Download, User, Zap, Key, DoorOpen, Trash2, Camera, CheckCircle } from 'lucide-react-native';
-import { Header, Card, Badge, IconButton } from '../../../components/ui';
+import { Edit, Pen, BarChart3, Download, User, Zap, Key, DoorOpen, Trash2, Camera, CheckCircle, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react-native';
+import { Header, Card, Badge, IconButton, RemoteThumbnail } from '../../../components/ui';
 import { GET_ETAT_DES_LIEUX, GET_ETATS_DES_LIEUX } from '../../../graphql/queries/edl';
 import { DELETE_ETAT_DES_LIEUX } from '../../../graphql/mutations/edl';
 import { STATUT_BADGE, TYPE_CONFIG, COMPTEUR_CONFIG, CLE_LABELS, ELEMENT_ETAT_LABELS } from '../../../types';
@@ -13,8 +13,20 @@ import { formatDate } from '../../../utils/format';
 import { useToastStore } from '../../../stores/toastStore';
 import { usePdfExport } from '../../../hooks/usePdfExport';
 
-import { GetEdlDetailData, PieceNode, CompteurNode, CleNode, ElementNode, GraphQLEdge } from '../../../types/graphql';
+import { GetEdlDetailData, PieceNode, CompteurNode, CleNode, ElementNode, PhotoNode, GraphQLEdge } from '../../../types/graphql';
+import { BASE_URL, UPLOADS_URL } from '../../../utils/constants';
 
+function photoUrl(chemin: string): string {
+  if (chemin?.startsWith('http')) return chemin;
+  if (chemin?.startsWith('/')) return `${BASE_URL}${chemin}`;
+  return `${UPLOADS_URL}/${chemin}`;
+}
+
+function getEtatVariant(etat: string): 'green' | 'red' | 'amber' {
+  if (etat === 'bon' || etat === 'neuf' || etat === 'tres_bon') return 'green';
+  if (etat === 'mauvais' || etat === 'hors_service') return 'red';
+  return 'amber';
+}
 
 export default function EdlDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,6 +34,7 @@ export default function EdlDetailScreen() {
   const { success, error: showError } = useToastStore();
   const { isExporting, exportPdf } = usePdfExport();
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedPieces, setExpandedPieces] = useState<string[]>([]);
 
   const { data, refetch, loading } = useQuery<GetEdlDetailData>(GET_ETAT_DES_LIEUX, {
     variables: { id: `/api/etat_des_lieuxes/${id}` },
@@ -58,12 +71,17 @@ export default function EdlDetailScreen() {
     );
   };
 
-  // Recharger les données quand on revient sur la page
   useFocusEffect(
     useCallback(() => {
       refetch();
     }, [refetch])
   );
+
+  const togglePiece = useCallback((pieceId: string) => {
+    setExpandedPieces(prev =>
+      prev.includes(pieceId) ? prev.filter(p => p !== pieceId) : [...prev, pieceId]
+    );
+  }, []);
 
   const edl = data?.etatDesLieux;
   const typeConfig = edl ? TYPE_CONFIG[edl.type as keyof typeof TYPE_CONFIG] : null;
@@ -73,7 +91,6 @@ export default function EdlDetailScreen() {
   const compteurs = edl?.compteurs?.edges?.map((e: GraphQLEdge<CompteurNode>) => e.node) || [];
   const cles = edl?.cles?.edges?.map((e: GraphQLEdge<CleNode>) => e.node) || [];
 
-  // Calcul du total de photos
   const totalPhotos = pieces.reduce((acc: number, piece: PieceNode) => {
     const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
     return acc + elements.reduce((elAcc: number, el: ElementNode) => {
@@ -237,31 +254,50 @@ export default function EdlDetailScreen() {
               <Zap size={20} color={COLORS.amber[500]} />
               <Text className="text-base font-semibold text-gray-800 ml-2">Compteurs</Text>
             </View>
-            <View className="flex-row flex-wrap gap-3">
-              {compteurs.map((compteur: CompteurNode) => {
-                const config = COMPTEUR_CONFIG[compteur.type as keyof typeof COMPTEUR_CONFIG];
-                const compteurPhotos = Array.isArray(compteur.photos) ? compteur.photos.length : 0;
-                return (
-                  <View key={compteur.id} className="bg-gray-50 rounded-lg p-3 flex-1 min-w-[45%]">
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-row items-center">
-                        <Text className="text-lg">{config?.icon || '📊'}</Text>
-                        <Text className="text-sm text-gray-600 ml-2">{config?.label || compteur.type}</Text>
+            {compteurs.map((compteur: CompteurNode, index: number) => {
+              const config = COMPTEUR_CONFIG[compteur.type as keyof typeof COMPTEUR_CONFIG];
+              const compteurPhotos = Array.isArray(compteur.photos) ? compteur.photos.length : 0;
+              return (
+                <View
+                  key={compteur.id}
+                  className={`bg-gray-50 rounded-xl p-3 ${index > 0 ? 'mt-2' : ''}`}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <View className="w-8 h-8 rounded-lg bg-white items-center justify-center">
+                        <Text className="text-base">{config?.icon || '📊'}</Text>
                       </View>
-                      {compteurPhotos > 0 && (
-                        <View className="flex-row items-center bg-white rounded-full px-1.5 py-0.5">
-                          <Camera size={10} color={COLORS.gray[500]} />
-                          <Text className="text-xs text-gray-500 ml-0.5">{compteurPhotos}</Text>
-                        </View>
-                      )}
+                      <Text className="text-sm font-semibold text-gray-800 ml-2">{config?.label || compteur.type}</Text>
                     </View>
-                    <Text className="text-lg font-bold text-gray-900 mt-1">
-                      {compteur.indexValue || '-'}
-                    </Text>
+                    {compteurPhotos > 0 && (
+                      <View className="flex-row items-center bg-white rounded-full px-2 py-0.5">
+                        <Camera size={10} color={COLORS.gray[500]} />
+                        <Text className="text-xs text-gray-500 ml-0.5">{compteurPhotos}</Text>
+                      </View>
+                    )}
                   </View>
-                );
-              })}
-            </View>
+                  <View className="flex-row items-baseline mt-2 gap-4">
+                    <View className="flex-1">
+                      <Text className="text-xs text-gray-400">Relevé</Text>
+                      <Text className="text-lg font-bold text-gray-900">
+                        {compteur.indexValue || <Text className="text-gray-300 font-normal text-sm">Non relevé</Text>}
+                      </Text>
+                    </View>
+                    {compteur.numero && (
+                      <View className="flex-1">
+                        <Text className="text-xs text-gray-400">N° compteur</Text>
+                        <Text className="text-sm text-gray-700">{compteur.numero}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {compteur.commentaire && (
+                    <View className="mt-2 pt-2 border-t border-gray-200">
+                      <Text className="text-xs text-gray-500 italic">{compteur.commentaire}</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </Card>
         )}
 
@@ -272,11 +308,19 @@ export default function EdlDetailScreen() {
               <Key size={20} color={COLORS.gray[600]} />
               <Text className="text-base font-semibold text-gray-800 ml-2">Clés</Text>
             </View>
-            {cles.map((cle: CleNode) => (
-              <View key={cle.id} className="flex-row items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <Text className="text-gray-700">
-                  {CLE_LABELS[cle.type as keyof typeof CLE_LABELS] || cle.type}
-                </Text>
+            {cles.map((cle: CleNode, index: number) => (
+              <View
+                key={cle.id}
+                className={`flex-row items-center justify-between py-2.5 ${index > 0 ? 'border-t border-gray-100' : ''}`}
+              >
+                <View className="flex-1">
+                  <Text className="text-gray-800">
+                    {CLE_LABELS[cle.type as keyof typeof CLE_LABELS] || cle.type}
+                  </Text>
+                  {cle.commentaire && (
+                    <Text className="text-xs text-gray-400 mt-0.5">{cle.commentaire}</Text>
+                  )}
+                </View>
                 <Badge label={`x${cle.nombre}`} variant="gray" />
               </View>
             ))}
@@ -293,54 +337,119 @@ export default function EdlDetailScreen() {
           </View>
           {pieces.map((piece: PieceNode) => {
             const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
-            const totalPhotos = elements.reduce((acc: number, el: ElementNode) => {
+            const piecePhotos = elements.reduce((acc: number, el: ElementNode) => {
               return acc + (el.photos?.edges?.length || 0);
             }, 0);
+            const isExpanded = expandedPieces.includes(piece.id);
+            const displayedElements = isExpanded ? elements : elements.slice(0, 3);
+            const hasMore = elements.length > 3;
+
             return (
               <Card key={piece.id} className="mb-3">
-                <View className="flex-row items-center justify-between">
-                  <Text className="font-medium text-gray-900">{piece.nom}</Text>
-                  <View className="flex-row items-center gap-2">
-                    {totalPhotos > 0 && (
-                      <View className="flex-row items-center bg-primary-50 rounded-full px-2 py-0.5">
-                        <Camera size={12} color={COLORS.primary[500]} />
-                        <Text className="text-xs text-primary-600 ml-1">{totalPhotos}</Text>
-                      </View>
-                    )}
-                    <Badge label={`${elements.length} éléments`} variant="gray" />
+                {/* Header pièce — cliquable */}
+                <TouchableOpacity
+                  onPress={() => togglePiece(piece.id)}
+                  activeOpacity={0.7}
+                  className="flex-row items-center justify-between"
+                >
+                  <View className="flex-row items-center flex-1">
+                    <Text className="font-semibold text-gray-900">{piece.nom}</Text>
+                    <View className="flex-row items-center gap-1.5 ml-2">
+                      {piecePhotos > 0 && (
+                        <View className="flex-row items-center bg-primary-50 rounded-full px-1.5 py-0.5">
+                          <Camera size={10} color={COLORS.primary[500]} />
+                          <Text className="text-xs text-primary-600 ml-0.5">{piecePhotos}</Text>
+                        </View>
+                      )}
+                      <Badge label={`${elements.length}`} variant="gray" />
+                    </View>
                   </View>
-                </View>
-                {elements.slice(0, 3).map((element: ElementNode) => {
-                  const photoCount = element.photos?.edges?.length || 0;
+                  {hasMore && (
+                    isExpanded
+                      ? <ChevronUp size={18} color={COLORS.gray[400]} />
+                      : <ChevronDown size={18} color={COLORS.gray[400]} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Éléments */}
+                {displayedElements.map((element: ElementNode) => {
+                  const photos = element.photos?.edges?.map((e: GraphQLEdge<PhotoNode>) => e.node) || [];
+                  const hasObservations = !!element.observations;
+                  const hasDegradations = Array.isArray(element.degradations) && element.degradations.length > 0;
+
                   return (
                     <View key={element.id} className="mt-2 pt-2 border-t border-gray-50">
                       <View className="flex-row items-center justify-between">
-                        <Text className="text-sm text-gray-600 flex-1">{element.nom}</Text>
-                        <View className="flex-row items-center gap-2">
-                          {photoCount > 0 && (
-                            <View className="flex-row items-center bg-gray-100 rounded-full px-2 py-0.5">
-                              <Camera size={12} color={COLORS.gray[500]} />
-                              <Text className="text-xs text-gray-500 ml-1">{photoCount}</Text>
-                            </View>
-                          )}
-                          <Badge
-                            label={ELEMENT_ETAT_LABELS[element.etat as keyof typeof ELEMENT_ETAT_LABELS] || element.etat}
-                            variant={element.etat === 'bon' || element.etat === 'neuf' || element.etat === 'tres_bon' ? 'green' : element.etat === 'mauvais' || element.etat === 'hors_service' ? 'red' : 'amber'}
-                          />
-                        </View>
+                        <Text className="text-sm text-gray-700 flex-1">{element.nom}</Text>
+                        <Badge
+                          label={ELEMENT_ETAT_LABELS[element.etat as keyof typeof ELEMENT_ETAT_LABELS] || element.etat}
+                          variant={getEtatVariant(element.etat)}
+                        />
                       </View>
+                      {hasObservations && (
+                        <Text className="text-xs text-gray-400 mt-1 italic">{element.observations}</Text>
+                      )}
+                      {hasDegradations && (
+                        <View className="flex-row flex-wrap gap-1 mt-1">
+                          {element.degradations!.map((deg, i) => (
+                            <View key={i} className="bg-red-50 rounded px-1.5 py-0.5">
+                              <Text className="text-xs text-red-600">{deg}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {isExpanded && photos.length > 0 && (
+                        <View className="flex-row flex-wrap gap-1.5 mt-2">
+                          {photos.map((photo) => (
+                            <RemoteThumbnail
+                              key={photo.id}
+                              source={{ uri: photoUrl(photo.chemin) }}
+                              size={44}
+                              borderRadius={8}
+                            />
+                          ))}
+                        </View>
+                      )}
                     </View>
                   );
                 })}
-                {elements.length > 3 && (
-                  <Text className="text-xs text-gray-400 mt-2">
-                    + {elements.length - 3} autres éléments
-                  </Text>
+
+                {/* Bouton voir plus / voir moins */}
+                {hasMore && !isExpanded && (
+                  <TouchableOpacity
+                    onPress={() => togglePiece(piece.id)}
+                    className="mt-2 pt-2 border-t border-gray-50"
+                  >
+                    <Text className="text-xs text-primary-600 text-center font-medium">
+                      Voir les {elements.length - 3} autres éléments
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {hasMore && isExpanded && (
+                  <TouchableOpacity
+                    onPress={() => togglePiece(piece.id)}
+                    className="mt-2 pt-2 border-t border-gray-50"
+                  >
+                    <Text className="text-xs text-primary-600 text-center font-medium">
+                      Réduire
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </Card>
             );
           })}
         </View>
+
+        {/* Observations générales */}
+        {edl?.observationsGenerales && (
+          <Card className="mx-4 mt-2">
+            <View className="flex-row items-center mb-2">
+              <MessageSquare size={18} color={COLORS.gray[500]} />
+              <Text className="text-base font-semibold text-gray-800 ml-2">Observations</Text>
+            </View>
+            <Text className="text-sm text-gray-600">{edl.observationsGenerales}</Text>
+          </Card>
+        )}
 
         {/* Supprimer */}
         <View className="mx-4 mt-6 mb-8">

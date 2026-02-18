@@ -1,6 +1,6 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Trash2 } from 'lucide-react-native';
-import { Card } from '../ui';
+import { Card, RemoteThumbnail } from '../ui';
 import { CLE_LABELS, CleType } from '../../types';
 import { CleNode } from '../../types/graphql';
 import { COLORS, BASE_URL, UPLOADS_URL } from '../../utils/constants';
@@ -67,7 +67,7 @@ export function EdlClesTab({
             </View>
             {cle.photo && (
               <View className="mt-2">
-                <Image
+                <RemoteThumbnail
                   source={{
                     uri: cle.photo.startsWith('http')
                       ? cle.photo
@@ -75,8 +75,8 @@ export function EdlClesTab({
                         ? `${BASE_URL}${cle.photo}`
                         : `${UPLOADS_URL}/${cle.photo}`,
                   }}
-                  className="w-20 h-20 rounded-lg"
-                  resizeMode="cover"
+                  size={80}
+                  borderRadius={8}
                 />
               </View>
             )}

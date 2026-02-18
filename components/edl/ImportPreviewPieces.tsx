@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { ChevronDown, ChevronUp, Trash2, DoorOpen } from 'lucide-react-native';
 import { Card, Badge } from '../ui';
@@ -36,7 +37,7 @@ interface ImportPreviewPiecesProps {
   token: string | null;
 }
 
-export function ImportPreviewPieces({
+export const ImportPreviewPieces = React.memo(function ImportPreviewPieces({
   extractedData,
   isEditing,
   expandedPieces,
@@ -170,4 +171,4 @@ export function ImportPreviewPieces({
       })}
     </Card>
   );
-}
+});

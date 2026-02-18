@@ -167,7 +167,6 @@ export function usePdfExport(): UsePdfExportReturn {
         }
       }
     } catch (err: unknown) {
-      console.error('PDF export error:', err);
       showError(err instanceof Error ? err.message : 'Erreur lors de l\'export PDF');
     } finally {
       setIsExporting(false);

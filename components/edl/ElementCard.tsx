@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Trash2, Sparkles } from 'lucide-react-native';
 import { Select, InputWithVoice, AideTooltip } from '../ui';
@@ -29,7 +30,7 @@ interface ElementCardProps {
   onDelete: (elementId: string, elementName: string, pieceId: string) => void;
 }
 
-export function ElementCard({
+export const ElementCard = React.memo(function ElementCard({
   element,
   pieceId,
   elementStates,
@@ -188,4 +189,4 @@ export function ElementCard({
       )}
     </View>
   );
-}
+});

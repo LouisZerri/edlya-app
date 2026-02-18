@@ -143,7 +143,6 @@ export function usePdfImport(): UsePdfImportReturn {
 
       return data as ImportResult;
     } catch (err: unknown) {
-      console.error('PDF import error:', err);
       showError(err instanceof Error ? err.message : 'Erreur lors de l\'import');
       return null;
     } finally {
@@ -189,7 +188,6 @@ export function usePdfImport(): UsePdfImportReturn {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Create EDL from data API error:', errorText);
         if (response.status === 410) {
           throw new Error('Les photos importées ont expiré. Veuillez ré-importer le PDF.');
         }
@@ -211,7 +209,6 @@ export function usePdfImport(): UsePdfImportReturn {
 
       return result as CreateEdlResult;
     } catch (err: unknown) {
-      console.error('Create EDL from data error:', err);
       showError(err instanceof Error ? err.message : 'Erreur lors de la création');
       return null;
     } finally {

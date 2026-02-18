@@ -55,7 +55,6 @@ export function InputWithVoice({
           setVoiceAvailable(true);
         }
       } catch (e) {
-        console.log('Speech module not available');
         setVoiceAvailable(false);
       }
     }, 100);

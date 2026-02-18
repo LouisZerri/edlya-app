@@ -98,7 +98,6 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
 
       return data.analyse as RoomAnalysisResult;
     } catch (err: unknown) {
-      console.error('Room analysis error:', err);
       showError(err instanceof Error ? err.message : 'Erreur lors de l\'analyse de la pièce');
       return null;
     } finally {
@@ -163,7 +162,6 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
       showSuccess(`${data.elements_crees?.length || 0} éléments détectés et ajoutés`);
       return data as AutoFillResult;
     } catch (err: unknown) {
-      console.error('Auto-fill room error:', err);
       showError(err instanceof Error ? err.message : 'Erreur lors de l\'auto-remplissage');
       return null;
     } finally {

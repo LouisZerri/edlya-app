@@ -165,7 +165,6 @@ export function useComparatif(): UseComparatifReturn {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Comparatif API error:', errorText);
         let errorMessage = `Erreur ${response.status}`;
         try {
           const errorData = JSON.parse(errorText);

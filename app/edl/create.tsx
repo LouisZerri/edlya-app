@@ -124,8 +124,8 @@ export default function CreateEdlScreen() {
               },
               body: JSON.stringify({ typologie: data.typologie }),
             });
-          } catch (err) {
-            console.error('Erreur generation pieces:', err);
+          } catch {
+            // silently fail - typologie pre-fill is optional
           }
         }
 

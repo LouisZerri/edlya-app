@@ -239,7 +239,6 @@ export function useEstimations(): UseEstimationsReturn {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Estimations API error:', errorText);
         let errorMessage = `Erreur ${response.status}`;
         try {
           const errorData = JSON.parse(errorText);
@@ -294,7 +293,6 @@ export function useEstimations(): UseEstimationsReturn {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Estimations refresh API error:', errorText);
         let errorMessage = `Erreur ${response.status}`;
         try {
           const errorData = JSON.parse(errorText);

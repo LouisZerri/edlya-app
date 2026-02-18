@@ -45,6 +45,8 @@ export default function EditEdlScreen() {
     localCompteurs: state.localCompteurs,
     localCles: state.localCles,
     compteurValues: state.compteurValues,
+    compteurNumeros: state.compteurNumeros,
+    compteurComments: state.compteurComments,
     cleValues: state.cleValues,
     elementStates: state.elementStates,
     elementObservations: state.elementObservations,
@@ -136,6 +138,10 @@ export default function EditEdlScreen() {
             localCompteurs={state.localCompteurs}
             compteurValues={state.compteurValues}
             setCompteurValues={state.setCompteurValues}
+            compteurNumeros={state.compteurNumeros}
+            setCompteurNumeros={state.setCompteurNumeros}
+            compteurComments={state.compteurComments}
+            setCompteurComments={state.setCompteurComments}
             compteurPhotos={state.compteurPhotos}
             setCompteurPhotos={state.setCompteurPhotos}
             onDeleteCompteur={mutations.handleDeleteCompteur}

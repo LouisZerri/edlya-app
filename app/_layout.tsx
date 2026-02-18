@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { apolloClient } from '../graphql/client';
 import { useAuthStore } from '../stores/authStore';
 import { ToastContainer } from '../components/ui';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { COLORS } from '../utils/constants';
 import '../global.css';
 
@@ -84,14 +85,16 @@ export default function RootLayout() {
   }
 
   return (
-    <ApolloProvider client={apolloClient}>
-      <SafeAreaProvider>
-        <View className="flex-1">
-          <StatusBar style="dark" />
-          <RootLayoutNav />
-          <ToastContainer />
-        </View>
-      </SafeAreaProvider>
-    </ApolloProvider>
+    <ErrorBoundary>
+      <ApolloProvider client={apolloClient}>
+        <SafeAreaProvider>
+          <View className="flex-1">
+            <StatusBar style="dark" />
+            <RootLayoutNav />
+            <ToastContainer />
+          </View>
+        </SafeAreaProvider>
+      </ApolloProvider>
+    </ErrorBoundary>
   );
 }

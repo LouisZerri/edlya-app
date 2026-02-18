@@ -1,16 +1,7 @@
-// Pour téléphone physique, utiliser l'IP locale du PC
-// Pour émulateur Android: 10.0.2.2
-// Pour simulateur iOS: 127.0.0.1
-// Pour test distant: utiliser ngrok
+import Constants from 'expo-constants';
 
-// URL locale (développement)
-// export const BASE_URL = 'http://192.168.1.135:8000';
-
-// URL locale (version web / dev)
-// export const BASE_URL = 'http://localhost:8000';
-
-// URL tunnel (test distant / téléphone)
-export const BASE_URL = 'https://dorathy-perspectiveless-besiegingly.ngrok-free.dev';
+const extra = Constants.expoConfig?.extra;
+export const BASE_URL = extra?.apiUrl || 'https://dorathy-perspectiveless-besiegingly.ngrok-free.dev';
 
 export const API_URL = `${BASE_URL}/api`;
 export const GRAPHQL_URL = `${API_URL}/graphql`;

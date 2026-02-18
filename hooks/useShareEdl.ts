@@ -67,7 +67,6 @@ export function useShareEdl(): UseShareEdlReturn {
       showSuccess(`Email envoyé à ${email}`);
       return data;
     } catch (err: unknown) {
-      console.error('Share by email error:', err);
       showError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi');
       return null;
     } finally {
@@ -109,7 +108,6 @@ export function useShareEdl(): UseShareEdlReturn {
       showSuccess('Lien de signature envoyé au locataire');
       return true;
     } catch (err: unknown) {
-      console.error('Send signature link error:', err);
       showError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi du lien');
       return false;
     } finally {

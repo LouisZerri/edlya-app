@@ -129,7 +129,6 @@ export function PhotoGallery({
         }
       }
     } catch (error) {
-      console.error('Error picking image:', error);
       Alert.alert('Erreur', "Impossible de sélectionner l'image");
     }
   };

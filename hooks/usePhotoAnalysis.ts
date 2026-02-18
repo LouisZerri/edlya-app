@@ -126,7 +126,6 @@ export function usePhotoAnalysis(): UsePhotoAnalysisReturn {
 
       return data.analyse as AnalyseResult;
     } catch (err: unknown) {
-      console.error('Photo analysis error:', err);
       showError(err instanceof Error ? err.message : 'Erreur lors de l\'analyse');
       return null;
     } finally {

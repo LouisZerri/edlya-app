@@ -16,6 +16,8 @@ interface UseEdlAutoSaveParams {
   localCompteurs: CompteurNode[];
   localCles: CleNode[];
   compteurValues: Record<string, string>;
+  compteurNumeros: Record<string, string>;
+  compteurComments: Record<string, string>;
   cleValues: Record<string, number>;
   elementStates: Record<string, ElementEtat>;
   elementObservations: Record<string, string>;
@@ -30,6 +32,8 @@ export function useEdlAutoSave({
   localCompteurs,
   localCles,
   compteurValues,
+  compteurNumeros,
+  compteurComments,
   cleValues,
   elementStates,
   elementObservations,
@@ -88,12 +92,18 @@ export function useEdlAutoSave({
 
       // Update compteurs
       for (const compteur of localCompteurs) {
-        if (compteurValues[compteur.id] !== compteur.indexValue) {
+        const hasIndexChange = compteurValues[compteur.id] !== compteur.indexValue;
+        const hasNumeroChange = compteurNumeros[compteur.id] !== (compteur.numero || '');
+        const hasCommentChange = compteurComments[compteur.id] !== (compteur.commentaire || '');
+
+        if (hasIndexChange || hasNumeroChange || hasCommentChange) {
           await updateCompteur({
             variables: {
               input: {
                 id: compteur.id,
                 indexValue: compteurValues[compteur.id],
+                numero: compteurNumeros[compteur.id] || null,
+                commentaire: compteurComments[compteur.id] || null,
               },
             },
           });
@@ -119,7 +129,7 @@ export function useEdlAutoSave({
     } catch {
       setAutoSaveStatus('error');
     }
-  }, [edl, edlId, formData, localPieces, localCompteurs, localCles, compteurValues, cleValues, elementStates, elementObservations, elementDegradations, updateEdl, updateElement, updateCompteur, updateCle]);
+  }, [edl, edlId, formData, localPieces, localCompteurs, localCles, compteurValues, compteurNumeros, compteurComments, cleValues, elementStates, elementObservations, elementDegradations, updateEdl, updateElement, updateCompteur, updateCle]);
 
   const triggerAutoSave = useCallback(() => {
     if (!isInitialized.current) return;
@@ -147,7 +157,7 @@ export function useEdlAutoSave({
   // Watch for changes and trigger auto-save
   useEffect(() => {
     triggerAutoSave();
-  }, [formData, compteurValues, cleValues, elementStates, elementObservations, elementDegradations]);
+  }, [formData, compteurValues, compteurNumeros, compteurComments, cleValues, elementStates, elementObservations, elementDegradations]);
 
   return { autoSaveStatus };
 }
