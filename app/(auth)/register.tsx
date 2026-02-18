@@ -10,9 +10,9 @@ import { useAuthStore } from '../../stores/authStore';
 import { useToastStore } from '../../stores/toastStore';
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'Minimum 2 caracteres'),
+  name: z.string().min(2, 'Minimum 2 caractères'),
   email: z.email({ message: 'Email invalide' }),
-  password: z.string().min(6, 'Minimum 6 caracteres'),
+  password: z.string().min(6, 'Minimum 6 caractères'),
   confirmPassword: z.string(),
   telephone: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -44,10 +44,10 @@ export default function RegisterScreen() {
         password: data.password,
         telephone: data.telephone,
       });
-      success('Compte cree avec succes !');
+      success('Compte créé avec succès !');
       router.replace('/(tabs)');
-    } catch (err: any) {
-      const message = err.message || 'Erreur lors de l\'inscription';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de l\'inscription';
       setError(message);
       showError(message);
     } finally {
@@ -72,7 +72,7 @@ export default function RegisterScreen() {
                 style={{ width: 80, height: 80 }}
                 resizeMode="contain"
               />
-              <Text className="text-xl font-bold text-gray-900 mt-3">Creer un compte</Text>
+              <Text className="text-xl font-bold text-gray-900 mt-3">Créer un compte</Text>
             </View>
 
             {error ? (
@@ -116,7 +116,7 @@ export default function RegisterScreen() {
               name="telephone"
               render={({ field: { onChange, value } }) => (
                 <Input
-                  label="Telephone (optionnel)"
+                  label="Téléphone (optionnel)"
                   value={value || ''}
                   onChangeText={onChange}
                   placeholder="06 12 34 56 78"
@@ -165,7 +165,7 @@ export default function RegisterScreen() {
             </View>
 
             <View className="flex-row justify-center mt-6 mb-8">
-              <Text className="text-gray-500">Deja un compte ? </Text>
+              <Text className="text-gray-500">Déjà un compte ? </Text>
               <Link href="/(auth)/login" asChild>
                 <TouchableOpacity>
                   <Text className="text-primary-600 font-medium">Se connecter</Text>

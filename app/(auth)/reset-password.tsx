@@ -64,7 +64,7 @@ export default function ResetPasswordScreen() {
         setErrorMessage(result.error || 'Une erreur est survenue');
         showError(result.error || 'Une erreur est survenue');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setErrorMessage('Erreur de connexion au serveur');
       showError('Erreur de connexion au serveur');
     } finally {

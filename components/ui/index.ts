@@ -1,3 +1,4 @@
+export { AideTooltip } from './AideTooltip';
 export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
@@ -7,4 +8,5 @@ export { Input } from './Input';
 export { InputWithVoice } from './InputWithVoice';
 export { SearchBar } from './SearchBar';
 export { Select } from './Select';
+export { FaqModal } from './FaqModal';
 export { ToastContainer } from './Toast';

@@ -6,8 +6,11 @@
 // URL locale (développement)
 // export const BASE_URL = 'http://192.168.1.135:8000';
 
-// URL tunnel (test distant)
-export const BASE_URL = 'https://edlya-api.loca.lt';
+// URL locale (version web / dev)
+// export const BASE_URL = 'http://localhost:8000';
+
+// URL tunnel (test distant / téléphone)
+export const BASE_URL = 'https://dorathy-perspectiveless-besiegingly.ngrok-free.dev';
 
 export const API_URL = `${BASE_URL}/api`;
 export const GRAPHQL_URL = `${API_URL}/graphql`;

@@ -97,6 +97,7 @@ export const GET_ETAT_DES_LIEUX = gql`
             type
             nombre
             commentaire
+            photo
           }
         }
       }

@@ -2,12 +2,21 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { Card, Badge } from '../ui';
-import { EtatDesLieux, STATUT_BADGE, TYPE_CONFIG, EdlType, EdlStatut } from '../../types';
+import { STATUT_BADGE, TYPE_CONFIG, EdlType, EdlStatut } from '../../types';
 import { formatDate } from '../../utils/format';
 import { COLORS } from '../../utils/constants';
 
+interface RecentEdlItem {
+  id: string;
+  type: string;
+  dateRealisation: string;
+  locataireNom: string;
+  statut: string;
+  logement: { nom: string };
+}
+
 interface RecentEdlListProps {
-  edls: EtatDesLieux[];
+  edls: RecentEdlItem[];
 }
 
 export function RecentEdlList({ edls }: RecentEdlListProps) {
@@ -16,7 +25,7 @@ export function RecentEdlList({ edls }: RecentEdlListProps) {
   return (
     <View className="px-4 mt-6">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-lg font-semibold text-gray-800">Etats des lieux recents</Text>
+        <Text className="text-lg font-semibold text-gray-800">États des lieux récents</Text>
         <TouchableOpacity
           onPress={() => router.push('/(tabs)/edl')}
           className="py-2 px-3 -mr-3"
@@ -28,7 +37,7 @@ export function RecentEdlList({ edls }: RecentEdlListProps) {
       {edls.length === 0 ? (
         <Card>
           <Text className="text-gray-500 text-center py-4">
-            Aucun etat des lieux pour le moment
+            Aucun état des lieux pour le moment
           </Text>
         </Card>
       ) : (

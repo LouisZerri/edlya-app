@@ -72,10 +72,10 @@ export default function CreateLogementScreen() {
           },
         },
       });
-      success('Logement cree avec succes !');
+      success('Logement créé avec succès !');
       router.back();
-    } catch (err: any) {
-      const message = err.message || 'Erreur lors de la creation';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la création';
       showError(message);
     } finally {
       setLoading(false);
@@ -162,7 +162,7 @@ export default function CreateLogementScreen() {
                 value={value || ''}
                 options={typeOptions}
                 onChange={onChange}
-                placeholder="Selectionner un type"
+                placeholder="Sélectionner un type"
               />
             )}
           />
@@ -174,7 +174,7 @@ export default function CreateLogementScreen() {
                 name="surface"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Surface (m2)"
+                    label="Surface (m²)"
                     value={value || ''}
                     onChangeText={onChange}
                     placeholder="65"
@@ -189,7 +189,7 @@ export default function CreateLogementScreen() {
                 name="nbPieces"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Nb de pieces"
+                    label="Nb de pièces"
                     value={value || ''}
                     onChangeText={onChange}
                     placeholder="3"
@@ -208,7 +208,7 @@ export default function CreateLogementScreen() {
                 label="Description (optionnel)"
                 value={value || ''}
                 onChangeText={onChange}
-                placeholder="Notes supplementaires..."
+                placeholder="Notes supplémentaires..."
                 multiline
                 numberOfLines={3}
               />
@@ -218,7 +218,7 @@ export default function CreateLogementScreen() {
 
         <View className="p-4 border-t border-gray-100">
           <Button
-            label="Creer le logement"
+            label="Créer le logement"
             onPress={handleSubmit(onSubmit)}
             loading={loading}
             fullWidth

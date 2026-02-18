@@ -15,7 +15,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Trash2, MapPin, Calendar } from 'lucide-react-native';
+import { X, Trash2, MapPin } from 'lucide-react-native';
 import { LocalPhoto } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { PhotoCaptionEditor } from './PhotoCaptionEditor';
@@ -110,7 +110,7 @@ export function PhotoViewer({
     })
   ).current;
 
-  const handleScroll = (event: any) => {
+  const handleScroll = (event: { nativeEvent: { contentOffset: { x: number } } }) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / SCREEN_WIDTH);
     if (index !== currentIndex && index >= 0 && index < photos.length) {

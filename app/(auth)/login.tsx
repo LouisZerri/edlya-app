@@ -11,7 +11,7 @@ import { useToastStore } from '../../stores/toastStore';
 
 const loginSchema = z.object({
   email: z.email({ message: 'Email invalide' }),
-  password: z.string().min(6, 'Minimum 6 caracteres'),
+  password: z.string().min(6, 'Minimum 6 caractères'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -33,10 +33,10 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(data.email, data.password);
-      success('Connexion reussie !');
+      success('Connexion réussie !');
       router.replace('/(tabs)');
-    } catch (err: any) {
-      const message = err.message || 'Erreur de connexion';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur de connexion';
       setError(message);
       showError(message);
     } finally {
@@ -61,7 +61,7 @@ export default function LoginScreen() {
                 style={{ width: 100, height: 100 }}
                 resizeMode="contain"
               />
-              <Text className="text-gray-500 mt-4">Gestion d'etats des lieux</Text>
+              <Text className="text-gray-500 mt-4">Gestion d'états des lieux</Text>
             </View>
 
             <Text className="text-xl font-semibold text-gray-900 mb-6">Connexion</Text>
@@ -108,7 +108,7 @@ export default function LoginScreen() {
               className="mb-6"
             >
               <Text className="text-primary-600 text-sm text-right">
-                Mot de passe oublie ?
+                Mot de passe oublié ?
               </Text>
             </TouchableOpacity>
 

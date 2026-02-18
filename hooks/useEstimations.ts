@@ -65,13 +65,70 @@ export interface EstimationsResult {
   message?: string;
 }
 
+// Types bruts de l'API REST estimations
+interface RawDegradation {
+  piece: string;
+  piece_id?: string;
+  element: string;
+  element_id?: string;
+  type?: string;
+  observations?: string;
+  degradations_specifiques?: { liste?: string[]; description?: string };
+  etat_entree?: string;
+  etat_sortie: string;
+  cout_brut?: number;
+  taux_vetuste?: number;
+  cout_apres_vetuste?: number;
+  intervention?: string;
+  type_intervention?: string;
+  justification?: string;
+  details?: string;
+  photos?: Array<{ id: string; chemin: string; legende?: string }>;
+}
+
+interface RawCleManquante {
+  type: string;
+  nombre_entree?: number;
+  nombre_sortie?: number;
+  manquantes?: number;
+  cout_unitaire?: number;
+  cout_total?: number;
+  total?: number;
+}
+
+interface RawGrilleVetuste {
+  annees?: string;
+  element?: string;
+  duree_vie?: string;
+  taux_locataire?: string;
+  taux_applique?: string;
+}
+
+interface EstimationsApiResponse {
+  success: boolean;
+  edl_id?: number;
+  type_edl?: string;
+  dates?: { duree_location_mois?: number };
+  duree_location_mois?: number;
+  depot_garantie?: number;
+  degradations?: RawDegradation[];
+  cles_manquantes?: RawCleManquante[];
+  grille_vetuste?: RawGrilleVetuste[];
+  nettoyage?: number;
+  compteurs?: Array<{ type: string; index_entree?: string; index_sortie?: string; consommation?: string }>;
+  resume?: { cout_degradations?: number; cout_cles?: number };
+  total_retenues?: number;
+  a_restituer?: number;
+  message?: string;
+}
+
 // Transformer les données brutes de l'API vers le format attendu par l'UI
-function transformApiResponse(data: any): EstimationsResult {
+function transformApiResponse(data: EstimationsApiResponse): EstimationsResult {
   // Transformer les dégradations
-  const degradations: DegradationEstimation[] = (data.degradations || []).map((d: any) => {
+  const degradations: DegradationEstimation[] = (data.degradations || []).map((d: RawDegradation) => {
     // Extraire la dégradation depuis observations ou degradations_specifiques
     let degradation = d.observations || '';
-    if (d.degradations_specifiques?.liste?.length > 0) {
+    if (d.degradations_specifiques?.liste && d.degradations_specifiques.liste.length > 0) {
       degradation = d.degradations_specifiques.liste.join(', ');
     } else if (d.degradations_specifiques?.description) {
       degradation = d.degradations_specifiques.description;
@@ -82,7 +139,7 @@ function transformApiResponse(data: any): EstimationsResult {
       piece_id: d.piece_id,
       element: d.element,
       element_id: d.element_id,
-      type_element: d.type,
+      type_element: d.type || 'autre',
       degradation: degradation || 'Dégradation constatée',
       etat_entree: d.etat_entree,
       etat_sortie: d.etat_sortie,
@@ -91,7 +148,7 @@ function transformApiResponse(data: any): EstimationsResult {
       montant_net: d.cout_apres_vetuste || d.cout_brut || 0,
       intervention: d.intervention || d.type_intervention,
       justification: d.justification || d.details,
-      photos: (d.photos || []).map((p: any) => ({
+      photos: (d.photos || []).map((p: { id: string; chemin: string; legende?: string }) => ({
         id: p.id,
         chemin: p.chemin,
         legende: p.legende,
@@ -100,7 +157,7 @@ function transformApiResponse(data: any): EstimationsResult {
   });
 
   // Transformer les clés manquantes
-  const cles_manquantes: CleManquante[] = (data.cles_manquantes || []).map((c: any) => ({
+  const cles_manquantes: CleManquante[] = (data.cles_manquantes || []).map((c: RawCleManquante) => ({
     type: c.type,
     nombre_entree: c.nombre_entree || 0,
     nombre_sortie: c.nombre_sortie || 0,
@@ -116,7 +173,7 @@ function transformApiResponse(data: any): EstimationsResult {
   const total_cles = cles_manquantes.reduce((sum, c) => sum + c.total, 0);
 
   // Transformer la grille de vétusté
-  const grille_vetuste = (data.grille_vetuste || []).map((g: any) => ({
+  const grille_vetuste = (data.grille_vetuste || []).map((g: RawGrilleVetuste) => ({
     element: g.annees ? `${g.annees} ans` : g.element || '',
     duree_vie: g.annees || g.duree_vie || '',
     taux_applique: g.taux_locataire ? `${g.taux_locataire}%` : g.taux_applique || '',
@@ -124,7 +181,7 @@ function transformApiResponse(data: any): EstimationsResult {
 
   return {
     success: data.success,
-    edl_id: data.edl_id,
+    edl_id: data.edl_id || 0,
     type_edl: data.type_edl || 'sortie',
     duree_location_mois: data.dates?.duree_location_mois || data.duree_location_mois,
     depot_garantie: data.depot_garantie || 0,
@@ -202,9 +259,9 @@ export function useEstimations(): UseEstimationsReturn {
       const transformed = transformApiResponse(data);
       setEstimations(transformed);
       return transformed;
-    } catch (err: any) {
-      console.error('Estimations error:', err);
-      showError(err.message || 'Erreur lors de la génération des estimations');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la génération des estimations';
+      showError(msg);
       return null;
     } finally {
       setIsLoading(false);
@@ -257,9 +314,9 @@ export function useEstimations(): UseEstimationsReturn {
       const transformed = transformApiResponse(data);
       setEstimations(transformed);
       return transformed;
-    } catch (err: any) {
-      console.error('Estimations refresh error:', err);
-      showError(err.message || 'Erreur lors du rafraîchissement');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors du rafraîchissement';
+      showError(msg);
       return null;
     } finally {
       setIsLoading(false);

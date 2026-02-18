@@ -1,9 +1,46 @@
 import { useCallback, useState } from 'react';
+import { Image as RNImage } from 'react-native';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { useAuthStore } from '../stores/authStore';
 import { usePhotoStore } from '../stores/photoStore';
 import { useToastStore } from '../stores/toastStore';
 import { LocalPhoto } from '../types';
 import { API_URL } from '../utils/constants';
+
+const MAX_DIMENSION = 1200;
+const JPEG_QUALITY = 0.7;
+
+function getImageSize(uri: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    RNImage.getSize(uri, (width, height) => resolve({ width, height }), reject);
+  });
+}
+
+async function compressPhoto(uri: string): Promise<string> {
+  try {
+    const { width, height } = await getImageSize(uri);
+    const needsResize = width > MAX_DIMENSION || height > MAX_DIMENSION;
+
+    const context = ImageManipulator.manipulate(uri);
+
+    if (needsResize) {
+      const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+      context.resize({
+        width: Math.round(width * ratio),
+        height: Math.round(height * ratio),
+      });
+    }
+
+    const image = await context.renderAsync();
+    const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: JPEG_QUALITY });
+    context.release();
+
+    return saved.uri;
+  } catch (err) {
+    console.warn('Photo compression failed, using original:', err);
+    return uri;
+  }
+}
 
 type UploadType = 'element' | 'compteur';
 
@@ -51,19 +88,17 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
         : `${API_URL}/upload/photo`;
       const idField = type === 'compteur' ? 'compteur_id' : 'element_id';
 
+      // Compress photo before upload
+      const compressedUri = await compressPhoto(photo.localUri);
+
       // Create FormData
       const formData = new FormData();
       formData.append(idField, numericId || entityId);
 
-      // Get file extension and mime type
-      const uriParts = photo.localUri.split('.');
-      const fileType = uriParts[uriParts.length - 1];
-      const mimeType = fileType === 'png' ? 'image/png' : 'image/jpeg';
-
       formData.append('photo', {
-        uri: photo.localUri,
-        name: `photo_${photo.id}.${fileType}`,
-        type: mimeType,
+        uri: compressedUri,
+        name: `photo_${photo.id}.jpg`,
+        type: 'image/jpeg',
       } as any);
 
       if (photo.legende) {
@@ -126,14 +161,14 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
 
       if (result.success) {
         setUploadStatus(entityId, photo.id, 'uploaded');
-        success('Photo uploadee');
+        success('Photo uploadée');
         return result;
       } else {
         setUploadStatus(entityId, photo.id, 'error', result.error);
         return result;
       }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Erreur upload';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur upload';
       setUploadStatus(entityId, photo.id, 'error', errorMessage);
       return { success: false, error: errorMessage };
     }

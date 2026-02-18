@@ -1,3 +1,4 @@
+export { useAideObservation } from './useAideObservation';
 export { useLocation } from './useLocation';
 export { usePhotoUpload } from './usePhotoUpload';
 export { usePdfExport } from './usePdfExport';

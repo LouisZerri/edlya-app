@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen() {
       } else {
         showError(result.error || 'Une erreur est survenue');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       showError('Erreur de connexion au serveur');
     } finally {
       setLoading(false);

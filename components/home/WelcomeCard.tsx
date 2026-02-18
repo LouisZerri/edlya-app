@@ -33,10 +33,35 @@ export function WelcomeCard({ user, stats }: WelcomeCardProps) {
             className="flex-1 rounded-lg"
             style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 8 }}
           >
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>EDL ce mois</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>EDL total</Text>
             <Text className="text-white text-lg font-bold">{stats.edlCeMois}</Text>
           </View>
         </View>
+
+        <View className="flex-row gap-3" style={{ marginTop: 8 }}>
+          <View
+            className="flex-1 rounded-lg"
+            style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8 }}
+          >
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>En attente</Text>
+            <Text className="text-white text-lg font-bold">{stats.enAttente}</Text>
+          </View>
+          <View
+            className="flex-1 rounded-lg"
+            style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8 }}
+          >
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>Signés</Text>
+            <Text className="text-white text-lg font-bold">{stats.signes}</Text>
+          </View>
+        </View>
+
+        {(stats.edlEntree > 0 || stats.edlSortie > 0) && (
+          <View className="flex-row items-center" style={{ marginTop: 10 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+              {stats.edlEntree} entrée{stats.edlEntree > 1 ? 's' : ''} / {stats.edlSortie} sortie{stats.edlSortie > 1 ? 's' : ''}
+            </Text>
+          </View>
+        )}
       </LinearGradient>
     </View>
   );

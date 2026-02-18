@@ -54,7 +54,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify({ email, password }),
     });
@@ -76,7 +75,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify({
         ...data,
@@ -114,7 +112,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const response = await fetch(`${API_URL}/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'ngrok-skip-browser-warning': 'true',
       },
     });
 
@@ -134,7 +131,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-        'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify(data),
     });

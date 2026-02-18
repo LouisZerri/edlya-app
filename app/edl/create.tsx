@@ -42,12 +42,21 @@ const edlSchema = z.object({
 type EdlForm = z.infer<typeof edlSchema>;
 
 const typologieOptions = [
-  { value: '', label: 'Aucun pre-remplissage' },
+  { value: '', label: 'Aucun pré-remplissage' },
   { value: 'studio', label: 'Studio' },
-  { value: 'f1', label: 'F1 / T1' },
-  { value: 'f2', label: 'F2 / T2' },
-  { value: 'f3', label: 'F3 / T3' },
-  { value: 'f4', label: 'F4 / T4' },
+  { value: 'f1', label: 'F1' },
+  { value: 'f2', label: 'F2' },
+  { value: 'f3', label: 'F3' },
+  { value: 'f4', label: 'F4' },
+  { value: 'f5', label: 'F5' },
+  { value: 't1', label: 'T1' },
+  { value: 't2', label: 'T2' },
+  { value: 't3', label: 'T3' },
+  { value: 't4', label: 'T4' },
+  { value: 't5', label: 'T5' },
+  { value: 'maison_t3', label: 'Maison T3' },
+  { value: 'maison_t4', label: 'Maison T4' },
+  { value: 'maison_t5', label: 'Maison T5' },
 ];
 
 export default function CreateEdlScreen() {
@@ -120,13 +129,13 @@ export default function CreateEdlScreen() {
           }
         }
 
-        success('Etat des lieux cree avec succes !');
+        success('État des lieux créé avec succès !');
         router.replace(`/edl/${id}`);
       } else {
         router.back();
       }
-    } catch (err: any) {
-      const message = err.message || 'Erreur lors de la creation';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la création';
       showError(message);
     } finally {
       setLoading(false);
@@ -135,7 +144,7 @@ export default function CreateEdlScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <Header title="Nouvel etat des lieux" showBack />
+      <Header title="Nouvel état des lieux" showBack />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -151,7 +160,7 @@ export default function CreateEdlScreen() {
                 value={value}
                 options={logements}
                 onChange={onChange}
-                placeholder="Selectionner un logement"
+                placeholder="Sélectionner un logement"
                 error={errors.logement?.message}
               />
             )}
@@ -171,7 +180,7 @@ export default function CreateEdlScreen() {
               >
                 <Text className="text-2xl mr-2">📥</Text>
                 <Text className={selectedType === 'entree' ? 'text-blue-700 font-medium' : 'text-gray-600'}>
-                  Entree
+                  Entrée
                 </Text>
               </TouchableOpacity>
 
@@ -242,7 +251,7 @@ export default function CreateEdlScreen() {
             name="locataireTelephone"
             render={({ field: { onChange, value } }) => (
               <Input
-                label="Telephone"
+                label="Téléphone"
                 value={value || ''}
                 onChangeText={onChange}
                 placeholder="06 12 34 56 78"
@@ -256,23 +265,23 @@ export default function CreateEdlScreen() {
             name="typologie"
             render={({ field: { onChange, value } }) => (
               <Select
-                label="Pre-remplissage par typologie"
+                label="Pré-remplissage par typologie"
                 value={value || ''}
                 options={typologieOptions}
                 onChange={onChange}
-                placeholder="Selectionner une typologie"
+                placeholder="Sélectionner une typologie"
               />
             )}
           />
 
           <Text className="text-xs text-gray-500 mt-1 mb-4">
-            Genere automatiquement les pieces standard pour ce type de logement
+            Génère automatiquement les pièces standard pour ce type de logement
           </Text>
         </ScrollView>
 
         <View className="p-4 border-t border-gray-100">
           <Button
-            label="Creer l'etat des lieux"
+            label="Créer l'état des lieux"
             onPress={handleSubmit(onSubmit)}
             loading={loading}
             fullWidth

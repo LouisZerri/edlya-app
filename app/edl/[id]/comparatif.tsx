@@ -256,7 +256,7 @@ export default function ComparatifScreen() {
                 <Card key={index} className="mb-3">
                   <View className="flex-row items-center justify-between mb-2">
                     <View className="flex-row items-center">
-                      <Text className="text-lg">🚪</Text>
+                      <View className={`w-3 h-3 rounded-sm ${hasDegradations ? 'bg-red-500' : 'bg-green-500'}`} />
                       <Text className="font-semibold text-gray-900 ml-2">{piece.nom}</Text>
                     </View>
                     {hasDegradations ? (
@@ -287,9 +287,11 @@ export default function ComparatifScreen() {
                         </View>
                       </View>
                       {element.degradations && element.degradations.length > 0 && (
-                        <View className="flex-row flex-wrap gap-1 mt-2">
+                        <View className="mt-2 gap-1">
                           {element.degradations.map((deg, i) => (
-                            <Badge key={i} label={deg} variant="red" />
+                            <Text key={i} className="text-xs text-red-700 bg-red-50 rounded-lg px-2.5 py-1.5">
+                              {deg}
+                            </Text>
                           ))}
                         </View>
                       )}

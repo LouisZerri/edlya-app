@@ -110,8 +110,8 @@ export default function LogementsScreen() {
             <Card>
               <Text className="text-gray-500 text-center py-8">
                 {search.trim()
-                  ? `Aucun logement trouve pour "${search}"`
-                  : 'Aucun logement pour le moment.\nCreez votre premier logement !'}
+                  ? `Aucun logement trouvé pour "${search}"`
+                  : 'Aucun logement pour le moment.\nCréez votre premier logement !'}
               </Text>
             </Card>
           ) : null

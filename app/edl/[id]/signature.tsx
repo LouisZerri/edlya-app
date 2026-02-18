@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState, useEffect, useCallback, memo } from 'react';
 import { useQuery } from '@apollo/client/react';
-import SignatureScreen from 'react-native-signature-canvas';
+import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
 import { Check, Trash2, User, Users } from 'lucide-react-native';
 import { Header, Card, Button } from '../../../components/ui';
 import { COLORS, API_URL } from '../../../utils/constants';
@@ -34,7 +34,7 @@ const SignatureCanvas = memo(({
   onBegin,
   onEnd,
 }: {
-  signatureRef: any;
+  signatureRef: React.RefObject<SignatureViewRef | null>;
   onOK: (sig: string) => void;
   onBegin: () => void;
   onEnd: () => void;
@@ -68,7 +68,7 @@ export default function SignatureEdlScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const isSigningRef = useRef(false);
 
-  const bailleurRef = useRef<any>(null);
+  const bailleurRef = useRef<SignatureViewRef>(null);
 
   // Contrôle du scroll via ref (pas de re-render)
   const disableScroll = useCallback(() => {
@@ -138,8 +138,9 @@ export default function SignatureEdlScreen() {
       setBailleurSaved(true);
       await refetch();
       success('Signature bailleur enregistrée');
-    } catch (err: any) {
-      showError(err.message || 'Erreur lors de la sauvegarde');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la sauvegarde';
+      showError(msg);
     } finally {
       setLoading(false);
     }
@@ -148,18 +149,14 @@ export default function SignatureEdlScreen() {
   const handleSaveLocataire = async () => {
     if (!signatureLocataire || !token) return;
 
-    // For locataire signature via the app (same device), we use a different approach
-    // The API expects the locataire to sign via a separate token-based flow
-    // But for simplicity in the app, we'll save it directly via GraphQL mutation
     setLoading(true);
     try {
-      // Use REST endpoint if available, or fallback to showing info
-      // For now, we'll just mark it as needing the token-based flow
       showError('La signature locataire doit être faite via le lien envoyé par email');
       setLoading(false);
       return;
-    } catch (err: any) {
-      showError(err.message || 'Erreur lors de la sauvegarde');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la sauvegarde';
+      showError(msg);
     } finally {
       setLoading(false);
     }
@@ -185,8 +182,9 @@ export default function SignatureEdlScreen() {
       }
 
       success('Lien de signature envoyé au locataire !');
-    } catch (err: any) {
-      showError(err.message || 'Erreur lors de l\'envoi');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors de l\'envoi';
+      showError(msg);
     } finally {
       setLoading(false);
     }
@@ -205,7 +203,7 @@ export default function SignatureEdlScreen() {
   }: {
     title: string;
     icon: React.ReactNode;
-    signatureRef: any;
+    signatureRef: React.RefObject<SignatureViewRef | null>;
     signature: string | null;
     isSaved: boolean;
     onOK: (sig: string) => void;

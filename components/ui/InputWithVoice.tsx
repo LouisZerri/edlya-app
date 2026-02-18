@@ -114,7 +114,7 @@ export function InputWithVoice({
       subscriptionsRef.current.forEach(sub => sub?.remove?.());
       subscriptionsRef.current = [];
 
-      const resultSub = addSpeechRecognitionListener('result', (event: any) => {
+      const resultSub = addSpeechRecognitionListener('result', (event: { results?: Array<{ transcript?: string }>; isFinal?: boolean }) => {
         const text = event.results?.[0]?.transcript || '';
         if (event.isFinal && text) {
           if (appendMode && value) {

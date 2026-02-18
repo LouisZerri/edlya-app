@@ -8,5 +8,17 @@ export const GET_USER_STATS = gql`
     etatDesLieuxes {
       totalCount
     }
+    enAttente: etatDesLieuxes(statut_list: ["brouillon", "en_cours"]) {
+      totalCount
+    }
+    signes: etatDesLieuxes(statut: "signe") {
+      totalCount
+    }
+    entrees: etatDesLieuxes(type: "entree") {
+      totalCount
+    }
+    sorties: etatDesLieuxes(type: "sortie") {
+      totalCount
+    }
   }
 `;

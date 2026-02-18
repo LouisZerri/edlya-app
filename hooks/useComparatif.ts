@@ -41,6 +41,48 @@ interface DegradationDetail {
   degradations: string[];
 }
 
+// Types bruts de l'API REST comparatif
+interface RawCompteur {
+  type: string;
+  entree?: { index?: string; numero?: string };
+  sortie?: { index?: string; numero?: string };
+  indexEntree?: string;
+  index_entree?: string;
+  indexSortie?: string;
+  index_sortie?: string;
+  consommation?: string | number;
+}
+
+interface RawCle {
+  type: string;
+  entree?: number;
+  sortie?: number;
+  nombreEntree?: number;
+  nombre_entree?: number;
+  nombreSortie?: number;
+  nombre_sortie?: number;
+  difference?: number;
+}
+
+interface RawElement {
+  element?: string;
+  nom?: string;
+  type?: string;
+  entree?: { etat?: string; observations?: string };
+  sortie?: { etat?: string; observations?: string };
+  evolution?: string;
+  etatEntree?: string;
+  etat_entree?: string;
+  etatSortie?: string;
+  etat_sortie?: string;
+}
+
+interface RawPiece {
+  nom?: string;
+  name?: string;
+  elements?: RawElement[];
+}
+
 export interface ComparatifResult {
   logement: {
     id: number;
@@ -63,9 +105,9 @@ export interface ComparatifResult {
     type: string;
   };
   comparatif: {
-    compteurs: any[];
-    cles: any[];
-    pieces: Record<string, any[]>;
+    compteurs: CompteurComparatif[];
+    cles: CleComparatif[];
+    pieces: Record<string, ElementComparatif[]>;
     degradations: DegradationDetail[];
     statistiques: {
       totalElements: number;
@@ -143,7 +185,7 @@ export function useComparatif(): UseComparatifReturn {
       // Format compteurs - structure API: { entree: { index, numero }, sortie: { index, numero }, consommation }
       const rawCompteurs = comparatifData?.compteurs || data.compteurs || [];
 
-      const compteurs_formatted: CompteurComparatif[] = rawCompteurs.map((c: any) => ({
+      const compteurs_formatted: CompteurComparatif[] = rawCompteurs.map((c: RawCompteur) => ({
         type: c.type,
         index_entree: c.entree?.index || c.indexEntree || c.index_entree,
         index_sortie: c.sortie?.index || c.indexSortie || c.index_sortie,
@@ -153,7 +195,7 @@ export function useComparatif(): UseComparatifReturn {
       // Format clés - structure API: { type, entree: number, sortie: number, difference: number }
       const rawCles = comparatifData?.cles || data.cles || [];
 
-      const cles_formatted: CleComparatif[] = rawCles.map((c: any) => {
+      const cles_formatted: CleComparatif[] = rawCles.map((c: RawCle) => {
         // L'API retourne directement entree/sortie comme nombres
         const nombreEntree = c.entree ?? c.nombreEntree ?? c.nombre_entree ?? 0;
         const nombreSortie = c.sortie ?? c.nombreSortie ?? c.nombre_sortie ?? 0;
@@ -175,9 +217,10 @@ export function useComparatif(): UseComparatifReturn {
       // Si c'est un objet avec les noms des pièces comme clés
       // Structure API: { "Salon": [{ element, type, entree: { etat, observations }, sortie: { etat, observations }, evolution }] }
       if (rawPieces && typeof rawPieces === 'object' && !Array.isArray(rawPieces)) {
-        pieces_formatted = Object.entries(rawPieces).map(([nom, elements]: [string, any]) => {
-          const elementsArray = Array.isArray(elements) ? elements : [];
-          const formattedElements: ElementComparatif[] = elementsArray.map((el: any) => {
+        pieces_formatted = Object.entries(rawPieces).map(([nom, elements]) => {
+          const typedElements = elements as RawElement[];
+          const elementsArray = Array.isArray(typedElements) ? typedElements : [];
+          const formattedElements: ElementComparatif[] = elementsArray.map((el: RawElement) => {
             // Extraire les observations comme dégradations si présentes
             const degradationsList: string[] = [];
             if (el.sortie?.observations) {
@@ -207,9 +250,9 @@ export function useComparatif(): UseComparatifReturn {
       }
       // Si c'est un tableau de pièces
       else if (Array.isArray(rawPieces)) {
-        pieces_formatted = rawPieces.map((piece: any) => {
+        pieces_formatted = rawPieces.map((piece: RawPiece) => {
           const elementsArray = Array.isArray(piece.elements) ? piece.elements : [];
-          const formattedElements: ElementComparatif[] = elementsArray.map((el: any) => {
+          const formattedElements: ElementComparatif[] = elementsArray.map((el: RawElement) => {
             const degradationsList: string[] = [];
             if (el.sortie?.observations) {
               degradationsList.push(el.sortie.observations);
@@ -264,9 +307,9 @@ export function useComparatif(): UseComparatifReturn {
 
       setComparatif(result);
       return result;
-    } catch (err: any) {
-      console.error('Comparatif error:', err);
-      showError(err.message || 'Erreur lors du chargement du comparatif');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors du chargement du comparatif';
+      showError(msg);
       return null;
     } finally {
       setIsLoading(false);

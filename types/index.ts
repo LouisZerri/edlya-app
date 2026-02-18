@@ -130,6 +130,8 @@ export type CleType =
   | 'interphone'
   | 'badge'
   | 'telecommande'
+  | 'vigik'
+  | 'digicode'
   | 'autre';
 
 export interface Cle {
@@ -143,6 +145,10 @@ export interface Cle {
 export interface UserStats {
   totalLogements: number;
   edlCeMois: number;
+  enAttente: number;
+  signes: number;
+  edlEntree: number;
+  edlSortie: number;
 }
 
 export type BadgeVariant = 'gray' | 'amber' | 'green' | 'red' | 'blue' | 'orange';
@@ -150,33 +156,35 @@ export type BadgeVariant = 'gray' | 'amber' | 'green' | 'red' | 'blue' | 'orange
 export const STATUT_BADGE: Record<EdlStatut, { variant: BadgeVariant; label: string }> = {
   brouillon: { variant: 'gray', label: 'Brouillon' },
   en_cours: { variant: 'amber', label: 'En cours' },
-  termine: { variant: 'blue', label: 'Termine' },
-  signe: { variant: 'green', label: 'Signe' },
+  termine: { variant: 'blue', label: 'Terminé' },
+  signe: { variant: 'green', label: 'Signé' },
 };
 
 export const TYPE_CONFIG: Record<EdlType, { icon: string; bg: string; label: string }> = {
-  entree: { icon: '📥', bg: 'bg-blue-100', label: 'Entree' },
+  entree: { icon: '📥', bg: 'bg-blue-100', label: 'Entrée' },
   sortie: { icon: '📤', bg: 'bg-orange-100', label: 'Sortie' },
 };
 
 export const COMPTEUR_CONFIG: Record<CompteurType, { icon: string; label: string }> = {
-  electricite: { icon: '⚡', label: 'Electricite' },
+  electricite: { icon: '⚡', label: 'Électricité' },
   eau_froide: { icon: '💧', label: 'Eau froide' },
   eau_chaude: { icon: '🔥', label: 'Eau chaude' },
   gaz: { icon: '🔵', label: 'Gaz' },
 };
 
 export const CLE_LABELS: Record<CleType, string> = {
-  porte_entree: 'Porte entree',
-  boite_lettres: 'Boite aux lettres',
+  porte_entree: "Porte d'entrée",
+  boite_lettres: 'Boîte aux lettres',
   cave: 'Cave',
   garage: 'Garage',
   parking: 'Parking',
-  local_velo: 'Local velo',
+  local_velo: 'Local vélo',
   portail: 'Portail',
   interphone: 'Interphone',
   badge: 'Badge',
-  telecommande: 'Telecommande',
+  telecommande: 'Télécommande',
+  vigik: 'Vigik',
+  digicode: 'Digicode',
   autre: 'Autre',
 };
 
@@ -185,20 +193,22 @@ export const ELEMENT_TYPE_LABELS: Record<ElementType, string> = {
   mur: 'Mur',
   plafond: 'Plafond',
   menuiserie: 'Menuiserie',
-  electricite: 'Electricite',
+  electricite: 'Électricité',
   plomberie: 'Plomberie',
   chauffage: 'Chauffage',
-  equipement: 'Equipement',
+  equipement: 'Équipement',
   mobilier: 'Mobilier',
-  electromenager: 'Electromenager',
+  electromenager: 'Électroménager',
   autre: 'Autre',
 };
 
 export const ELEMENT_ETAT_LABELS: Record<ElementEtat, string> = {
   neuf: 'Neuf',
-  tres_bon: 'Tres bon',
+  tres_bon: 'Très bon',
   bon: 'Bon',
-  usage: 'Usage',
+  usage: 'Usagé',
   mauvais: 'Mauvais',
   hors_service: 'Hors service',
 };
+
+export * from './graphql';

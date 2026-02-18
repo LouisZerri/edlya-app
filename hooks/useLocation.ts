@@ -48,7 +48,7 @@ export function useLocation(): UseLocationReturn {
       if (currentPermission !== 'granted') {
         const granted = await requestPermission();
         if (!granted) {
-          setError('Permission de localisation refusee');
+          setError('Permission de localisation refusée');
           return null;
         }
       }
@@ -63,7 +63,7 @@ export function useLocation(): UseLocationReturn {
       };
     } catch (err) {
       console.error('Error getting location:', err);
-      setError('Impossible de recuperer la position');
+      setError('Impossible de récupérer la position');
       return null;
     } finally {
       setIsLoading(false);

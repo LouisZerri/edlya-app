@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, Plus } from 'lucide-react-native';
+import { Camera } from 'lucide-react-native';
 import { LocalPhoto } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { PhotoThumbnail } from './PhotoThumbnail';
@@ -104,10 +104,10 @@ export function PhotoGallery({
           }
         } else if (asset.exif) {
           // Try to get from EXIF data
-          const exif = asset.exif as any;
+          const exif = asset.exif as Record<string, unknown>;
           if (exif.GPSLatitude && exif.GPSLongitude) {
-            latitude = exif.GPSLatitude;
-            longitude = exif.GPSLongitude;
+            latitude = exif.GPSLatitude as number;
+            longitude = exif.GPSLongitude as number;
           }
         }
 
@@ -130,19 +130,19 @@ export function PhotoGallery({
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Erreur', "Impossible de selectionner l'image");
+      Alert.alert('Erreur', "Impossible de sélectionner l'image");
     }
   };
 
   const showOptions = () => {
     if (photos.length >= maxPhotos) {
-      Alert.alert('Limite atteinte', `Maximum ${maxPhotos} photos autorisees`);
+      Alert.alert('Limite atteinte', `Maximum ${maxPhotos} photos autorisées`);
       return;
     }
 
     Alert.alert('Ajouter une photo', 'Choisissez une source', [
       {
-        text: 'Camera',
+        text: 'Caméra',
         onPress: () => pickImage(true),
       },
       {

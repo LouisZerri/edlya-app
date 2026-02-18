@@ -13,9 +13,8 @@ import { formatDate } from '../../../utils/format';
 import { useToastStore } from '../../../stores/toastStore';
 import { usePdfExport } from '../../../hooks/usePdfExport';
 
-interface EdlDetailData {
-  etatDesLieux?: any;
-}
+import { GetEdlDetailData, PieceNode, CompteurNode, CleNode, ElementNode, GraphQLEdge } from '../../../types/graphql';
+
 
 export default function EdlDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,7 +23,7 @@ export default function EdlDetailScreen() {
   const { isExporting, exportPdf } = usePdfExport();
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data, refetch, loading } = useQuery<EdlDetailData>(GET_ETAT_DES_LIEUX, {
+  const { data, refetch, loading } = useQuery<GetEdlDetailData>(GET_ETAT_DES_LIEUX, {
     variables: { id: `/api/etat_des_lieuxes/${id}` },
     fetchPolicy: 'network-only',
   });
@@ -36,7 +35,7 @@ export default function EdlDetailScreen() {
   const handleDelete = () => {
     Alert.alert(
       'Supprimer',
-      'Etes-vous sur de vouloir supprimer cet etat des lieux ? Cette action est irreversible.',
+      'Êtes-vous sûr de vouloir supprimer cet état des lieux ? Cette action est irréversible.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -47,10 +46,11 @@ export default function EdlDetailScreen() {
               await deleteEdl({
                 variables: { input: { id: `/api/etat_des_lieuxes/${id}` } },
               });
-              success('Etat des lieux supprime !');
+              success('État des lieux supprimé !');
               router.replace('/(tabs)/edl');
-            } catch (err: any) {
-              showError(err.message || 'Erreur lors de la suppression');
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : 'Erreur lors de la suppression';
+              showError(msg);
             }
           },
         },
@@ -69,17 +69,17 @@ export default function EdlDetailScreen() {
   const typeConfig = edl ? TYPE_CONFIG[edl.type as keyof typeof TYPE_CONFIG] : null;
   const statutBadge = edl ? STATUT_BADGE[edl.statut as keyof typeof STATUT_BADGE] : null;
 
-  const pieces = edl?.pieces?.edges?.map((e: any) => e.node) || [];
-  const compteurs = edl?.compteurs?.edges?.map((e: any) => e.node) || [];
-  const cles = edl?.cles?.edges?.map((e: any) => e.node) || [];
+  const pieces = edl?.pieces?.edges?.map((e: GraphQLEdge<PieceNode>) => e.node) || [];
+  const compteurs = edl?.compteurs?.edges?.map((e: GraphQLEdge<CompteurNode>) => e.node) || [];
+  const cles = edl?.cles?.edges?.map((e: GraphQLEdge<CleNode>) => e.node) || [];
 
   // Calcul du total de photos
-  const totalPhotos = pieces.reduce((acc: number, piece: any) => {
-    const elements = piece.elements?.edges?.map((e: any) => e.node) || [];
-    return acc + elements.reduce((elAcc: number, el: any) => {
+  const totalPhotos = pieces.reduce((acc: number, piece: PieceNode) => {
+    const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
+    return acc + elements.reduce((elAcc: number, el: ElementNode) => {
       return elAcc + (el.photos?.edges?.length || 0);
     }, 0);
-  }, 0) + compteurs.reduce((acc: number, c: any) => {
+  }, 0) + compteurs.reduce((acc: number, c: CompteurNode) => {
     return acc + (Array.isArray(c.photos) ? c.photos.length : 0);
   }, 0);
 
@@ -92,7 +92,7 @@ export default function EdlDetailScreen() {
   if (loading && !edl) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50">
-        <Header title="Etat des lieux" showBack />
+        <Header title="État des lieux" showBack />
         <View className="flex-1 items-center justify-center">
           <Text className="text-gray-500">Chargement...</Text>
         </View>
@@ -102,7 +102,7 @@ export default function EdlDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-      <Header title="Etat des lieux" showBack />
+      <Header title="État des lieux" showBack />
 
       <ScrollView
         className="flex-1"
@@ -122,8 +122,8 @@ export default function EdlDetailScreen() {
                 {edl?.logement?.adresse}, {edl?.logement?.ville}
               </Text>
               <View className="flex-row items-center gap-2 mt-2">
-                <Badge label={typeConfig?.label || edl?.type} variant={edl?.type === 'entree' ? 'blue' : 'orange'} />
-                <Badge label={statutBadge?.label || edl?.statut} variant={statutBadge?.variant || 'gray'} />
+                <Badge label={typeConfig?.label || edl?.type || ''} variant={edl?.type === 'entree' ? 'blue' : 'orange'} />
+                <Badge label={statutBadge?.label || edl?.statut || ''} variant={statutBadge?.variant || 'gray'} />
               </View>
             </View>
           </View>
@@ -188,7 +188,7 @@ export default function EdlDetailScreen() {
             <Text className="text-sm text-gray-500 mt-0.5">{edl.locataireTelephone}</Text>
           )}
           <Text className="text-xs text-gray-400 mt-2">
-            Date: {formatDate(edl?.dateRealisation)}
+            Date: {edl?.dateRealisation ? formatDate(edl.dateRealisation) : '-'}
           </Text>
         </Card>
 
@@ -238,7 +238,7 @@ export default function EdlDetailScreen() {
               <Text className="text-base font-semibold text-gray-800 ml-2">Compteurs</Text>
             </View>
             <View className="flex-row flex-wrap gap-3">
-              {compteurs.map((compteur: any) => {
+              {compteurs.map((compteur: CompteurNode) => {
                 const config = COMPTEUR_CONFIG[compteur.type as keyof typeof COMPTEUR_CONFIG];
                 const compteurPhotos = Array.isArray(compteur.photos) ? compteur.photos.length : 0;
                 return (
@@ -265,14 +265,14 @@ export default function EdlDetailScreen() {
           </Card>
         )}
 
-        {/* Cles */}
+        {/* Clés */}
         {cles.length > 0 && (
           <Card className="mx-4 mt-4">
             <View className="flex-row items-center mb-3">
               <Key size={20} color={COLORS.gray[600]} />
-              <Text className="text-base font-semibold text-gray-800 ml-2">Cles</Text>
+              <Text className="text-base font-semibold text-gray-800 ml-2">Clés</Text>
             </View>
-            {cles.map((cle: any) => (
+            {cles.map((cle: CleNode) => (
               <View key={cle.id} className="flex-row items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <Text className="text-gray-700">
                   {CLE_LABELS[cle.type as keyof typeof CLE_LABELS] || cle.type}
@@ -283,17 +283,17 @@ export default function EdlDetailScreen() {
           </Card>
         )}
 
-        {/* Pieces */}
+        {/* Pièces */}
         <View className="mx-4 mt-4">
           <View className="flex-row items-center mb-3">
             <DoorOpen size={20} color={COLORS.primary[600]} />
             <Text className="text-base font-semibold text-gray-800 ml-2">
-              Pieces ({pieces.length})
+              Pièces ({pieces.length})
             </Text>
           </View>
-          {pieces.map((piece: any) => {
-            const elements = piece.elements?.edges?.map((e: any) => e.node) || [];
-            const totalPhotos = elements.reduce((acc: number, el: any) => {
+          {pieces.map((piece: PieceNode) => {
+            const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
+            const totalPhotos = elements.reduce((acc: number, el: ElementNode) => {
               return acc + (el.photos?.edges?.length || 0);
             }, 0);
             return (
@@ -307,10 +307,10 @@ export default function EdlDetailScreen() {
                         <Text className="text-xs text-primary-600 ml-1">{totalPhotos}</Text>
                       </View>
                     )}
-                    <Badge label={`${elements.length} elements`} variant="gray" />
+                    <Badge label={`${elements.length} éléments`} variant="gray" />
                   </View>
                 </View>
-                {elements.slice(0, 3).map((element: any) => {
+                {elements.slice(0, 3).map((element: ElementNode) => {
                   const photoCount = element.photos?.edges?.length || 0;
                   return (
                     <View key={element.id} className="mt-2 pt-2 border-t border-gray-50">
@@ -334,7 +334,7 @@ export default function EdlDetailScreen() {
                 })}
                 {elements.length > 3 && (
                   <Text className="text-xs text-gray-400 mt-2">
-                    + {elements.length - 3} autres elements
+                    + {elements.length - 3} autres éléments
                   </Text>
                 )}
               </Card>
@@ -349,7 +349,7 @@ export default function EdlDetailScreen() {
             className="flex-row items-center justify-center py-4 rounded-xl border border-red-200 bg-red-50"
           >
             <Trash2 size={20} color={COLORS.red[600]} />
-            <Text className="text-red-600 font-medium ml-2">Supprimer cet etat des lieux</Text>
+            <Text className="text-red-600 font-medium ml-2">Supprimer cet état des lieux</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

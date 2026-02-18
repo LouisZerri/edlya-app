@@ -12,7 +12,7 @@ import { formatDate } from '../../utils/format';
 
 interface EdlData {
   etatDesLieuxes?: {
-    edges: Array<{ node: any }>;
+    edges: Array<{ node: EtatDesLieux }>;
   };
 }
 
@@ -103,7 +103,7 @@ export default function EdlScreen() {
               <View className="flex-row items-center">
                 <DoorOpen size={12} color={COLORS.gray[400]} />
                 <Text className="text-xs text-gray-400 ml-1">
-                  {(item.pieces as any)?.totalCount || item.pieces?.length || 0} pieces
+                  {(item.pieces as { totalCount?: number })?.totalCount || item.pieces?.length || 0} pièces
                 </Text>
               </View>
             </View>
@@ -118,7 +118,7 @@ export default function EdlScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
       <Header
-        title="Etats des lieux"
+        title="États des lieux"
         rightAction={
           <TouchableOpacity onPress={() => router.push('/edl/create')}>
             <Plus size={24} color={COLORS.primary[600]} />
@@ -134,7 +134,7 @@ export default function EdlScreen() {
         />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
           <FilterPill type="tous" label="Tous" />
-          <FilterPill type="entree" label="Entree" />
+          <FilterPill type="entree" label="Entrée" />
           <FilterPill type="sortie" label="Sortie" />
         </ScrollView>
       </View>
@@ -152,8 +152,8 @@ export default function EdlScreen() {
             <Card>
               <Text className="text-gray-500 text-center py-8">
                 {search.trim()
-                  ? `Aucun EDL trouve pour "${search}"`
-                  : 'Aucun etat des lieux pour le moment.\nCreez votre premier EDL !'}
+                  ? `Aucun EDL trouvé pour "${search}"`
+                  : 'Aucun état des lieux pour le moment.\nCréez votre premier EDL !'}
               </Text>
             </Card>
           ) : null

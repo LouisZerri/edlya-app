@@ -1,65 +1,140 @@
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, Modal, TextInput, Image } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import { Download, Info, Sparkles, RefreshCw, AlertCircle, Send, X, Wrench, Camera } from 'lucide-react-native';
+import { Download, Info, Sparkles, AlertCircle, Send, X, Plus, Trash2, List, ChevronRight } from 'lucide-react-native';
 import { TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState, useCallback } from 'react';
-import { Header, Card, Badge, Button } from '../../../components/ui';
-import { COLORS, BASE_URL, UPLOADS_URL } from '../../../utils/constants';
+import { Header, Card, Button } from '../../../components/ui';
+import { COLORS } from '../../../utils/constants';
 import { formatCurrency } from '../../../utils/format';
 import { useEstimations } from '../../../hooks/useEstimations';
+import { useDevis, LigneDevis, CoutSuggestion } from '../../../hooks/useDevis';
 import { usePdfExport } from '../../../hooks/usePdfExport';
 import { useShareEdl } from '../../../hooks/useShareEdl';
 
-// Helper pour construire l'URL de la photo
-const getPhotoUrl = (chemin: string) => {
-  if (!chemin) return '';
-  if (chemin.startsWith('http')) return chemin;
-  if (chemin.startsWith('/uploads/')) return `${BASE_URL}${chemin}`;
-  if (chemin.startsWith('uploads/')) return `${BASE_URL}/${chemin}`;
-  if (chemin.startsWith('/')) return `${UPLOADS_URL}${chemin}`;
-  return `${UPLOADS_URL}/${chemin}`;
+const UNITE_LABELS: Record<string, string> = {
+  m2: 'm\u00B2',
+  unite: 'unit\u00E9',
+  ml: 'ml',
+  forfait: 'forfait',
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  sol: 'Sol',
+  mur: 'Mur',
+  plafond: 'Plafond',
+  menuiserie: 'Menuiserie',
+  electricite: '\u00C9lectricit\u00E9',
+  plomberie: 'Plomberie',
+  chauffage: 'Chauffage',
+  equipement: '\u00C9quipement',
+  autre: 'Autre',
 };
 
 export default function EstimationsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isLoading, estimations, generateEstimations, refreshEstimations } = useEstimations();
+  const { isLoading, estimations, generateEstimations } = useEstimations();
+  const devis = useDevis();
   const { isExporting, exportPdf } = usePdfExport();
   const { isSharing, shareByEmail } = useShareEdl();
+
   const [refreshing, setRefreshing] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingLigne, setEditingLigne] = useState<LigneDevis | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
+  // Chargement initial
   useEffect(() => {
     if (id) {
       generateEstimations(id);
+      devis.loadSuggestions();
     }
   }, [id]);
+
+  // Pré-remplir les lignes de devis depuis les dégradations
+  useEffect(() => {
+    if (estimations && !initialized) {
+      const degradations = estimations.degradations || [];
+      if (degradations.length > 0) {
+        devis.setLignesFromDegradations(
+          degradations.map(d => ({
+            piece: d.piece,
+            element: d.element,
+            type: d.type_element,
+            intervention: d.intervention || '',
+            cout_brut: d.montant_brut || 0,
+            observations: d.degradation,
+          }))
+        );
+      }
+      setInitialized(true);
+    }
+  }, [estimations, initialized]);
 
   const onRefresh = useCallback(async () => {
     if (!id) return;
     setRefreshing(true);
-    await refreshEstimations(id);
+    setInitialized(false);
+    await generateEstimations(id);
     setRefreshing(false);
-  }, [id, refreshEstimations]);
+  }, [id, generateEstimations]);
 
-  const handleRegenerate = async () => {
+  const handleAffinerIA = async () => {
     if (!id) return;
-    await refreshEstimations(id);
+    await devis.analyserAvecIA(id);
   };
 
+  const handleEditLigne = (ligne: LigneDevis) => {
+    setEditingLigne({ ...ligne });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingLigne) return;
+    devis.updateLigne(editingLigne.id, {
+      piece: editingLigne.piece,
+      description: editingLigne.description,
+      quantite: editingLigne.quantite,
+      unite: editingLigne.unite,
+      prix_unitaire: editingLigne.prix_unitaire,
+    });
+    setShowEditModal(false);
+    setEditingLigne(null);
+  };
+
+  const handleAddFromSuggestion = (suggestion: CoutSuggestion) => {
+    devis.addLigne({
+      piece: '',
+      description: suggestion.nom,
+      quantite: 1,
+      unite: suggestion.unite,
+      prix_unitaire: suggestion.prix_unitaire,
+    });
+    setShowSuggestions(false);
+  };
+
+  // Calculs
+  const totalCles = estimations?.cles_manquantes?.reduce((sum, c) => sum + c.total, 0) || 0;
+  const totalRetenues = devis.totalHT + totalCles;
+  const depotGarantie = estimations?.depot_garantie || 0;
+  const aRestituer = Math.max(0, depotGarantie - totalRetenues);
+
+  // Loading state
   if (isLoading && !estimations) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-        <Header title="Estimations" showBack />
+        <Header title="Devis" showBack />
         <View className="flex-1 items-center justify-center">
           <View className="w-20 h-20 bg-amber-100 rounded-full items-center justify-center mb-4">
             <Sparkles size={40} color={COLORS.amber[600]} />
           </View>
           <Text className="text-lg font-semibold text-gray-800">Analyse en cours...</Text>
           <Text className="text-gray-500 text-center mt-2 px-8">
-            L'IA analyse les dégradations et calcule les estimations
+            Calcul des estimations et dégradations
           </Text>
           <ActivityIndicator size="large" color={COLORS.amber[600]} className="mt-6" />
         </View>
@@ -70,7 +145,7 @@ export default function EstimationsScreen() {
   if (!estimations) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-        <Header title="Estimations" showBack />
+        <Header title="Devis" showBack />
         <View className="flex-1 items-center justify-center p-4">
           <View className="w-20 h-20 bg-gray-100 rounded-full items-center justify-center mb-4">
             <AlertCircle size={40} color={COLORS.gray[400]} />
@@ -91,24 +166,9 @@ export default function EstimationsScreen() {
     );
   }
 
-  const hasDegradations = estimations.degradations && estimations.degradations.length > 0;
-  const hasClesManquantes = estimations.cles_manquantes && estimations.cles_manquantes.length > 0;
-
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-      <Header
-        title="Estimations"
-        showBack
-        rightAction={
-          <TouchableOpacity onPress={handleRegenerate} disabled={isLoading}>
-            {isLoading ? (
-              <ActivityIndicator size="small" color={COLORS.primary[600]} />
-            ) : (
-              <RefreshCw size={22} color={COLORS.primary[600]} />
-            )}
-          </TouchableOpacity>
-        }
-      />
+      <Header title="Devis" showBack />
 
       <ScrollView
         className="flex-1"
@@ -116,7 +176,7 @@ export default function EstimationsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Hero */}
+        {/* Hero - Total TTC */}
         <LinearGradient
           colors={['#F59E0B', '#EA580C']}
           start={{ x: 0, y: 0 }}
@@ -126,140 +186,137 @@ export default function EstimationsScreen() {
         >
           <View className="flex-row items-center">
             <Sparkles size={20} color="rgba(255,255,255,0.8)" />
-            <Text className="text-amber-100 text-sm ml-2">Estimation IA des retenues</Text>
+            <Text className="text-amber-100 text-sm ml-2">Total TTC du devis</Text>
           </View>
           <Text className="text-white text-4xl font-bold mt-1">
-            {formatCurrency(estimations.total_retenues)}
+            {formatCurrency(devis.totalTTC + totalCles)}
           </Text>
 
           <View className="flex-row mt-4">
             <View className="bg-white/20 rounded-lg px-3 py-2 flex-1 mr-2">
               <Text className="text-white/80 text-xs">Dépôt de garantie</Text>
               <Text className="text-white font-bold">
-                {formatCurrency(estimations.depot_garantie || 0)}
+                {formatCurrency(depotGarantie)}
               </Text>
             </View>
             <View className="bg-white/20 rounded-lg px-3 py-2 flex-1 ml-2">
               <Text className="text-white/80 text-xs">À restituer</Text>
               <Text className="text-white font-bold">
-                {formatCurrency(estimations.a_restituer)}
+                {formatCurrency(Math.max(0, depotGarantie - devis.totalTTC - totalCles))}
               </Text>
             </View>
           </View>
-
-          {estimations.duree_location_mois && (
-            <Text className="text-white/70 text-xs mt-3">
-              Durée de location : {estimations.duree_location_mois} mois
-            </Text>
-          )}
         </LinearGradient>
 
-        {/* No degradations message */}
-        {!hasDegradations && !hasClesManquantes && estimations.nettoyage === 0 && (
-          <View className="mx-4 mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
-            <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
-                <Text className="text-xl">✨</Text>
-              </View>
-              <View className="flex-1 ml-3">
-                <Text className="font-semibold text-green-800">Aucune retenue</Text>
-                <Text className="text-green-700 text-sm">
-                  Le logement est en bon état, pas de dégradation constatée
-                </Text>
-              </View>
+        {/* Bouton Affiner avec IA */}
+        <View className="mx-4 mt-4">
+          <TouchableOpacity
+            onPress={handleAffinerIA}
+            disabled={devis.isAnalyzing}
+            className="bg-primary-600 rounded-xl py-3.5 flex-row items-center justify-center"
+            style={{ backgroundColor: devis.isAnalyzing ? COLORS.gray[300] : COLORS.primary[600] }}
+          >
+            {devis.isAnalyzing ? (
+              <>
+                <ActivityIndicator size="small" color="white" />
+                <Text className="text-white font-semibold ml-2">L'IA analyse les dégradations...</Text>
+              </>
+            ) : (
+              <>
+                <Sparkles size={18} color="white" />
+                <Text className="text-white font-semibold ml-2">Affiner avec IA</Text>
+              </>
+            )}
+          </TouchableOpacity>
+          <Text className="text-xs text-gray-400 text-center mt-1">
+            Analyse les photos côté serveur et génère des lignes précises
+          </Text>
+        </View>
+
+        {/* Lignes de devis */}
+        <View className="p-4">
+          <Text className="text-base font-semibold text-gray-800 mb-3">
+            Lignes de devis ({devis.lignes.length})
+          </Text>
+
+          {devis.lignes.length === 0 && (
+            <View className="bg-gray-50 border border-gray-200 rounded-xl p-6 items-center">
+              <List size={32} color={COLORS.gray[300]} />
+              <Text className="text-gray-400 text-sm mt-2">Aucune ligne de devis</Text>
+              <Text className="text-gray-400 text-xs mt-1">
+                Utilisez "Affiner avec IA" ou ajoutez des lignes manuellement
+              </Text>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Dégradations */}
-        {hasDegradations && (
-          <View className="p-4">
-            <Text className="text-base font-semibold text-gray-800 mb-3">
-              Dégradations locatives ({estimations.degradations.length})
-            </Text>
-            {estimations.degradations.map((deg, index) => (
-              <Card key={index} className="mb-3">
-                {/* Header: Element + Prix */}
-                <View className="flex-row items-start justify-between mb-2">
+          {devis.lignes.map((ligne) => (
+            <TouchableOpacity
+              key={ligne.id}
+              onPress={() => handleEditLigne(ligne)}
+              activeOpacity={0.7}
+            >
+              <Card className="mb-3">
+                <View className="flex-row items-start justify-between">
                   <View className="flex-1 pr-3">
-                    <Text className="font-semibold text-gray-900">{deg.element}</Text>
-                    <Text className="text-sm text-gray-500">{deg.piece}</Text>
-                  </View>
-                  <View className="items-end">
-                    <Text className="text-lg font-bold text-amber-600">
-                      {formatCurrency(deg.montant_net)}
+                    {ligne.piece ? (
+                      <Text className="text-xs text-primary-600 font-medium mb-0.5">{ligne.piece}</Text>
+                    ) : null}
+                    <Text className="font-medium text-gray-900" numberOfLines={2}>
+                      {ligne.description || 'Sans description'}
                     </Text>
-                    {deg.taux_vetuste < 100 && (
-                      <Text className="text-xs text-gray-400">
-                        {formatCurrency(deg.montant_brut)} - {deg.taux_vetuste}% vétusté
-                      </Text>
-                    )}
+                    <Text className="text-sm text-gray-500 mt-1">
+                      {ligne.quantite} {UNITE_LABELS[ligne.unite] || ligne.unite} × {formatCurrency(ligne.prix_unitaire)}
+                    </Text>
+                  </View>
+                  <View className="items-end flex-row">
+                    <Text className="text-lg font-bold text-amber-600 mr-3">
+                      {formatCurrency(ligne.total)}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => devis.removeLigne(ligne.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Trash2 size={18} color={COLORS.red[500]} />
+                    </TouchableOpacity>
                   </View>
                 </View>
-
-                {/* Dégât constaté */}
-                <View className="bg-red-50 rounded-lg p-2 mb-2">
-                  <Text className="text-xs text-red-600 font-medium mb-1">Dégât constaté</Text>
-                  <Text className="text-red-800">{deg.degradation}</Text>
-                  {deg.etat_entree && deg.etat_sortie && (
-                    <Text className="text-xs text-red-600 mt-1">
-                      État : {deg.etat_entree} → {deg.etat_sortie}
-                    </Text>
-                  )}
-                </View>
-
-                {/* Réparation à faire */}
-                {deg.intervention && (
-                  <View className="bg-blue-50 rounded-lg p-2 mb-2">
-                    <View className="flex-row items-center mb-1">
-                      <Wrench size={14} color={COLORS.blue[600]} />
-                      <Text className="text-xs text-blue-600 font-medium ml-1">Réparation à faire</Text>
-                    </View>
-                    <Text className="text-blue-800">{deg.intervention}</Text>
-                  </View>
-                )}
-
-                {/* Photos preuves */}
-                {deg.photos && deg.photos.length > 0 && (
-                  <View className="mt-2">
-                    <View className="flex-row items-center mb-2">
-                      <Camera size={14} color={COLORS.gray[500]} />
-                      <Text className="text-xs text-gray-500 font-medium ml-1">
-                        Photos ({deg.photos.length})
-                      </Text>
-                    </View>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      {deg.photos.map((photo, photoIndex) => (
-                        <View key={photo.id || photoIndex} className="mr-2">
-                          <Image
-                            source={{ uri: getPhotoUrl(photo.chemin) }}
-                            style={{ width: 80, height: 80, borderRadius: 8 }}
-                            resizeMode="cover"
-                          />
-                          {photo.legende && (
-                            <Text className="text-xs text-gray-500 mt-1 w-20" numberOfLines={1}>
-                              {photo.legende}
-                            </Text>
-                          )}
-                        </View>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-
-                {/* Justification */}
-                {deg.justification && (
-                  <Text className="text-xs text-gray-500 mt-2 italic">
-                    {deg.justification}
-                  </Text>
-                )}
               </Card>
-            ))}
+            </TouchableOpacity>
+          ))}
+
+          {/* Boutons ajouter */}
+          <View className="flex-row gap-3 mt-1">
+            <TouchableOpacity
+              onPress={() => {
+                setEditingLigne({
+                  id: '',
+                  piece: '',
+                  description: '',
+                  quantite: 1,
+                  unite: 'forfait',
+                  prix_unitaire: 0,
+                  total: 0,
+                });
+                setShowEditModal(true);
+              }}
+              className="flex-1 border border-dashed border-primary-300 rounded-xl py-3 flex-row items-center justify-center"
+            >
+              <Plus size={18} color={COLORS.primary[600]} />
+              <Text className="text-primary-600 font-medium ml-2">Ajouter une ligne</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowSuggestions(true)}
+              className="flex-1 border border-dashed border-amber-300 rounded-xl py-3 flex-row items-center justify-center"
+            >
+              <List size={18} color={COLORS.amber[600]} />
+              <Text className="text-amber-600 font-medium ml-2">Suggestions</Text>
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
 
         {/* Clés manquantes */}
-        {hasClesManquantes && (
+        {estimations.cles_manquantes && estimations.cles_manquantes.length > 0 && (
           <View className="px-4">
             <Text className="text-base font-semibold text-gray-800 mb-3">
               Clés manquantes
@@ -272,9 +329,6 @@ export default function EstimationsScreen() {
                     <Text className="text-sm text-gray-500">
                       {cle.manquantes} x {formatCurrency(cle.cout_unitaire)}
                     </Text>
-                    <Text className="text-xs text-gray-400">
-                      Entrée: {cle.nombre_entree} → Sortie: {cle.nombre_sortie}
-                    </Text>
                   </View>
                   <Text className="text-lg font-bold text-gray-900">
                     {formatCurrency(cle.total)}
@@ -285,80 +339,6 @@ export default function EstimationsScreen() {
           </View>
         )}
 
-        {/* Nettoyage */}
-        {estimations.nettoyage > 0 && (
-          <View className="px-4">
-            <Card>
-              <View className="flex-row items-center justify-between">
-                <View>
-                  <Text className="font-medium text-gray-900">Nettoyage</Text>
-                  <Text className="text-sm text-gray-500">Remise en état de propreté</Text>
-                </View>
-                <Text className="text-lg font-bold text-gray-900">
-                  {formatCurrency(estimations.nettoyage)}
-                </Text>
-              </View>
-            </Card>
-          </View>
-        )}
-
-        {/* Grille vétusté */}
-        {estimations.grille_vetuste && estimations.grille_vetuste.length > 0 && (
-          <View className="px-4 mt-4">
-            <View className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <View className="flex-row items-center mb-3">
-                <Info size={18} color={COLORS.blue[600]} />
-                <Text className="text-blue-800 font-medium ml-2">Grille de vétusté appliquée</Text>
-              </View>
-              {estimations.duree_location_mois && (
-                <Text className="text-sm text-blue-700 mb-3">
-                  Durée de location : {estimations.duree_location_mois} mois
-                </Text>
-              )}
-              {estimations.grille_vetuste.map((item, index) => (
-                <View key={index} className="flex-row items-center justify-between py-1.5 border-b border-blue-100 last:border-0">
-                  <View className="flex-1">
-                    <Text className="text-blue-700">{item.element}</Text>
-                    <Text className="text-blue-500 text-xs">{item.duree_vie}</Text>
-                  </View>
-                  <Text className="text-blue-800 font-medium">{item.taux_applique}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Compteurs */}
-        {estimations.compteurs && estimations.compteurs.length > 0 && (
-          <View className="px-4 mt-4">
-            <Text className="text-base font-semibold text-gray-800 mb-3">
-              Relevés compteurs
-            </Text>
-            <Card>
-              {estimations.compteurs.map((compteur, index) => (
-                <View
-                  key={index}
-                  className={`flex-row items-center justify-between py-2 ${
-                    index < estimations.compteurs.length - 1 ? 'border-b border-gray-100' : ''
-                  }`}
-                >
-                  <Text className="text-gray-700 font-medium">{compteur.type}</Text>
-                  <View className="items-end">
-                    <Text className="text-gray-600 text-sm">
-                      {compteur.index_entree || '-'} → {compteur.index_sortie || '-'}
-                    </Text>
-                    {compteur.consommation && (
-                      <Text className="text-gray-500 text-xs">
-                        Conso: {compteur.consommation}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              ))}
-            </Card>
-          </View>
-        )}
-
         {/* Récapitulatif */}
         <View className="p-4">
           <Text className="text-base font-semibold text-gray-800 mb-3">
@@ -366,51 +346,89 @@ export default function EstimationsScreen() {
           </Text>
           <Card>
             <View className="flex-row items-center justify-between py-2 border-b border-gray-100">
-              <Text className="text-gray-700">Dégradations (brut)</Text>
+              <Text className="text-gray-700">Total HT</Text>
               <Text className="font-medium text-gray-900">
-                {formatCurrency(estimations.total_brut)}
+                {formatCurrency(devis.totalHT)}
               </Text>
             </View>
-            {estimations.total_abattement_vetuste > 0 && (
-              <View className="flex-row items-center justify-between py-2 border-b border-gray-100">
-                <Text className="text-green-700">- Abattement vétusté</Text>
-                <Text className="font-medium text-green-700">
-                  -{formatCurrency(estimations.total_abattement_vetuste)}
-                </Text>
-              </View>
-            )}
-            {estimations.total_cles > 0 && (
+            <View className="flex-row items-center justify-between py-2 border-b border-gray-100">
+              <Text className="text-gray-700">TVA 20%</Text>
+              <Text className="font-medium text-gray-900">
+                {formatCurrency(devis.tva)}
+              </Text>
+            </View>
+            <View className="flex-row items-center justify-between py-2 border-b border-gray-100">
+              <Text className="text-gray-700 font-semibold">Total TTC</Text>
+              <Text className="font-bold text-gray-900">
+                {formatCurrency(devis.totalTTC)}
+              </Text>
+            </View>
+            {totalCles > 0 && (
               <View className="flex-row items-center justify-between py-2 border-b border-gray-100">
                 <Text className="text-gray-700">Clés manquantes</Text>
                 <Text className="font-medium text-gray-900">
-                  {formatCurrency(estimations.total_cles)}
-                </Text>
-              </View>
-            )}
-            {estimations.nettoyage > 0 && (
-              <View className="flex-row items-center justify-between py-2 border-b border-gray-100">
-                <Text className="text-gray-700">Nettoyage</Text>
-                <Text className="font-medium text-gray-900">
-                  {formatCurrency(estimations.nettoyage)}
+                  {formatCurrency(totalCles)}
                 </Text>
               </View>
             )}
             <View className="flex-row items-center justify-between py-3 mt-2 bg-amber-50 -mx-4 -mb-4 px-4 rounded-b-xl">
               <Text className="text-amber-800 font-semibold">Total retenues</Text>
               <Text className="text-xl font-bold text-amber-700">
-                {formatCurrency(estimations.total_retenues)}
+                {formatCurrency(devis.totalTTC + totalCles)}
+              </Text>
+            </View>
+          </Card>
+
+          {/* Dépôt / Reste */}
+          <Card className="mt-3">
+            <View className="flex-row items-center justify-between py-2 border-b border-gray-100">
+              <Text className="text-gray-700">Dépôt de garantie</Text>
+              <Text className="font-medium text-gray-900">
+                {formatCurrency(depotGarantie)}
+              </Text>
+            </View>
+            <View className="flex-row items-center justify-between py-2">
+              <Text className="text-gray-700 font-semibold">
+                {depotGarantie >= devis.totalTTC + totalCles ? 'À restituer' : 'Reste à charge'}
+              </Text>
+              <Text className={`font-bold text-lg ${
+                depotGarantie >= devis.totalTTC + totalCles ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {formatCurrency(Math.abs(depotGarantie - devis.totalTTC - totalCles))}
               </Text>
             </View>
           </Card>
         </View>
 
+        {/* Grille vétusté */}
+        {estimations.grille_vetuste && estimations.grille_vetuste.length > 0 && (
+          <View className="px-4">
+            <View className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <View className="flex-row items-center mb-3">
+                <Info size={18} color={COLORS.blue[600]} />
+                <Text className="text-blue-800 font-medium ml-2">Grille de vétusté</Text>
+              </View>
+              {estimations.duree_location_mois && (
+                <Text className="text-sm text-blue-700 mb-2">
+                  Durée de location : {estimations.duree_location_mois} mois
+                </Text>
+              )}
+              {estimations.grille_vetuste.map((item, index) => (
+                <View key={index} className="flex-row items-center justify-between py-1.5 border-b border-blue-100">
+                  <Text className="text-blue-700 text-sm">{item.element}</Text>
+                  <Text className="text-blue-800 font-medium text-sm">{item.taux_applique}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Info IA */}
-        <View className="px-4 mb-4">
+        <View className="px-4 mt-4 mb-4">
           <View className="bg-gray-100 rounded-lg p-3 flex-row items-start">
             <Sparkles size={16} color={COLORS.gray[500]} />
             <Text className="text-gray-500 text-xs ml-2 flex-1">
-              Ces estimations sont générées par IA et sont indicatives.
-              Les montants réels peuvent varier selon les devis professionnels.
+              Ce devis est indicatif. Les montants réels peuvent varier selon les devis professionnels.
             </Text>
           </View>
         </View>
@@ -418,10 +436,19 @@ export default function EstimationsScreen() {
         <View className="h-4" />
       </ScrollView>
 
+      {/* Footer */}
       <View className="p-4 bg-white border-t border-gray-100">
         <Button
-          label={isExporting ? "Export en cours..." : "Exporter le détail PDF"}
-          onPress={() => id && exportPdf(id, 'estimations')}
+          label={isExporting ? "Export en cours..." : "Exporter PDF"}
+          onPress={() => id && exportPdf(id, 'estimations', {
+            lignes: devis.lignes.map(l => ({
+              piece: l.piece,
+              description: l.description,
+              quantite: l.quantite,
+              unite: l.unite,
+              prix_unitaire: l.prix_unitaire,
+            }))
+          })}
           fullWidth
           loading={isExporting}
           icon={!isExporting ? <Download size={18} color="white" /> : undefined}
@@ -436,6 +463,203 @@ export default function EstimationsScreen() {
           icon={!isSharing ? <Send size={18} color={COLORS.gray[700]} /> : undefined}
         />
       </View>
+
+      {/* Modal édition ligne */}
+      <Modal
+        visible={showEditModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowEditModal(false)}
+            className="flex-1 bg-black/50 justify-end"
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => {}}
+              className="bg-white rounded-t-2xl p-5"
+            >
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-lg font-bold text-gray-900">
+                  {editingLigne?.id ? 'Modifier la ligne' : 'Nouvelle ligne'}
+                </Text>
+                <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                  <X size={24} color={COLORS.gray[400]} />
+                </TouchableOpacity>
+              </View>
+
+              {editingLigne && (
+                <View>
+                  <Text className="text-sm font-medium text-gray-700 mb-1">Pièce</Text>
+                  <TextInput
+                    value={editingLigne.piece}
+                    onChangeText={(t) => setEditingLigne(prev => prev ? { ...prev, piece: t } : null)}
+                    placeholder="Ex: Salon, Cuisine..."
+                    style={{ borderWidth: 1, borderColor: COLORS.gray[200], borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, marginBottom: 12, color: COLORS.gray[900] }}
+                  />
+
+                  <Text className="text-sm font-medium text-gray-700 mb-1">Description</Text>
+                  <TextInput
+                    value={editingLigne.description}
+                    onChangeText={(t) => setEditingLigne(prev => prev ? { ...prev, description: t } : null)}
+                    placeholder="Ex: Peinture murale 2 couches"
+                    style={{ borderWidth: 1, borderColor: COLORS.gray[200], borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, marginBottom: 12, color: COLORS.gray[900] }}
+                    multiline
+                  />
+
+                  <View className="flex-row gap-3 mb-3">
+                    <View className="flex-1">
+                      <Text className="text-sm font-medium text-gray-700 mb-1">Quantité</Text>
+                      <TextInput
+                        value={String(editingLigne.quantite)}
+                        onChangeText={(t) => setEditingLigne(prev => prev ? { ...prev, quantite: parseFloat(t) || 0 } : null)}
+                        keyboardType="decimal-pad"
+                        style={{ borderWidth: 1, borderColor: COLORS.gray[200], borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, color: COLORS.gray[900] }}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-medium text-gray-700 mb-1">Unité</Text>
+                      <View className="flex-row flex-wrap gap-2">
+                        {['m2', 'unite', 'ml', 'forfait'].map(u => (
+                          <TouchableOpacity
+                            key={u}
+                            onPress={() => setEditingLigne(prev => prev ? { ...prev, unite: u } : null)}
+                            className={`px-3 py-2.5 rounded-lg border ${
+                              editingLigne.unite === u
+                                ? 'bg-primary-50 border-primary-300'
+                                : 'border-gray-200'
+                            }`}
+                          >
+                            <Text className={editingLigne.unite === u ? 'text-primary-700 font-medium' : 'text-gray-600'}>
+                              {UNITE_LABELS[u]}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+
+                  <Text className="text-sm font-medium text-gray-700 mb-1">Prix unitaire</Text>
+                  <TextInput
+                    value={String(editingLigne.prix_unitaire)}
+                    onChangeText={(t) => setEditingLigne(prev => prev ? { ...prev, prix_unitaire: parseFloat(t) || 0 } : null)}
+                    keyboardType="decimal-pad"
+                    style={{ borderWidth: 1, borderColor: COLORS.gray[200], borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, marginBottom: 12, color: COLORS.gray[900] }}
+                  />
+
+                  <View className="bg-amber-50 rounded-lg p-3 mb-4">
+                    <Text className="text-amber-800 font-semibold text-center">
+                      Total : {formatCurrency((editingLigne.quantite || 0) * (editingLigne.prix_unitaire || 0))}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (editingLigne.id) {
+                        handleSaveEdit();
+                      } else {
+                        devis.addLigne({
+                          piece: editingLigne.piece,
+                          description: editingLigne.description,
+                          quantite: editingLigne.quantite,
+                          unite: editingLigne.unite,
+                          prix_unitaire: editingLigne.prix_unitaire,
+                        });
+                        setShowEditModal(false);
+                        setEditingLigne(null);
+                      }
+                    }}
+                    className="rounded-xl py-3.5 items-center"
+                    style={{ backgroundColor: COLORS.primary[600] }}
+                  >
+                    <Text className="text-white font-semibold">
+                      {editingLigne.id ? 'Enregistrer' : 'Ajouter'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal suggestions tarifs */}
+      <Modal
+        visible={showSuggestions}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSuggestions(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowSuggestions(false)}
+          className="flex-1 bg-black/50 justify-end"
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {}}
+            className="bg-white rounded-t-2xl"
+            style={{ maxHeight: '80%' }}
+          >
+            <View className="flex-row items-center justify-between p-5 border-b border-gray-100">
+              <Text className="text-lg font-bold text-gray-900">Suggestions tarifs</Text>
+              <TouchableOpacity onPress={() => setShowSuggestions(false)}>
+                <X size={24} color={COLORS.gray[400]} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView className="px-5 py-3">
+              {Object.entries(devis.suggestions).map(([type, items]) => (
+                <View key={type} className="mb-4">
+                  <Text className="text-sm font-semibold text-gray-800 mb-2">
+                    {TYPE_LABELS[type] || type}
+                  </Text>
+                  {items.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => handleAddFromSuggestion(item)}
+                      className="flex-row items-center justify-between py-3 border-b border-gray-50"
+                    >
+                      <View className="flex-1 pr-3">
+                        <Text className="text-gray-900 font-medium">{item.nom}</Text>
+                        {item.description && (
+                          <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
+                            {item.description}
+                          </Text>
+                        )}
+                      </View>
+                      <View className="flex-row items-center">
+                        <Text className="text-amber-600 font-bold mr-1">
+                          {formatCurrency(item.prix_unitaire)}
+                        </Text>
+                        <Text className="text-gray-400 text-xs mr-2">
+                          /{UNITE_LABELS[item.unite] || item.unite}
+                        </Text>
+                        <ChevronRight size={16} color={COLORS.gray[300]} />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+
+              {Object.keys(devis.suggestions).length === 0 && (
+                <View className="py-8 items-center">
+                  <ActivityIndicator size="large" color={COLORS.primary[600]} />
+                  <Text className="text-gray-500 mt-3">Chargement des tarifs...</Text>
+                </View>
+              )}
+
+              <View className="h-8" />
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Modal Email */}
       <Modal
@@ -464,7 +688,7 @@ export default function EstimationsScreen() {
             </View>
 
             <Text className="text-gray-600 text-sm mb-4">
-              Le locataire recevra un email avec un lien pour consulter les estimations.
+              Le locataire recevra un email avec le détail du devis.
             </Text>
 
             <Text className="text-sm font-medium text-gray-700 mb-1">
@@ -474,10 +698,22 @@ export default function EstimationsScreen() {
               value={emailInput}
               onChangeText={setEmailInput}
               placeholder="exemple@email.com"
+              placeholderTextColor="#9CA3AF"
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
-              className="border border-gray-200 rounded-lg px-4 py-3 text-base mb-4"
+              style={{
+                height: 52,
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                fontSize: 16,
+                color: '#111827',
+                backgroundColor: '#ffffff',
+                textAlignVertical: 'center',
+                marginBottom: 16,
+              }}
             />
 
             <View className="flex-row gap-3">
@@ -498,9 +734,10 @@ export default function EstimationsScreen() {
                   }
                 }}
                 disabled={!emailInput || !emailInput.includes('@') || isSharing}
-                className={`flex-1 py-3 rounded-xl items-center flex-row justify-center ${
-                  emailInput && emailInput.includes('@') ? 'bg-primary-600' : 'bg-gray-300'
-                }`}
+                className="flex-1 py-3 rounded-xl items-center flex-row justify-center"
+                style={{
+                  backgroundColor: emailInput && emailInput.includes('@') ? COLORS.primary[600] : COLORS.gray[300],
+                }}
               >
                 {isSharing ? (
                   <ActivityIndicator size="small" color="white" />
