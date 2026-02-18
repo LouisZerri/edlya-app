@@ -3,6 +3,7 @@ import { Trash2, Key } from 'lucide-react-native';
 import { Card, Badge } from '../ui';
 import { DonneesExtraites } from '../../hooks/usePdfImport';
 import { COLORS } from '../../utils/constants';
+import { CLE_LABELS, CleType } from '../../types';
 import { ImportPhotoThumbnails } from './ImportPhotoThumbnails';
 
 interface ImportPreviewClesProps {
@@ -29,13 +30,13 @@ export function ImportPreviewCles({
       <View className="flex-row items-center mb-3">
         <Key size={20} color={COLORS.gray[600]} />
         <Text className="font-semibold text-gray-800 ml-2">
-          Clés ({extractedData.cles.length})
+          Clés ({extractedData.cles.reduce((sum, c) => sum + c.nombre, 0)})
         </Text>
       </View>
       {extractedData.cles.map((cle, idx) => (
         <View key={idx} className="py-2 border-b border-gray-100 last:border-0">
           <View className="flex-row items-center justify-between">
-            <Text className="text-gray-700">{cle.type}</Text>
+            <Text className="text-gray-700">{CLE_LABELS[cle.type as CleType] || cle.type}</Text>
             {isEditing ? (
               <View className="flex-row items-center">
                 <TouchableOpacity

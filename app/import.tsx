@@ -84,11 +84,30 @@ export default function ImportScreen() {
     }
   };
 
+  // Déduplique les clés en fusionnant les doublons par type
+  const deduplicateCles = (cles: DonneesExtraites['cles']): DonneesExtraites['cles'] => {
+    if (!cles) return cles;
+    const map = new Map<string, typeof cles[number]>();
+    for (const cle of cles) {
+      const existing = map.get(cle.type);
+      if (existing) {
+        existing.nombre += cle.nombre;
+      } else {
+        map.set(cle.type, { ...cle });
+      }
+    }
+    return Array.from(map.values());
+  };
+
   const handleAnalyze = async () => {
     if (!selectedFile) return;
     const result = await importPdf(selectedFile.uri, selectedFile.name);
     if (result?.success && result.donnees_extraites) {
-      setExtractedData(result.donnees_extraites);
+      const data = {
+        ...result.donnees_extraites,
+        cles: deduplicateCles(result.donnees_extraites.cles),
+      };
+      setExtractedData(data);
       setExtractedImages(result.images || []);
       setImportId(result.import_id || null);
       setStep('preview');

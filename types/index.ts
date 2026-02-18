@@ -121,6 +121,7 @@ export interface Compteur {
 
 export type CleType =
   | 'porte_entree'
+  | 'parties_communes'
   | 'boite_lettres'
   | 'cave'
   | 'garage'
@@ -174,6 +175,7 @@ export const COMPTEUR_CONFIG: Record<CompteurType, { icon: string; label: string
 
 export const CLE_LABELS: Record<CleType, string> = {
   porte_entree: "Porte d'entrée",
+  parties_communes: 'Parties communes',
   boite_lettres: 'Boîte aux lettres',
   cave: 'Cave',
   garage: 'Garage',

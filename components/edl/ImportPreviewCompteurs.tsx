@@ -3,6 +3,7 @@ import { Trash2, Zap } from 'lucide-react-native';
 import { Card } from '../ui';
 import { DonneesExtraites } from '../../hooks/usePdfImport';
 import { COLORS } from '../../utils/constants';
+import { COMPTEUR_CONFIG, CompteurType } from '../../types';
 import { ImportPhotoThumbnails } from './ImportPhotoThumbnails';
 
 interface ImportPreviewCompteursProps {
@@ -38,7 +39,9 @@ export function ImportPreviewCompteurs({
             {isEditing ? (
               <>
                 <View className="flex-1 mr-2">
-                  <Text className="text-gray-700 text-sm font-medium">{compteur.type}</Text>
+                  <Text className="text-gray-700 text-sm font-medium">
+                    {COMPTEUR_CONFIG[compteur.type as CompteurType]?.icon} {COMPTEUR_CONFIG[compteur.type as CompteurType]?.label || compteur.type}
+                  </Text>
                   <TextInput
                     value={compteur.index || ''}
                     onChangeText={(t) => onUpdate(d => {
@@ -56,7 +59,9 @@ export function ImportPreviewCompteurs({
               </>
             ) : (
               <>
-                <Text className="text-gray-700">{compteur.type}</Text>
+                <Text className="text-gray-700">
+                  {COMPTEUR_CONFIG[compteur.type as CompteurType]?.icon} {COMPTEUR_CONFIG[compteur.type as CompteurType]?.label || compteur.type}
+                </Text>
                 {compteur.index && (
                   <Text className="text-gray-500 text-sm">{compteur.index}</Text>
                 )}
