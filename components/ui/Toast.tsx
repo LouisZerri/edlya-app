@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react-native';
 import { useToastStore, ToastType } from '../../stores/toastStore';
+import { hapticSuccess, hapticError } from '../../utils/haptics';
 
 const toastConfig: Record<ToastType, { bg: string; icon: typeof CheckCircle; iconColor: string; textColor: string }> = {
   success: {
@@ -44,6 +45,9 @@ function ToastItem({ id, message, type }: ToastItemProps) {
   const translateY = useRef(new Animated.Value(-20)).current;
 
   useEffect(() => {
+    if (type === 'success') hapticSuccess();
+    else if (type === 'error') hapticError();
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,

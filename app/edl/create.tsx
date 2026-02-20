@@ -6,7 +6,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
-import { Header, Input, Select, Button } from '../../components/ui';
+import { Home } from 'lucide-react-native';
+import { Header, Input, Select, Button, EmptyState } from '../../components/ui';
 import { GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { CREATE_ETAT_DES_LIEUX } from '../../graphql/mutations/edl';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
@@ -150,6 +151,18 @@ export default function CreateEdlScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
+        {logements.length === 0 ? (
+          <View className="flex-1 justify-center px-4">
+            <EmptyState
+              icon={Home}
+              title="Aucun logement"
+              subtitle="Vous devez d'abord créer un logement avant de pouvoir réaliser un état des lieux."
+              actionLabel="Créer un logement"
+              onAction={() => router.push('/logement/create')}
+            />
+          </View>
+        ) : (
+        <>
         <ScrollView className="flex-1 p-4">
           <Controller
             control={control}
@@ -287,6 +300,8 @@ export default function CreateEdlScreen() {
             fullWidth
           />
         </View>
+        </>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

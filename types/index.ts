@@ -162,8 +162,8 @@ export const STATUT_BADGE: Record<EdlStatut, { variant: BadgeVariant; label: str
 };
 
 export const TYPE_CONFIG: Record<EdlType, { icon: string; bg: string; label: string }> = {
-  entree: { icon: '📥', bg: 'bg-blue-100', label: 'Entrée' },
-  sortie: { icon: '📤', bg: 'bg-orange-100', label: 'Sortie' },
+  entree: { icon: '📥', bg: 'bg-blue-100 dark:bg-blue-900/40', label: 'Entrée' },
+  sortie: { icon: '📤', bg: 'bg-orange-100 dark:bg-orange-900/40', label: 'Sortie' },
 };
 
 export const COMPTEUR_CONFIG: Record<CompteurType, { icon: string; label: string }> = {

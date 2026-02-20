@@ -1,5 +1,6 @@
 import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 import { ReactNode } from 'react';
+import { hapticLight, hapticError } from '../../utils/haptics';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success';
 
@@ -34,7 +35,10 @@ export function Button({
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={() => {
+        if (variant === 'danger') hapticError(); else hapticLight();
+        onPress();
+      }}
       disabled={isDisabled}
       className={`
         flex-row items-center justify-center py-3.5 px-4 rounded-xl

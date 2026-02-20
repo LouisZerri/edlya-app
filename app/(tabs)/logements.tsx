@@ -3,8 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@apollo/client/react';
 import { useState, useCallback, useMemo } from 'react';
-import { Plus, ChevronRight, MapPin } from 'lucide-react-native';
-import { Header, Card, SearchBar } from '../../components/ui';
+import { Plus, ChevronRight, MapPin, Home, Search } from 'lucide-react-native';
+import { Header, Card, SearchBar, EmptyState, SkeletonList, AnimatedListItem, Fab } from '../../components/ui';
 import { GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { Logement } from '../../types';
 import { COLORS } from '../../utils/constants';
@@ -42,9 +42,10 @@ export default function LogementsScreen() {
     setRefreshing(false);
   }, []);
 
-  const renderItem = ({ item }: { item: Logement }) => {
+  const renderItem = ({ item, index }: { item: Logement; index: number }) => {
     const logementId = item.id.split('/').pop();
     return (
+    <AnimatedListItem index={index}>
     <Card
       onPress={() => router.push(`/logement/${logementId}`)}
       className="mb-3"
@@ -75,6 +76,7 @@ export default function LogementsScreen() {
         <ChevronRight size={20} color={COLORS.gray[400]} />
       </View>
     </Card>
+    </AnimatedListItem>
     );
   };
 
@@ -82,11 +84,6 @@ export default function LogementsScreen() {
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header
         title="Mes logements"
-        rightAction={
-          <TouchableOpacity onPress={() => router.push('/logement/create')}>
-            <Plus size={24} color={COLORS.primary[600]} />
-          </TouchableOpacity>
-        }
       />
 
       <View className="px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
@@ -97,26 +94,39 @@ export default function LogementsScreen() {
         />
       </View>
 
+      {loading && filteredLogements.length === 0 ? (
+        <SkeletonList count={5} />
+      ) : (
       <FlatList
         data={filteredLogements}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
         }
         ListEmptyComponent={
           !loading ? (
-            <Card>
-              <Text className="text-gray-500 dark:text-gray-400 text-center py-8">
-                {search.trim()
-                  ? `Aucun logement trouvé pour "${search}"`
-                  : 'Aucun logement pour le moment.\nCréez votre premier logement !'}
-              </Text>
-            </Card>
+            search.trim() ? (
+              <EmptyState
+                icon={Search}
+                title="Aucun résultat"
+                subtitle={`Aucun logement trouvé pour "${search}"`}
+              />
+            ) : (
+              <EmptyState
+                icon={Home}
+                title="Pas encore de logement"
+                subtitle="Ajoutez votre premier logement pour commencer"
+                actionLabel="Ajouter un logement"
+                onAction={() => router.push('/logement/create')}
+              />
+            )
           ) : null
         }
       />
+      )}
+      <Fab onPress={() => router.push('/logement/create')} />
     </SafeAreaView>
   );
 }

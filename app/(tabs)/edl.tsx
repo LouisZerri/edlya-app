@@ -3,8 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@apollo/client/react';
 import { useState, useCallback, useMemo } from 'react';
-import { Plus, ChevronRight, Calendar, DoorOpen } from 'lucide-react-native';
-import { Header, Card, Badge, SearchBar } from '../../components/ui';
+import { Plus, ChevronRight, Calendar, DoorOpen, FileText, Search } from 'lucide-react-native';
+import { Header, Card, Badge, SearchBar, EmptyState, SkeletonList, AnimatedListItem, Fab } from '../../components/ui';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
 import { EtatDesLieux, STATUT_BADGE, TYPE_CONFIG } from '../../types';
 import { COLORS } from '../../utils/constants';
@@ -69,12 +69,13 @@ export default function EdlScreen() {
     </TouchableOpacity>
   );
 
-  const renderItem = ({ item }: { item: EtatDesLieux }) => {
+  const renderItem = ({ item, index }: { item: EtatDesLieux; index: number }) => {
     const typeConfig = TYPE_CONFIG[item.type];
     const statutBadge = STATUT_BADGE[item.statut];
     const edlId = item.id.split('/').pop();
 
     return (
+      <AnimatedListItem index={index}>
       <Card
         onPress={() => router.push(`/edl/${edlId}`)}
         className="mb-3"
@@ -112,19 +113,13 @@ export default function EdlScreen() {
           <ChevronRight size={20} color={COLORS.gray[400]} style={{ alignSelf: 'center' }} />
         </View>
       </Card>
+      </AnimatedListItem>
     );
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
-      <Header
-        title="États des lieux"
-        rightAction={
-          <TouchableOpacity onPress={() => router.push('/edl/create')}>
-            <Plus size={24} color={COLORS.primary[600]} />
-          </TouchableOpacity>
-        }
-      />
+      <Header title="États des lieux" />
 
       <View className="bg-white dark:bg-gray-900 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
         <SearchBar
@@ -139,26 +134,39 @@ export default function EdlScreen() {
         </ScrollView>
       </View>
 
+      {loading && filteredEdls.length === 0 ? (
+        <SkeletonList count={5} />
+      ) : (
       <FlatList
         data={filteredEdls}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
         }
         ListEmptyComponent={
           !loading ? (
-            <Card>
-              <Text className="text-gray-500 dark:text-gray-400 text-center py-8">
-                {search.trim()
-                  ? `Aucun EDL trouvé pour "${search}"`
-                  : 'Aucun état des lieux pour le moment.\nCréez votre premier EDL !'}
-              </Text>
-            </Card>
+            search.trim() ? (
+              <EmptyState
+                icon={Search}
+                title="Aucun résultat"
+                subtitle={`Aucun EDL trouvé pour "${search}"`}
+              />
+            ) : (
+              <EmptyState
+                icon={FileText}
+                title="Pas encore d'état des lieux"
+                subtitle="Créez votre premier EDL pour commencer à gérer vos biens"
+                actionLabel="Créer un EDL"
+                onAction={() => router.push('/edl/create')}
+              />
+            )
           ) : null
         }
       />
+      )}
+      <Fab onPress={() => router.push('/edl/create')} />
     </SafeAreaView>
   );
 }

@@ -85,10 +85,10 @@ export default function HomeScreen() {
       <ScrollView
         className="flex-1"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
         }
       >
-        <View className="pt-4 pb-8">
+        <View className="pb-8">
           <WelcomeCard user={user} stats={stats} />
           <QuickActions />
           <LogementsSansEdl logements={logementsSansEdl} />

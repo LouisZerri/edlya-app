@@ -61,7 +61,10 @@ export default function LoginScreen() {
                 style={{ width: 100, height: 100 }}
                 resizeMode="contain"
               />
-              <Text className="text-gray-500 dark:text-gray-400 mt-4">Gestion d'états des lieux</Text>
+              <View className="items-center mt-4">
+                <Text className="text-lg font-bold text-primary-600">Edlya</Text>
+                <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">propulsé par <Text className="font-semibold text-gray-500 dark:text-gray-400">GEST'IMMO</Text></Text>
+              </View>
             </View>
 
             <Text className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Connexion</Text>

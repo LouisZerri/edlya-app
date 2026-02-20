@@ -356,9 +356,9 @@ export default function EdlDetailScreen() {
                     <Text className="font-semibold text-gray-900 dark:text-gray-100">{piece.nom}</Text>
                     <View className="flex-row items-center gap-1.5 ml-2">
                       {piecePhotos > 0 && (
-                        <View className="flex-row items-center bg-primary-50 rounded-full px-1.5 py-0.5">
+                        <View className="flex-row items-center bg-primary-50 dark:bg-primary-800/40 rounded-full px-1.5 py-0.5">
                           <Camera size={10} color={COLORS.primary[500]} />
-                          <Text className="text-xs text-primary-600 ml-0.5">{piecePhotos}</Text>
+                          <Text className="text-xs text-primary-600 dark:text-primary-400 ml-0.5">{piecePhotos}</Text>
                         </View>
                       )}
                       <Badge label={`${elements.length}`} variant="gray" />
