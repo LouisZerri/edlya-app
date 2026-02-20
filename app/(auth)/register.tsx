@@ -56,7 +56,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -72,12 +72,12 @@ export default function RegisterScreen() {
                 style={{ width: 80, height: 80 }}
                 resizeMode="contain"
               />
-              <Text className="text-xl font-bold text-gray-900 mt-3">Créer un compte</Text>
+              <Text className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-3">Créer un compte</Text>
             </View>
 
             {error ? (
-              <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <Text className="text-red-700 text-sm">{error}</Text>
+              <View className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4">
+                <Text className="text-red-700 dark:text-red-300 text-sm">{error}</Text>
               </View>
             ) : null}
 
@@ -165,7 +165,7 @@ export default function RegisterScreen() {
             </View>
 
             <View className="flex-row justify-center mt-6 mb-8">
-              <Text className="text-gray-500">Déjà un compte ? </Text>
+              <Text className="text-gray-500 dark:text-gray-400">Déjà un compte ? </Text>
               <Link href="/(auth)/login" asChild>
                 <TouchableOpacity>
                   <Text className="text-primary-600 font-medium">Se connecter</Text>

@@ -9,8 +9,9 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 import { LocalPhoto } from '../../types';
-import { COLORS } from '../../utils/constants';
+import { COLORS, DARK_COLORS } from '../../utils/constants';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { PhotoViewer } from './PhotoViewer';
 import { useLocation } from '../../hooks/useLocation';
@@ -52,6 +53,8 @@ export function PhotoGallery({
 }: PhotoGalleryProps) {
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { getCurrentLocation } = useLocation();
   const { uploadPhoto, deletePhotoFromServer } = usePhotoUpload();
 
@@ -237,10 +240,14 @@ export function PhotoGallery({
   const renderAddButton = () => (
     <TouchableOpacity
       onPress={showOptions}
-      style={[styles.addButton, { width: dimension, height: dimension }]}
+      style={[
+        styles.addButton,
+        { width: dimension, height: dimension },
+        isDark && { backgroundColor: DARK_COLORS.surfaceAlt, borderColor: COLORS.gray[600] },
+      ]}
     >
-      <Camera size={dimension * 0.25} color={COLORS.gray[400]} />
-      <Text style={styles.addText}>Photo</Text>
+      <Camera size={dimension * 0.25} color={isDark ? COLORS.gray[500] : COLORS.gray[400]} />
+      <Text style={[styles.addText, isDark && { color: COLORS.gray[500] }]}>Photo</Text>
     </TouchableOpacity>
   );
 

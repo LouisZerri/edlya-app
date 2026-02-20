@@ -108,17 +108,17 @@ export default function EdlDetailScreen() {
 
   if (loading && !edl) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950">
         <Header title="État des lieux" showBack />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-500">Chargement...</Text>
+          <Text className="text-gray-500 dark:text-gray-400">Chargement...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header title="État des lieux" showBack />
 
       <ScrollView
@@ -128,14 +128,14 @@ export default function EdlDetailScreen() {
         }
       >
         {/* Hero */}
-        <View className="bg-white p-4 border-b border-gray-100">
+        <View className="bg-white dark:bg-gray-900 p-4 border-b border-gray-100 dark:border-gray-700">
           <View className="flex-row items-start">
             <View className={`w-14 h-14 rounded-xl items-center justify-center ${typeConfig?.bg || 'bg-gray-100'}`}>
               <Text className="text-3xl">{typeConfig?.icon || '📋'}</Text>
             </View>
             <View className="flex-1 ml-4">
-              <Text className="text-lg font-bold text-gray-900">{edl?.logement?.nom}</Text>
-              <Text className="text-gray-500 text-sm mt-0.5">
+              <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">{edl?.logement?.nom}</Text>
+              <Text className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
                 {edl?.logement?.adresse}, {edl?.logement?.ville}
               </Text>
               <View className="flex-row items-center gap-2 mt-2">
@@ -145,20 +145,20 @@ export default function EdlDetailScreen() {
             </View>
           </View>
           {/* Stats */}
-          <View className="flex-row items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+          <View className="flex-row items-center gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
             <View className="flex-row items-center">
               <DoorOpen size={14} color={COLORS.gray[400]} />
-              <Text className="text-sm text-gray-500 ml-1">{pieces.length} pièces</Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{pieces.length} pièces</Text>
             </View>
             <View className="flex-row items-center">
               <Camera size={14} color={COLORS.gray[400]} />
-              <Text className="text-sm text-gray-500 ml-1">{totalPhotos} photos</Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{totalPhotos} photos</Text>
             </View>
           </View>
         </View>
 
         {/* Actions */}
-        <View className="bg-white px-4 py-3 border-b border-gray-100">
+        <View className="bg-white dark:bg-gray-900 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
           <View className="flex-row justify-around">
             <IconButton
               icon={<Edit size={20} color="white" />}
@@ -195,16 +195,16 @@ export default function EdlDetailScreen() {
         <Card className="mx-4 mt-4">
           <View className="flex-row items-center mb-3">
             <User size={20} color={COLORS.primary[600]} />
-            <Text className="text-base font-semibold text-gray-800 ml-2">Locataire</Text>
+            <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">Locataire</Text>
           </View>
-          <Text className="font-medium text-gray-900">{edl?.locataireNom}</Text>
+          <Text className="font-medium text-gray-900 dark:text-gray-100">{edl?.locataireNom}</Text>
           {edl?.locataireEmail && (
-            <Text className="text-sm text-gray-500 mt-1">{edl.locataireEmail}</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">{edl.locataireEmail}</Text>
           )}
           {edl?.locataireTelephone && (
-            <Text className="text-sm text-gray-500 mt-0.5">{edl.locataireTelephone}</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{edl.locataireTelephone}</Text>
           )}
-          <Text className="text-xs text-gray-400 mt-2">
+          <Text className="text-sm text-gray-400 mt-2">
             Date: {edl?.dateRealisation ? formatDate(edl.dateRealisation) : '-'}
           </Text>
         </Card>
@@ -214,11 +214,11 @@ export default function EdlDetailScreen() {
           <Card className="mx-4 mt-4">
             <View className="flex-row items-center mb-3">
               <Pen size={20} color={COLORS.green[600]} />
-              <Text className="text-base font-semibold text-gray-800 ml-2">Signatures</Text>
+              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">Signatures</Text>
             </View>
             <View className="space-y-2">
               <View className="flex-row items-center justify-between">
-                <Text className="text-gray-600">Bailleur</Text>
+                <Text className="text-gray-600 dark:text-gray-300">Bailleur</Text>
                 {edl?.signatureBailleur ? (
                   <View className="flex-row items-center">
                     <CheckCircle size={16} color={COLORS.green[600]} />
@@ -231,7 +231,7 @@ export default function EdlDetailScreen() {
                 )}
               </View>
               <View className="flex-row items-center justify-between mt-2">
-                <Text className="text-gray-600">Locataire</Text>
+                <Text className="text-gray-600 dark:text-gray-300">Locataire</Text>
                 {edl?.signatureLocataire ? (
                   <View className="flex-row items-center">
                     <CheckCircle size={16} color={COLORS.green[600]} />
@@ -252,7 +252,7 @@ export default function EdlDetailScreen() {
           <Card className="mx-4 mt-4">
             <View className="flex-row items-center mb-3">
               <Zap size={20} color={COLORS.amber[500]} />
-              <Text className="text-base font-semibold text-gray-800 ml-2">Compteurs</Text>
+              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">Compteurs</Text>
             </View>
             {compteurs.map((compteur: CompteurNode, index: number) => {
               const config = COMPTEUR_CONFIG[compteur.type as keyof typeof COMPTEUR_CONFIG];
@@ -260,39 +260,39 @@ export default function EdlDetailScreen() {
               return (
                 <View
                   key={compteur.id}
-                  className={`bg-gray-50 rounded-xl p-3 ${index > 0 ? 'mt-2' : ''}`}
+                  className={`bg-gray-50 dark:bg-gray-900 rounded-xl p-3 ${index > 0 ? 'mt-2' : ''}`}
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center">
-                      <View className="w-8 h-8 rounded-lg bg-white items-center justify-center">
+                      <View className="w-8 h-8 rounded-lg bg-white dark:bg-gray-800 items-center justify-center">
                         <Text className="text-base">{config?.icon || '📊'}</Text>
                       </View>
-                      <Text className="text-sm font-semibold text-gray-800 ml-2">{config?.label || compteur.type}</Text>
+                      <Text className="text-sm font-semibold text-gray-800 dark:text-gray-200 ml-2">{config?.label || compteur.type}</Text>
                     </View>
                     {compteurPhotos > 0 && (
-                      <View className="flex-row items-center bg-white rounded-full px-2 py-0.5">
+                      <View className="flex-row items-center bg-white dark:bg-gray-800 rounded-full px-2 py-0.5">
                         <Camera size={10} color={COLORS.gray[500]} />
-                        <Text className="text-xs text-gray-500 ml-0.5">{compteurPhotos}</Text>
+                        <Text className="text-xs text-gray-500 dark:text-gray-400 ml-0.5">{compteurPhotos}</Text>
                       </View>
                     )}
                   </View>
                   <View className="flex-row items-baseline mt-2 gap-4">
                     <View className="flex-1">
-                      <Text className="text-xs text-gray-400">Relevé</Text>
-                      <Text className="text-lg font-bold text-gray-900">
-                        {compteur.indexValue || <Text className="text-gray-300 font-normal text-sm">Non relevé</Text>}
+                      <Text className="text-sm text-gray-400">Relevé</Text>
+                      <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        {compteur.indexValue || <Text className="text-gray-300 dark:text-gray-500 font-normal text-sm">Non relevé</Text>}
                       </Text>
                     </View>
                     {compteur.numero && (
                       <View className="flex-1">
-                        <Text className="text-xs text-gray-400">N° compteur</Text>
-                        <Text className="text-sm text-gray-700">{compteur.numero}</Text>
+                        <Text className="text-sm text-gray-400">N° compteur</Text>
+                        <Text className="text-sm text-gray-700 dark:text-gray-300">{compteur.numero}</Text>
                       </View>
                     )}
                   </View>
                   {compteur.commentaire && (
-                    <View className="mt-2 pt-2 border-t border-gray-200">
-                      <Text className="text-xs text-gray-500 italic">{compteur.commentaire}</Text>
+                    <View className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                      <Text className="text-sm text-gray-500 dark:text-gray-400 italic">{compteur.commentaire}</Text>
                     </View>
                   )}
                 </View>
@@ -306,19 +306,19 @@ export default function EdlDetailScreen() {
           <Card className="mx-4 mt-4">
             <View className="flex-row items-center mb-3">
               <Key size={20} color={COLORS.gray[600]} />
-              <Text className="text-base font-semibold text-gray-800 ml-2">Clés</Text>
+              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">Clés</Text>
             </View>
             {cles.map((cle: CleNode, index: number) => (
               <View
                 key={cle.id}
-                className={`flex-row items-center justify-between py-2.5 ${index > 0 ? 'border-t border-gray-100' : ''}`}
+                className={`flex-row items-center justify-between py-2.5 ${index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''}`}
               >
                 <View className="flex-1">
-                  <Text className="text-gray-800">
+                  <Text className="text-gray-800 dark:text-gray-200">
                     {CLE_LABELS[cle.type as keyof typeof CLE_LABELS] || cle.type}
                   </Text>
                   {cle.commentaire && (
-                    <Text className="text-xs text-gray-400 mt-0.5">{cle.commentaire}</Text>
+                    <Text className="text-sm text-gray-400 mt-0.5">{cle.commentaire}</Text>
                   )}
                 </View>
                 <Badge label={`x${cle.nombre}`} variant="gray" />
@@ -331,7 +331,7 @@ export default function EdlDetailScreen() {
         <View className="mx-4 mt-4">
           <View className="flex-row items-center mb-3">
             <DoorOpen size={20} color={COLORS.primary[600]} />
-            <Text className="text-base font-semibold text-gray-800 ml-2">
+            <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">
               Pièces ({pieces.length})
             </Text>
           </View>
@@ -353,7 +353,7 @@ export default function EdlDetailScreen() {
                   className="flex-row items-center justify-between"
                 >
                   <View className="flex-row items-center flex-1">
-                    <Text className="font-semibold text-gray-900">{piece.nom}</Text>
+                    <Text className="font-semibold text-gray-900 dark:text-gray-100">{piece.nom}</Text>
                     <View className="flex-row items-center gap-1.5 ml-2">
                       {piecePhotos > 0 && (
                         <View className="flex-row items-center bg-primary-50 rounded-full px-1.5 py-0.5">
@@ -378,21 +378,21 @@ export default function EdlDetailScreen() {
                   const hasDegradations = Array.isArray(element.degradations) && element.degradations.length > 0;
 
                   return (
-                    <View key={element.id} className="mt-2 pt-2 border-t border-gray-50">
+                    <View key={element.id} className="mt-2 pt-2 border-t border-gray-50 dark:border-gray-800">
                       <View className="flex-row items-center justify-between">
-                        <Text className="text-sm text-gray-700 flex-1">{element.nom}</Text>
+                        <Text className="text-sm text-gray-700 dark:text-gray-300 flex-1">{element.nom}</Text>
                         <Badge
                           label={ELEMENT_ETAT_LABELS[element.etat as keyof typeof ELEMENT_ETAT_LABELS] || element.etat}
                           variant={getEtatVariant(element.etat)}
                         />
                       </View>
                       {hasObservations && (
-                        <Text className="text-xs text-gray-400 mt-1 italic">{element.observations}</Text>
+                        <Text className="text-sm text-gray-400 mt-1 italic">{element.observations}</Text>
                       )}
                       {hasDegradations && (
                         <View className="flex-row flex-wrap gap-1 mt-1">
                           {element.degradations!.map((deg, i) => (
-                            <View key={i} className="bg-red-50 rounded px-1.5 py-0.5">
+                            <View key={i} className="bg-red-50 dark:bg-red-900/30 rounded px-1.5 py-0.5">
                               <Text className="text-xs text-red-600">{deg}</Text>
                             </View>
                           ))}
@@ -418,7 +418,7 @@ export default function EdlDetailScreen() {
                 {hasMore && !isExpanded && (
                   <TouchableOpacity
                     onPress={() => togglePiece(piece.id)}
-                    className="mt-2 pt-2 border-t border-gray-50"
+                    className="mt-2 pt-2 border-t border-gray-50 dark:border-gray-800"
                   >
                     <Text className="text-xs text-primary-600 text-center font-medium">
                       Voir les {elements.length - 3} autres éléments
@@ -428,7 +428,7 @@ export default function EdlDetailScreen() {
                 {hasMore && isExpanded && (
                   <TouchableOpacity
                     onPress={() => togglePiece(piece.id)}
-                    className="mt-2 pt-2 border-t border-gray-50"
+                    className="mt-2 pt-2 border-t border-gray-50 dark:border-gray-800"
                   >
                     <Text className="text-xs text-primary-600 text-center font-medium">
                       Réduire
@@ -445,9 +445,9 @@ export default function EdlDetailScreen() {
           <Card className="mx-4 mt-2">
             <View className="flex-row items-center mb-2">
               <MessageSquare size={18} color={COLORS.gray[500]} />
-              <Text className="text-base font-semibold text-gray-800 ml-2">Observations</Text>
+              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">Observations</Text>
             </View>
-            <Text className="text-sm text-gray-600">{edl.observationsGenerales}</Text>
+            <Text className="text-sm text-gray-600 dark:text-gray-300">{edl.observationsGenerales}</Text>
           </Card>
         )}
 
@@ -455,7 +455,7 @@ export default function EdlDetailScreen() {
         <View className="mx-4 mt-6 mb-8">
           <TouchableOpacity
             onPress={handleDelete}
-            className="flex-row items-center justify-center py-4 rounded-xl border border-red-200 bg-red-50"
+            className="flex-row items-center justify-center py-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800"
           >
             <Trash2 size={20} color={COLORS.red[600]} />
             <Text className="text-red-600 font-medium ml-2">Supprimer cet état des lieux</Text>

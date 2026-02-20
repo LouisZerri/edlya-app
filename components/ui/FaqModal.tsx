@@ -62,11 +62,11 @@ function FaqItemComponent({ item }: { item: FaqItem }) {
   return (
     <TouchableOpacity
       onPress={() => setExpanded(!expanded)}
-      className="mb-3 bg-white rounded-xl border border-gray-100 overflow-hidden"
+      className="mb-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden"
       activeOpacity={0.7}
     >
       <View className="flex-row items-center justify-between p-4">
-        <Text className="flex-1 font-medium text-gray-800 pr-3">{item.question}</Text>
+        <Text className="flex-1 font-medium text-gray-800 dark:text-gray-200 pr-3">{item.question}</Text>
         {expanded ? (
           <ChevronUp size={20} color={COLORS.gray[400]} />
         ) : (
@@ -75,8 +75,8 @@ function FaqItemComponent({ item }: { item: FaqItem }) {
       </View>
       {expanded && (
         <View className="px-4 pb-4 pt-0">
-          <View className="h-px bg-gray-100 mb-3" />
-          <Text className="text-gray-600 text-sm leading-5">{item.answer}</Text>
+          <View className="h-px bg-gray-100 dark:bg-gray-700 mb-3" />
+          <Text className="text-gray-600 dark:text-gray-300 text-sm leading-5">{item.answer}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -91,16 +91,16 @@ export function FaqModal({ visible, onClose }: FaqModalProps) {
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
         {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-4 bg-white border-b border-gray-100">
+        <View className="flex-row items-center justify-between px-4 py-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
           <View className="flex-row items-center">
             <HelpCircle size={24} color={COLORS.primary[600]} />
-            <Text className="text-xl font-bold text-gray-900 ml-3">FAQ</Text>
+            <Text className="text-xl font-bold text-gray-900 dark:text-gray-100 ml-3">FAQ</Text>
           </View>
           <TouchableOpacity
             onPress={onClose}
-            className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+            className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center"
           >
             <X size={20} color={COLORS.gray[600]} />
           </TouchableOpacity>
@@ -108,7 +108,7 @@ export function FaqModal({ visible, onClose }: FaqModalProps) {
 
         {/* Content */}
         <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
-          <Text className="text-gray-500 text-sm mb-4">
+          <Text className="text-gray-500 dark:text-gray-400 text-sm mb-4">
             Questions fréquemment posées sur l'utilisation d'Edlya
           </Text>
 

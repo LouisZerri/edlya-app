@@ -29,7 +29,7 @@ export function EdlClesTab({
             <View className="flex-row items-center">
               <Text className="text-2xl mr-3">🔑</Text>
               <View className="flex-1">
-                <Text className="font-medium text-gray-900">{cleLabel}</Text>
+                <Text className="font-medium text-gray-900 dark:text-gray-100">{cleLabel}</Text>
               </View>
               <View className="flex-row items-center">
                 <TouchableOpacity
@@ -39,11 +39,11 @@ export function EdlClesTab({
                       [cle.id]: Math.max(0, (prev[cle.id] || 0) - 1),
                     }))
                   }
-                  className="w-10 h-10 bg-gray-100 rounded-lg items-center justify-center"
+                  className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg items-center justify-center"
                 >
-                  <Text className="text-lg font-bold text-gray-600">-</Text>
+                  <Text className="text-lg font-bold text-gray-600 dark:text-gray-300">-</Text>
                 </TouchableOpacity>
-                <Text className="mx-4 text-lg font-bold text-gray-900">
+                <Text className="mx-4 text-lg font-bold text-gray-900 dark:text-gray-100">
                   {cleValues[cle.id] || 0}
                 </Text>
                 <TouchableOpacity
@@ -86,22 +86,22 @@ export function EdlClesTab({
 
       {localCles.length === 0 && (
         <Card className="mb-4">
-          <Text className="text-gray-500 text-center py-4">
+          <Text className="text-gray-500 dark:text-gray-400 text-center py-4">
             Aucune clé configurée
           </Text>
         </Card>
       )}
 
-      <Text className="text-sm font-medium text-gray-700 mb-2 mt-4">Ajouter une clé</Text>
+      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 mt-4">Ajouter une clé</Text>
       <View className="flex-row flex-wrap gap-2">
         {(Object.keys(CLE_LABELS) as CleType[]).map((type) => (
           <TouchableOpacity
             key={type}
             onPress={() => onAddCle(type)}
-            className="bg-gray-100 rounded-lg px-3 py-2 flex-row items-center"
+            className="bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2 flex-row items-center"
           >
             <Text className="mr-1">🔑</Text>
-            <Text className="text-gray-700 text-sm">{CLE_LABELS[type]}</Text>
+            <Text className="text-gray-700 dark:text-gray-300 text-sm">{CLE_LABELS[type]}</Text>
           </TouchableOpacity>
         ))}
       </View>

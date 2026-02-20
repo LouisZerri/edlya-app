@@ -201,17 +201,17 @@ export default function EditEdlScreen() {
 
   if (loading && !edl) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
         <Header title="Modifier EDL" showBack />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-500">Chargement...</Text>
+          <Text className="text-gray-500 dark:text-gray-400">Chargement...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header title="Modifier EDL" showBack />
 
       <EdlTabBar activeTab={activeTab} onTabChange={setActiveTab} />
@@ -227,7 +227,7 @@ export default function EditEdlScreen() {
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
 
-      <View className="p-4 bg-white border-t border-gray-100">
+      <View className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
         <AutoSaveIndicator status={autoSaveStatus} />
         <Button
           label="Enregistrer et quitter"

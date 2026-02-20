@@ -119,6 +119,22 @@ export default function ImportScreen() {
     setCreatingLogement(true);
     try {
       const logementData = extractedData.logement;
+
+      // Normaliser le type (f1/f2/t3 → appartement, maison_* → maison)
+      let normalizedType: string | null = logementData.type?.toLowerCase().trim() || null;
+      if (normalizedType) {
+        const validTypes = ['appartement', 'maison', 'studio', 'loft', 'chambre', 'commerce', 'bureau', 'parking', 'autre'];
+        if (!validTypes.includes(normalizedType)) {
+          if (/^[ft]\d$/i.test(normalizedType)) {
+            normalizedType = 'appartement';
+          } else if (/^maison/i.test(normalizedType)) {
+            normalizedType = 'maison';
+          } else {
+            normalizedType = null;
+          }
+        }
+      }
+
       const result = await createLogementMutation({
         variables: {
           input: {
@@ -126,9 +142,9 @@ export default function ImportScreen() {
             adresse: logementData.adresse || '',
             codePostal: logementData.code_postal || '',
             ville: logementData.ville || '',
-            type: logementData.type || null,
+            type: normalizedType,
             surface: logementData.surface ? parseFloat(String(logementData.surface)) : null,
-            nbPieces: 1,
+            nbPieces: extractedData.pieces?.length || 1,
           },
         },
       });
@@ -171,10 +187,10 @@ export default function ImportScreen() {
     <>
       <TouchableOpacity
         onPress={handlePickDocument}
-        className="flex-1 max-h-64 border-2 border-dashed border-primary-300 bg-primary-50 rounded-2xl items-center justify-center"
+        className="flex-1 max-h-64 border-2 border-dashed border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-950 rounded-2xl items-center justify-center"
         activeOpacity={0.7}
       >
-        <View className="w-16 h-16 bg-primary-100 rounded-full items-center justify-center mb-4">
+        <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900 rounded-full items-center justify-center mb-4">
           {selectedFile ? (
             <FileText size={32} color={COLORS.primary[600]} />
           ) : (
@@ -183,13 +199,13 @@ export default function ImportScreen() {
         </View>
         {selectedFile ? (
           <>
-            <Text className="text-primary-700 font-medium text-center px-4">{selectedFile.name}</Text>
-            <Text className="text-primary-500 text-sm mt-2">Appuyez pour changer</Text>
+            <Text className="text-primary-700 dark:text-primary-300 font-medium text-center px-4">{selectedFile.name}</Text>
+            <Text className="text-primary-500 dark:text-primary-400 text-sm mt-2">Appuyez pour changer</Text>
           </>
         ) : (
           <>
-            <Text className="text-primary-700 font-medium">Déposez votre PDF ici</Text>
-            <Text className="text-primary-500 text-sm mt-1">ou cliquez pour sélectionner</Text>
+            <Text className="text-primary-700 dark:text-primary-300 font-medium">Déposez votre PDF ici</Text>
+            <Text className="text-primary-500 dark:text-primary-400 text-sm mt-1">ou cliquez pour sélectionner</Text>
             <View className="mt-4 px-4 py-2 bg-primary-600 rounded-lg">
               <Text className="text-white font-medium">Choisir un fichier</Text>
             </View>
@@ -197,12 +213,12 @@ export default function ImportScreen() {
         )}
       </TouchableOpacity>
 
-      <View className="mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
+      <View className="mt-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700">
         <View className="flex-row">
           <Lightbulb size={20} color={COLORS.amber[600]} />
           <View className="flex-1 ml-3">
-            <Text className="font-medium text-amber-800">Astuce</Text>
-            <Text className="text-amber-700 text-sm mt-1">
+            <Text className="font-medium text-amber-800 dark:text-amber-300">Astuce</Text>
+            <Text className="text-amber-700 dark:text-amber-400 text-sm mt-1">
               Notre IA analyse automatiquement votre PDF d'état des lieux existant et extrait
               les informations pour créer un nouvel EDL numérique.
             </Text>
@@ -226,19 +242,19 @@ export default function ImportScreen() {
   const renderPreviewStep = () => (
     <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
       {/* Success Banner + Edit Toggle */}
-      <View className="bg-green-50 border border-green-200 rounded-xl p-4 flex-row items-center mb-4">
-        <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
+      <View className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-xl p-4 flex-row items-center mb-4">
+        <View className="w-10 h-10 bg-green-100 dark:bg-green-800/50 rounded-full items-center justify-center">
           <Check size={24} color={COLORS.green[600]} />
         </View>
         <View className="flex-1 ml-3">
-          <Text className="font-semibold text-green-800">Analyse terminée !</Text>
-          <Text className="text-green-700 text-sm">
+          <Text className="font-semibold text-green-800 dark:text-green-300">Analyse terminée !</Text>
+          <Text className="text-green-700 dark:text-green-400 text-sm">
             {editor.isEditingPreview ? 'Modifiez les données si nécessaire' : 'Vérifiez et modifiez les données extraites'}
           </Text>
         </View>
         <TouchableOpacity
           onPress={() => editor.setIsEditingPreview(!editor.isEditingPreview)}
-          className={`p-2 rounded-lg ${editor.isEditingPreview ? 'bg-primary-100' : 'bg-green-100'}`}
+          className={`p-2 rounded-lg ${editor.isEditingPreview ? 'bg-primary-100 dark:bg-primary-900/30' : 'bg-green-100 dark:bg-green-800/50'}`}
         >
           <Edit3 size={20} color={editor.isEditingPreview ? COLORS.primary[600] : COLORS.green[700]} />
         </TouchableOpacity>
@@ -300,8 +316,8 @@ export default function ImportScreen() {
 
       {/* Info photos */}
       {extractedImages.length > 0 && (
-        <View className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-          <Text className="text-blue-700 text-sm text-center">
+        <View className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded-xl">
+          <Text className="text-blue-700 dark:text-blue-300 text-sm text-center">
             {extractedImages.length} photo{extractedImages.length > 1 ? 's' : ''} extraite{extractedImages.length > 1 ? 's' : ''} du PDF — elles seront associées aux éléments lors de la création.
           </Text>
         </View>
@@ -317,15 +333,15 @@ export default function ImportScreen() {
       <View className="w-20 h-20 bg-primary-100 rounded-full items-center justify-center mb-4">
         <ActivityIndicator size="large" color={COLORS.primary[600]} />
       </View>
-      <Text className="text-xl font-semibold text-gray-800">Création en cours...</Text>
-      <Text className="text-gray-500 text-center mt-2 px-8">
+      <Text className="text-xl font-semibold text-gray-800 dark:text-gray-200">Création en cours...</Text>
+      <Text className="text-gray-500 dark:text-gray-400 text-center mt-2 px-8">
         L'EDL est en cours de création avec les données extraites du PDF.
       </Text>
     </View>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header
         title={
           step === 'upload' ? "Importer un PDF" :
@@ -356,13 +372,13 @@ export default function ImportScreen() {
 
       {/* Footer for preview step */}
       {step === 'preview' && (
-        <View className="p-4 bg-white border-t border-gray-100">
+        <View className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
           <View className="flex-row gap-3">
             <TouchableOpacity
               onPress={resetImport}
-              className="flex-1 py-3 border border-gray-300 rounded-xl items-center"
+              className="flex-1 py-3 border border-gray-300 dark:border-gray-600 rounded-xl items-center"
             >
-              <Text className="text-gray-700 font-medium">Recommencer</Text>
+              <Text className="text-gray-700 dark:text-gray-300 font-medium">Recommencer</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={selectedLogement ? handleCreateEdl : () => setStep('logement')}
@@ -381,13 +397,13 @@ export default function ImportScreen() {
 
       {/* Footer for logement step */}
       {step === 'logement' && (logements.length > 0 || extractedData?.logement) && (
-        <View className="p-4 bg-white border-t border-gray-100">
+        <View className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
           <View className="flex-row gap-3">
             <TouchableOpacity
               onPress={() => setStep('preview')}
-              className="flex-1 py-3 border border-gray-300 rounded-xl items-center"
+              className="flex-1 py-3 border border-gray-300 dark:border-gray-600 rounded-xl items-center"
             >
-              <Text className="text-gray-700 font-medium">Retour</Text>
+              <Text className="text-gray-700 dark:text-gray-300 font-medium">Retour</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCreateEdl}

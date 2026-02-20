@@ -52,11 +52,11 @@ export const ElementCard = React.memo(function ElementCard({
     : [];
 
   return (
-    <View className="py-3 border-t border-gray-100">
+    <View className="py-3 border-t border-gray-100 dark:border-gray-700">
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-1">
-          <Text className="font-medium text-gray-900">{element.nom}</Text>
-          <Text className="text-xs text-gray-400">
+          <Text className="font-medium text-gray-900 dark:text-gray-100">{element.nom}</Text>
+          <Text className="text-sm text-gray-400">
             {ELEMENT_TYPE_LABELS[element.type as ElementType] || element.type}
           </Text>
         </View>
@@ -82,7 +82,7 @@ export const ElementCard = React.memo(function ElementCard({
 
       {/* Dégradations */}
       <View className="mt-3">
-        <Text className="text-sm font-medium text-gray-700 mb-2">Dégradations</Text>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dégradations</Text>
         <View className="flex-row flex-wrap gap-2">
           {suggestions.map((deg) => (
             <TouchableOpacity
@@ -90,15 +90,15 @@ export const ElementCard = React.memo(function ElementCard({
               onPress={() => toggleDegradation(element.id, deg)}
               className={`px-3 py-1.5 rounded-full border ${
                 currentDegradations.includes(deg)
-                  ? 'bg-red-100 border-red-300'
-                  : 'bg-gray-50 border-gray-200'
+                  ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700'
+                  : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-600'
               }`}
             >
               <Text
                 className={`text-xs ${
                   currentDegradations.includes(deg)
-                    ? 'text-red-700 font-medium'
-                    : 'text-gray-600'
+                    ? 'text-red-700 dark:text-red-300 font-medium'
+                    : 'text-gray-600 dark:text-gray-300'
                 }`}
               >
                 {deg}
@@ -107,9 +107,9 @@ export const ElementCard = React.memo(function ElementCard({
           ))}
           <TouchableOpacity
             onPress={() => addCustomDegradation(element.id)}
-            className="px-3 py-1.5 rounded-full border border-dashed border-gray-300 bg-white"
+            className="px-3 py-1.5 rounded-full border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900"
           >
-            <Text className="text-xs text-gray-500">+ Autre</Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400">+ Autre</Text>
           </TouchableOpacity>
         </View>
         {currentDegradations.filter(d => !suggestions.includes(d)).length > 0 && (
@@ -120,9 +120,9 @@ export const ElementCard = React.memo(function ElementCard({
                 <TouchableOpacity
                   key={deg}
                   onPress={() => toggleDegradation(element.id, deg)}
-                  className="px-3 py-1.5 rounded-full bg-red-100 border border-red-300"
+                  className="px-3 py-1.5 rounded-full bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700"
                 >
-                  <Text className="text-xs text-red-700 font-medium">{deg}</Text>
+                  <Text className="text-xs text-red-700 dark:text-red-300 font-medium">{deg}</Text>
                 </TouchableOpacity>
               ))}
           </View>
@@ -176,7 +176,7 @@ export const ElementCard = React.memo(function ElementCard({
           onPress={() => onAnalyze(element)}
           disabled={isAnalyzing}
           className={`mt-3 flex-row items-center justify-center py-2.5 rounded-lg ${
-            isAnalyzing ? 'bg-gray-100' : 'bg-purple-50 border border-purple-200'
+            isAnalyzing ? 'bg-gray-100 dark:bg-gray-800' : 'bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700'
           }`}
         >
           <Sparkles size={16} color={isAnalyzing ? COLORS.gray[400] : '#9333EA'} />

@@ -29,50 +29,61 @@ export function ImportPreviewCompteurs({
     <Card className="mb-4">
       <View className="flex-row items-center mb-3">
         <Zap size={20} color={COLORS.amber[500]} />
-        <Text className="font-semibold text-gray-800 ml-2">
+        <Text className="font-semibold text-gray-800 dark:text-gray-200 ml-2">
           Compteurs ({extractedData.compteurs.length})
         </Text>
       </View>
-      {extractedData.compteurs.map((compteur, idx) => (
-        <View key={idx} className="py-2 border-b border-gray-100 last:border-0">
-          <View className="flex-row items-center justify-between">
+      {extractedData.compteurs.map((compteur, idx) => {
+        const config = COMPTEUR_CONFIG[compteur.type as CompteurType];
+        return (
+          <View key={idx} className="py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
             {isEditing ? (
-              <>
-                <View className="flex-1 mr-2">
-                  <Text className="text-gray-700 text-sm font-medium">
-                    {COMPTEUR_CONFIG[compteur.type as CompteurType]?.icon} {COMPTEUR_CONFIG[compteur.type as CompteurType]?.label || compteur.type}
-                  </Text>
-                  <TextInput
-                    value={compteur.index || ''}
-                    onChangeText={(t) => onUpdate(d => {
-                      const compteurs = [...(d.compteurs || [])];
-                      compteurs[idx] = { ...compteurs[idx], index: t };
-                      return { ...d, compteurs };
-                    })}
-                    className="border border-gray-200 rounded px-2 py-1 text-sm text-gray-600 bg-white mt-1"
-                    placeholder="Index..."
-                  />
+              <View>
+                <View className="flex-row items-center justify-between mb-2">
+                  <View className="flex-row items-center">
+                    <Text className="text-lg mr-2">{config?.icon || '📊'}</Text>
+                    <Text className="text-gray-700 dark:text-gray-200 font-medium">
+                      {config?.label || compteur.type}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => removeCompteur(idx)} className="p-1">
+                    <Trash2 size={16} color={COLORS.red[500]} />
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={() => removeCompteur(idx)} className="p-1">
-                  <Trash2 size={16} color={COLORS.red[500]} />
-                </TouchableOpacity>
-              </>
+                <TextInput
+                  value={compteur.index || ''}
+                  onChangeText={(t) => onUpdate(d => {
+                    const compteurs = [...(d.compteurs || [])];
+                    compteurs[idx] = { ...compteurs[idx], index: t };
+                    return { ...d, compteurs };
+                  })}
+                  className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800"
+                  style={{ includeFontPadding: false }}
+                  placeholder="Index du compteur..."
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
             ) : (
-              <>
-                <Text className="text-gray-700">
-                  {COMPTEUR_CONFIG[compteur.type as CompteurType]?.icon} {COMPTEUR_CONFIG[compteur.type as CompteurType]?.label || compteur.type}
-                </Text>
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Text className="text-lg mr-2">{config?.icon || '📊'}</Text>
+                  <Text className="text-gray-700 dark:text-gray-200 font-medium">
+                    {config?.label || compteur.type}
+                  </Text>
+                </View>
                 {compteur.index && (
-                  <Text className="text-gray-500 text-sm">{compteur.index}</Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-sm font-mono">{compteur.index}</Text>
                 )}
-              </>
+              </View>
+            )}
+            {!isEditing && compteur.photo_indices && compteur.photo_indices.length > 0 && importId && (
+              <View className="mt-2">
+                <ImportPhotoThumbnails photoIndices={compteur.photo_indices} importId={importId} token={token} />
+              </View>
             )}
           </View>
-          {!isEditing && compteur.photo_indices && compteur.photo_indices.length > 0 && importId && (
-            <ImportPhotoThumbnails photoIndices={compteur.photo_indices} importId={importId} token={token} />
-          )}
-        </View>
-      ))}
+        );
+      })}
     </Card>
   );
 }

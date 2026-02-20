@@ -1,10 +1,11 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Trash2 } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 import { Card } from '../ui';
 import { PhotoGallery } from '../photo';
 import { COMPTEUR_CONFIG, CompteurType, LocalPhoto } from '../../types';
 import { CompteurNode } from '../../types/graphql';
-import { COLORS } from '../../utils/constants';
+import { COLORS, DARK_COLORS } from '../../utils/constants';
 
 interface EdlCompteursTabProps {
   localCompteurs: CompteurNode[];
@@ -33,6 +34,10 @@ export function EdlCompteursTab({
   onDeleteCompteur,
   onAddCompteur,
 }: EdlCompteursTabProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const darkInput = isDark ? { backgroundColor: DARK_COLORS.inputBg, borderColor: DARK_COLORS.inputBorder, color: DARK_COLORS.text } : {};
+
   return (
     <View className="p-4">
       {localCompteurs.map((compteur) => {
@@ -42,10 +47,10 @@ export function EdlCompteursTab({
             {/* Header : icône + label + delete */}
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
-                <View className="w-9 h-9 rounded-lg bg-gray-100 items-center justify-center mr-2.5">
+                <View className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 items-center justify-center mr-2.5">
                   <Text className="text-lg">{config?.icon || '📊'}</Text>
                 </View>
-                <Text className="text-base font-semibold text-gray-800">
+                <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
                   {config?.label || compteur.type}
                 </Text>
               </View>
@@ -60,7 +65,7 @@ export function EdlCompteursTab({
             {/* N° compteur + Relevé côte à côte */}
             <View className="flex-row gap-3 mb-2">
               <View className="flex-1">
-                <Text className="text-xs font-medium text-gray-500 mb-1">N° compteur</Text>
+                <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">N° compteur</Text>
                 <TextInput
                   value={compteurNumeros[compteur.id] || ''}
                   onChangeText={(text) =>
@@ -68,11 +73,11 @@ export function EdlCompteursTab({
                   }
                   placeholder="09 435 672 108"
                   placeholderTextColor="#9CA3AF"
-                  style={styles.input}
+                  style={[styles.input, darkInput]}
                 />
               </View>
               <View className="flex-1">
-                <Text className="text-xs font-medium text-gray-500 mb-1">Relevé</Text>
+                <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Relevé</Text>
                 <TextInput
                   value={compteurValues[compteur.id] || ''}
                   onChangeText={(text) =>
@@ -81,14 +86,14 @@ export function EdlCompteursTab({
                   placeholder="00000"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
-                  style={styles.input}
+                  style={[styles.input, darkInput]}
                 />
               </View>
             </View>
 
             {/* Observations */}
             <View className="mb-2">
-              <Text className="text-xs font-medium text-gray-500 mb-1">Observations</Text>
+              <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Observations</Text>
               <TextInput
                 value={compteurComments[compteur.id] || ''}
                 onChangeText={(text) =>
@@ -97,7 +102,7 @@ export function EdlCompteursTab({
                 placeholder="Emplacement, état, remarques..."
                 placeholderTextColor="#9CA3AF"
                 multiline
-                style={[styles.input, styles.multiline]}
+                style={[styles.input, styles.multiline, darkInput]}
               />
             </View>
 
@@ -118,22 +123,22 @@ export function EdlCompteursTab({
 
       {localCompteurs.length === 0 && (
         <Card className="mb-4">
-          <Text className="text-gray-500 text-center py-4">
+          <Text className="text-gray-500 dark:text-gray-400 text-center py-4">
             Aucun compteur configuré
           </Text>
         </Card>
       )}
 
-      <Text className="text-sm font-medium text-gray-700 mb-2 mt-2">Ajouter un compteur</Text>
+      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 mt-2">Ajouter un compteur</Text>
       <View className="flex-row flex-wrap gap-2">
         {(Object.keys(COMPTEUR_CONFIG) as CompteurType[]).map((type) => (
           <TouchableOpacity
             key={type}
             onPress={() => onAddCompteur(type)}
-            className="bg-gray-100 rounded-lg px-3 py-2 flex-row items-center"
+            className="bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2 flex-row items-center"
           >
             <Text className="mr-1">{COMPTEUR_CONFIG[type].icon}</Text>
-            <Text className="text-gray-700 text-sm">{COMPTEUR_CONFIG[type].label}</Text>
+            <Text className="text-gray-700 dark:text-gray-300 text-sm">{COMPTEUR_CONFIG[type].label}</Text>
           </TouchableOpacity>
         ))}
       </View>

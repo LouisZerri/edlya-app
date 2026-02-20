@@ -25,7 +25,7 @@ export function RecentEdlList({ edls }: RecentEdlListProps) {
   return (
     <View className="px-4 mt-6">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-lg font-semibold text-gray-800">États des lieux récents</Text>
+        <Text className="text-lg font-semibold text-gray-800 dark:text-gray-200">États des lieux récents</Text>
         <TouchableOpacity
           onPress={() => router.push('/(tabs)/edl')}
           className="py-2 px-3 -mr-3"
@@ -36,7 +36,7 @@ export function RecentEdlList({ edls }: RecentEdlListProps) {
 
       {edls.length === 0 ? (
         <Card>
-          <Text className="text-gray-500 text-center py-4">
+          <Text className="text-gray-500 dark:text-gray-400 text-center py-4">
             Aucun état des lieux pour le moment
           </Text>
         </Card>
@@ -59,10 +59,10 @@ export function RecentEdlList({ edls }: RecentEdlListProps) {
                   </View>
 
                   <View className="flex-1 ml-3">
-                    <Text className="text-base font-semibold text-gray-900">
+                    <Text className="text-base font-semibold text-gray-900 dark:text-gray-100">
                       {item.logement?.nom || 'Logement'}
                     </Text>
-                    <Text className="text-sm text-gray-500 mt-0.5">{item.locataireNom}</Text>
+                    <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{item.locataireNom}</Text>
                     <Text className="text-sm text-gray-400 mt-1">
                       {formatDate(item.dateRealisation)}
                     </Text>

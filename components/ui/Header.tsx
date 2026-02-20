@@ -14,7 +14,7 @@ export function Header({ title, showBack = false, rightAction }: HeaderProps) {
   const router = useRouter();
 
   return (
-    <View className="h-14 bg-white border-b border-gray-100 flex-row items-center px-4">
+    <View className="h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 flex-row items-center px-4">
       {showBack ? (
         <TouchableOpacity
           onPress={() => router.back()}
@@ -26,7 +26,7 @@ export function Header({ title, showBack = false, rightAction }: HeaderProps) {
         <View className="w-10" />
       )}
 
-      <Text className="flex-1 text-center text-lg font-semibold text-gray-900">
+      <Text className="flex-1 text-center text-lg font-semibold text-gray-900 dark:text-gray-100">
         {title}
       </Text>
 

@@ -32,7 +32,7 @@ export function IconButton({
       <View className={`p-3 rounded-xl ${variantStyles[variant]}`}>
         {icon}
       </View>
-      <Text className="text-xs text-gray-600 mt-1.5 text-center">{label}</Text>
+      <Text className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 text-center">{label}</Text>
     </TouchableOpacity>
   );
 }

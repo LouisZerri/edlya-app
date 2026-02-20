@@ -75,22 +75,22 @@ export default function ResetPasswordScreen() {
   // Pas de token
   if (!token) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
         <View className="flex-1 px-6 pt-12">
           <TouchableOpacity onPress={() => router.back()} className="mb-8">
             <ArrowLeft size={24} color={COLORS.gray[700]} />
           </TouchableOpacity>
 
           <View className="flex-1 items-center justify-center -mt-20">
-            <View className="w-20 h-20 bg-red-100 rounded-full items-center justify-center mb-6">
+            <View className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full items-center justify-center mb-6">
               <AlertCircle size={40} color={COLORS.red[600]} />
             </View>
 
-            <Text className="text-2xl font-bold text-gray-900 text-center mb-3">
+            <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-3">
               Lien invalide
             </Text>
 
-            <Text className="text-gray-500 text-center mb-8 px-4">
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-8 px-4">
               Ce lien de réinitialisation est invalide ou a expiré.
             </Text>
 
@@ -109,18 +109,18 @@ export default function ResetPasswordScreen() {
   // Succès
   if (resetSuccess) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
         <View className="flex-1 px-6 pt-12">
           <View className="flex-1 items-center justify-center -mt-20">
-            <View className="w-20 h-20 bg-green-100 rounded-full items-center justify-center mb-6">
+            <View className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full items-center justify-center mb-6">
               <CheckCircle size={40} color={COLORS.green[600]} />
             </View>
 
-            <Text className="text-2xl font-bold text-gray-900 text-center mb-3">
+            <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-3">
               Mot de passe modifié !
             </Text>
 
-            <Text className="text-gray-500 text-center mb-8 px-4">
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-8 px-4">
               Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.
             </Text>
 
@@ -137,7 +137,7 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -157,17 +157,17 @@ export default function ResetPasswordScreen() {
               </View>
             </View>
 
-            <Text className="text-2xl font-bold text-gray-900 mb-2">
+            <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               Nouveau mot de passe
             </Text>
 
-            <Text className="text-gray-500 mb-8">
+            <Text className="text-gray-500 dark:text-gray-400 mb-8">
               Choisissez un nouveau mot de passe sécurisé d'au moins 8 caractères.
             </Text>
 
             {errorMessage && (
-              <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <Text className="text-red-700 text-sm">{errorMessage}</Text>
+              <View className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4">
+                <Text className="text-red-700 dark:text-red-300 text-sm">{errorMessage}</Text>
               </View>
             )}
 

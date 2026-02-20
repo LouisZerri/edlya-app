@@ -55,17 +55,17 @@ export default function LogementsScreen() {
         </View>
 
         <View className="flex-1 ml-3">
-          <Text className="font-semibold text-gray-900">{item.nom}</Text>
+          <Text className="font-semibold text-gray-900 dark:text-gray-100">{item.nom}</Text>
           <View className="flex-row items-center mt-1">
             <MapPin size={12} color={COLORS.gray[400]} />
-            <Text className="text-sm text-gray-500 ml-1">{item.adresse}</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1 flex-1" numberOfLines={1}>{item.adresse}</Text>
           </View>
-          <Text className="text-xs text-gray-400 mt-0.5">{item.ville}</Text>
+          <Text className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{item.ville}</Text>
         </View>
 
         <View className="items-end mr-2">
           {item.surface && (
-            <Text className="text-xs text-gray-500">📐 {formatSurface(item.surface)}</Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400">📐 {formatSurface(item.surface)}</Text>
           )}
           <Text className="text-xs text-gray-400 mt-0.5">
             📋 EDL
@@ -79,7 +79,7 @@ export default function LogementsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header
         title="Mes logements"
         rightAction={
@@ -89,7 +89,7 @@ export default function LogementsScreen() {
         }
       />
 
-      <View className="px-4 py-3 bg-white border-b border-gray-100">
+      <View className="px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
         <SearchBar
           value={search}
           onChangeText={setSearch}
@@ -108,7 +108,7 @@ export default function LogementsScreen() {
         ListEmptyComponent={
           !loading ? (
             <Card>
-              <Text className="text-gray-500 text-center py-8">
+              <Text className="text-gray-500 dark:text-gray-400 text-center py-8">
                 {search.trim()
                   ? `Aucun logement trouvé pour "${search}"`
                   : 'Aucun logement pour le moment.\nCréez votre premier logement !'}

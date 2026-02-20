@@ -8,7 +8,7 @@ interface CardProps {
 }
 
 export function Card({ children, onPress, className = '' }: CardProps) {
-  const baseStyles = `bg-white p-4 rounded-xl border border-gray-100 ${className}`;
+  const baseStyles = `bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-700 ${className}`;
 
   if (onPress) {
     return (

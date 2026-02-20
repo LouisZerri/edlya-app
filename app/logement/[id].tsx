@@ -1,16 +1,37 @@
-import { View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useState, useCallback } from 'react';
-import { MapPin, Ruler, DoorOpen, Trash2, Edit3, Save, X } from 'lucide-react-native';
-import { Header, Card, Badge, Button } from '../../components/ui';
+import { MapPin, Ruler, DoorOpen, Trash2, Edit3, Save, X, Home, Plus, FileText, ChevronRight, Calendar } from 'lucide-react-native';
+import { Header, Card, Badge, Input, Select, Button } from '../../components/ui';
 import { GET_LOGEMENT, GET_LOGEMENTS } from '../../graphql/queries/logements';
-import { UPDATE_LOGEMENT } from '../../graphql/mutations/logements';
-import { DELETE_LOGEMENT } from '../../graphql/mutations/logements';
+import { UPDATE_LOGEMENT, DELETE_LOGEMENT } from '../../graphql/mutations/logements';
 import { COLORS } from '../../utils/constants';
-import { formatSurface } from '../../utils/format';
+import { formatSurface, formatDate } from '../../utils/format';
+import { STATUT_BADGE, TYPE_CONFIG, EdlType, EdlStatut } from '../../types';
 import { useToastStore } from '../../stores/toastStore';
+
+const TYPE_OPTIONS = [
+  { value: '', label: 'Non renseigné' },
+  { value: 'appartement', label: 'Appartement' },
+  { value: 'maison', label: 'Maison' },
+  { value: 'studio', label: 'Studio' },
+  { value: 'loft', label: 'Loft' },
+  { value: 'chambre', label: 'Chambre' },
+  { value: 'commerce', label: 'Commerce' },
+  { value: 'bureau', label: 'Bureau' },
+  { value: 'parking', label: 'Parking' },
+  { value: 'autre', label: 'Autre' },
+];
+
+interface EdlNode {
+  id: string;
+  type: string;
+  statut: string;
+  dateRealisation: string;
+  locataireNom: string;
+}
 
 interface LogementData {
   id: string;
@@ -22,7 +43,10 @@ interface LogementData {
   surface?: number;
   nbPieces?: number;
   description?: string;
-  etatsDesLieux?: { totalCount: number };
+  etatDesLieux?: {
+    totalCount: number;
+    edges: Array<{ node: EdlNode }>;
+  };
 }
 
 interface LogementDetailData {
@@ -131,17 +155,21 @@ export default function LogementDetailScreen() {
 
   if (loading && !logement) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950">
         <Header title="Logement" showBack />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-500">Chargement...</Text>
+          <Text className="text-gray-500 dark:text-gray-400">Chargement...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  const edlCount = logement?.etatDesLieux?.totalCount || 0;
+  const edlList = logement?.etatDesLieux?.edges?.map(e => e.node) || [];
+  const typeLabel = TYPE_OPTIONS.find(o => o.value === logement?.type)?.label || logement?.type;
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header
         title="Logement"
         showBack
@@ -156,6 +184,7 @@ export default function LogementDetailScreen() {
 
       <ScrollView
         className="flex-1"
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -163,195 +192,236 @@ export default function LogementDetailScreen() {
         {isEditing ? (
           /* Mode édition */
           <View className="p-4">
-            <Card className="mb-4">
-              <Text className="text-lg font-bold text-gray-900 mb-4">Modifier le logement</Text>
-
-              <View className="mb-3">
-                <Text className="text-sm font-medium text-gray-700 mb-1">Nom</Text>
-                <TextInput
-                  value={editNom}
-                  onChangeText={setEditNom}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white"
-                  placeholder="Nom du logement"
-                />
-              </View>
-
-              <View className="mb-3">
-                <Text className="text-sm font-medium text-gray-700 mb-1">Adresse</Text>
-                <TextInput
-                  value={editAdresse}
-                  onChangeText={setEditAdresse}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white"
-                  placeholder="Adresse"
-                />
-              </View>
-
-              <View className="flex-row gap-3 mb-3">
+            <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2 px-1 tracking-wide">INFORMATIONS</Text>
+            <Card className="mb-5">
+              <Input
+                label="Nom du logement"
+                value={editNom}
+                onChangeText={setEditNom}
+                placeholder="Ex: Appartement Rue de la Paix"
+              />
+              <Input
+                label="Adresse"
+                value={editAdresse}
+                onChangeText={setEditAdresse}
+                placeholder="12 rue de la Paix"
+              />
+              <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="text-sm font-medium text-gray-700 mb-1">Code postal</Text>
-                  <TextInput
+                  <Input
+                    label="Code postal"
                     value={editCodePostal}
                     onChangeText={setEditCodePostal}
-                    className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white"
-                    placeholder="Code postal"
+                    placeholder="75001"
                     keyboardType="numeric"
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-medium text-gray-700 mb-1">Ville</Text>
-                  <TextInput
+                  <Input
+                    label="Ville"
                     value={editVille}
                     onChangeText={setEditVille}
-                    className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white"
-                    placeholder="Ville"
+                    placeholder="Paris"
                   />
                 </View>
               </View>
+            </Card>
 
-              <View className="mb-3">
-                <Text className="text-sm font-medium text-gray-700 mb-1">Type</Text>
-                <TextInput
-                  value={editType}
-                  onChangeText={setEditType}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white"
-                  placeholder="appartement, maison, studio..."
-                />
-              </View>
-
-              <View className="flex-row gap-3 mb-3">
+            <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2 px-1 tracking-wide">CARACTÉRISTIQUES</Text>
+            <Card className="mb-5">
+              <Select
+                label="Type de bien"
+                value={editType}
+                options={TYPE_OPTIONS}
+                onChange={setEditType}
+              />
+              <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="text-sm font-medium text-gray-700 mb-1">Surface (m²)</Text>
-                  <TextInput
+                  <Input
+                    label="Surface (m²)"
                     value={editSurface}
                     onChangeText={setEditSurface}
-                    className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white"
                     placeholder="50"
                     keyboardType="numeric"
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-medium text-gray-700 mb-1">Nb pièces</Text>
-                  <TextInput
+                  <Input
+                    label="Nombre de pièces"
                     value={editNbPieces}
                     onChangeText={setEditNbPieces}
-                    className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white"
                     placeholder="3"
                     keyboardType="numeric"
                   />
                 </View>
               </View>
-
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-gray-700 mb-1">Description</Text>
-                <TextInput
-                  value={editDescription}
-                  onChangeText={setEditDescription}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white"
-                  placeholder="Description optionnelle"
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <View className="flex-row gap-3">
-                <TouchableOpacity
-                  onPress={() => setIsEditing(false)}
-                  className="flex-1 flex-row items-center justify-center py-3 border border-gray-300 rounded-xl"
-                >
-                  <X size={18} color={COLORS.gray[600]} />
-                  <Text className="text-gray-700 font-medium ml-2">Annuler</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleSave}
-                  disabled={saving}
-                  className={`flex-1 flex-row items-center justify-center py-3 rounded-xl ${saving ? 'bg-primary-400' : 'bg-primary-600'}`}
-                >
-                  <Save size={18} color="white" />
-                  <Text className="text-white font-medium ml-2">
-                    {saving ? 'Sauvegarde...' : 'Enregistrer'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <Input
+                label="Description"
+                value={editDescription}
+                onChangeText={setEditDescription}
+                placeholder="Notes, particularités du logement..."
+                multiline
+                numberOfLines={3}
+              />
             </Card>
+
+            {/* Actions édition */}
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => setIsEditing(false)}
+                className="flex-1 flex-row items-center justify-center py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl"
+              >
+                <X size={18} color={COLORS.gray[500]} />
+                <Text className="text-gray-600 dark:text-gray-300 font-medium ml-2">Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={saving}
+                className={`flex-1 flex-row items-center justify-center py-3.5 rounded-xl ${saving ? 'bg-primary-400' : 'bg-primary-600'}`}
+              >
+                <Save size={18} color="white" />
+                <Text className="text-white font-semibold ml-2">
+                  {saving ? 'Sauvegarde...' : 'Enregistrer'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           /* Mode lecture */
           <>
             {/* Hero */}
-            <View className="bg-white p-4 border-b border-gray-100">
-              <View className="flex-row items-start">
-                <View className="w-16 h-16 bg-primary-100 rounded-2xl items-center justify-center">
-                  <Text className="text-4xl">🏠</Text>
+            <View className="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+              <View className="flex-row items-center">
+                <View className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-2xl items-center justify-center">
+                  <Home size={28} color={COLORS.primary[600]} />
                 </View>
                 <View className="flex-1 ml-4">
-                  <Text className="text-xl font-bold text-gray-900">{logement?.nom}</Text>
+                  <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">{logement?.nom}</Text>
                   <View className="flex-row items-center mt-1">
-                    <MapPin size={14} color={COLORS.gray[500]} />
-                    <Text className="text-gray-500 ml-1">{logement?.adresse}</Text>
+                    <MapPin size={14} color={COLORS.gray[400]} />
+                    <Text className="text-gray-500 dark:text-gray-400 ml-1 text-sm flex-1" numberOfLines={1}>
+                      {logement?.adresse}, {logement?.codePostal} {logement?.ville}
+                    </Text>
                   </View>
-                  <Text className="text-gray-400 text-sm">
-                    {logement?.codePostal} {logement?.ville}
-                  </Text>
                 </View>
               </View>
 
-              {/* Infos */}
-              <View className="flex-row flex-wrap mt-4 gap-3">
-                <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
-                  <Ruler size={16} color={COLORS.gray[500]} />
-                  <Text className="text-gray-700 ml-2 font-medium">
-                    {logement?.surface ? formatSurface(logement.surface) : 'Non renseigné'}
-                  </Text>
-                </View>
-                <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
-                  <DoorOpen size={16} color={COLORS.gray[500]} />
-                  <Text className="text-gray-700 ml-2 font-medium">
-                    {logement?.nbPieces ? `${logement.nbPieces} pièces` : 'Non renseigné'}
-                  </Text>
-                </View>
-                {logement?.type && (
-                  <Badge label={logement.type} variant="gray" />
-                )}
+              {/* Stats */}
+              <View className="flex-row mt-4 gap-2">
+                {logement?.surface ? (
+                  <View className="flex-row items-center bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                    <Ruler size={15} color={COLORS.primary[500]} />
+                    <Text className="text-gray-700 dark:text-gray-300 ml-1.5 text-sm font-medium">
+                      {formatSurface(logement.surface)}
+                    </Text>
+                  </View>
+                ) : null}
+                {logement?.nbPieces ? (
+                  <View className="flex-row items-center bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                    <DoorOpen size={15} color={COLORS.primary[500]} />
+                    <Text className="text-gray-700 dark:text-gray-300 ml-1.5 text-sm font-medium">
+                      {logement.nbPieces} pièce{logement.nbPieces > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                ) : null}
+                {typeLabel ? (
+                  <View className="bg-primary-50 dark:bg-primary-900/30 px-3 py-2 rounded-lg">
+                    <Text className="text-primary-700 dark:text-primary-300 text-sm font-medium">{typeLabel}</Text>
+                  </View>
+                ) : null}
               </View>
             </View>
 
-            {/* Description */}
-            {logement?.description && (
-              <Card className="mx-4 mt-4">
-                <Text className="text-sm font-medium text-gray-700 mb-2">Description</Text>
-                <Text className="text-gray-600">{logement.description}</Text>
+            <View className="p-4">
+              {/* Description */}
+              {logement?.description ? (
+                <>
+                  <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2 px-1 tracking-wide">DESCRIPTION</Text>
+                  <Card className="mb-5">
+                    <Text className="text-gray-600 dark:text-gray-300 leading-5">{logement.description}</Text>
+                  </Card>
+                </>
+              ) : null}
+
+              {/* EDL liés */}
+              <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2 px-1 tracking-wide">
+                ÉTATS DES LIEUX ({edlCount})
+              </Text>
+              {edlCount > 0 ? (
+                edlList.map((edl, index) => {
+                  const edlId = edl.id.split('/').pop();
+                  const typeConfig = TYPE_CONFIG[edl.type as EdlType];
+                  const statutBadge = STATUT_BADGE[edl.statut as EdlStatut];
+                  return (
+                    <Card key={edl.id} className={index < edlList.length - 1 ? 'mb-2' : 'mb-5'}>
+                      <TouchableOpacity
+                        onPress={() => router.push(`/edl/${edlId}`)}
+                        className="flex-row items-center"
+                      >
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center ${typeConfig?.bg || 'bg-gray-100'}`}>
+                          <Text className="text-lg">{typeConfig?.icon || '📋'}</Text>
+                        </View>
+                        <View className="flex-1 ml-3">
+                          <View className="flex-row items-center gap-2">
+                            <Text className="font-medium text-gray-800 dark:text-gray-200 flex-1" numberOfLines={1}>
+                              {edl.locataireNom}
+                            </Text>
+                            <Badge label={statutBadge?.label || edl.statut} variant={statutBadge?.variant || 'gray'} />
+                          </View>
+                          <View className="flex-row items-center mt-1 gap-2">
+                            <Badge label={typeConfig?.label || edl.type} variant={edl.type === 'entree' ? 'blue' : 'orange'} />
+                            <View className="flex-row items-center">
+                              <Calendar size={12} color={COLORS.gray[400]} />
+                              <Text className="text-sm text-gray-400 ml-1">{formatDate(edl.dateRealisation)}</Text>
+                            </View>
+                          </View>
+                        </View>
+                        <ChevronRight size={20} color={COLORS.gray[400]} />
+                      </TouchableOpacity>
+                    </Card>
+                  );
+                })
+              ) : (
+                <Card className="mb-5">
+                  <View className="flex-row items-center">
+                    <View className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center">
+                      <FileText size={20} color={COLORS.gray[400]} />
+                    </View>
+                    <Text className="text-sm text-gray-500 dark:text-gray-400 ml-3">Aucun EDL pour ce logement</Text>
+                  </View>
+                </Card>
+              )}
+
+              {/* Actions */}
+              <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2 px-1 tracking-wide">ACTIONS</Text>
+              <Card className="mb-5">
+                <TouchableOpacity
+                  onPress={() => router.push(`/edl/create?logementId=${id}`)}
+                  className="flex-row items-center py-1"
+                >
+                  <View className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-full items-center justify-center">
+                    <Plus size={20} color={COLORS.green[600]} />
+                  </View>
+                  <View className="flex-1 ml-3">
+                    <Text className="font-medium text-gray-800 dark:text-gray-200">Créer un état des lieux</Text>
+                    <Text className="text-sm text-gray-500 dark:text-gray-400">Nouveau EDL pour ce logement</Text>
+                  </View>
+                  <ChevronRight size={20} color={COLORS.gray[400]} />
+                </TouchableOpacity>
               </Card>
-            )}
 
-            {/* Actions */}
-            <View className="px-4 mt-6 gap-3">
-              <Button
-                label="Créer un état des lieux"
-                onPress={() => router.push(`/edl/create?logementId=${id}`)}
-                fullWidth
-              />
-              <TouchableOpacity
-                onPress={startEditing}
-                className="flex-row items-center justify-center py-3 rounded-xl border border-primary-200 bg-primary-50"
-              >
-                <Edit3 size={20} color={COLORS.primary[600]} />
-                <Text className="text-primary-600 font-medium ml-2">Modifier le logement</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Supprimer */}
-            <View className="px-4 mt-6">
+              {/* Zone danger */}
+              <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2 px-1 tracking-wide">ZONE DANGER</Text>
               <TouchableOpacity
                 onPress={handleDelete}
-                className="flex-row items-center justify-center py-4 rounded-xl border border-red-200 bg-red-50"
+                className="flex-row items-center justify-center py-4 rounded-xl bg-red-50 dark:bg-red-900/20"
               >
                 <Trash2 size={20} color={COLORS.red[600]} />
-                <Text className="text-red-600 font-medium ml-2">Supprimer ce logement</Text>
+                <Text className="text-red-600 font-semibold ml-2">Supprimer ce logement</Text>
               </TouchableOpacity>
             </View>
 
-            <View className="h-8" />
+            <View className="h-4" />
           </>
         )}
       </ScrollView>

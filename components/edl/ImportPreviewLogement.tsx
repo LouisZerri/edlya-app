@@ -32,21 +32,23 @@ export function ImportPreviewLogement({
     <Card className="mb-4">
       <View className="flex-row items-center mb-3">
         <Home size={20} color={COLORS.primary[600]} />
-        <Text className="font-semibold text-gray-800 ml-2">Logement</Text>
+        <Text className="font-semibold text-gray-800 dark:text-gray-200 ml-2">Logement</Text>
       </View>
 
       {/* Données extraites du PDF (éditables) */}
       {extractedData.logement && (
         isEditing ? (
-          <View className="bg-gray-50 rounded-lg p-3 mb-3">
-            <Text className="text-xs text-gray-500 mb-2">Données extraites (modifiables) :</Text>
+          <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3">
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">Données extraites (modifiables) :</Text>
             <TextInput
               value={extractedData.logement.adresse || ''}
               onChangeText={(t) => onUpdate(d => ({
                 ...d, logement: { ...d.logement!, adresse: t }
               }))}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white mb-2"
+              className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 mb-2"
+              style={{ includeFontPadding: false }}
               placeholder="Adresse"
+              placeholderTextColor="#9CA3AF"
             />
             <View className="flex-row gap-2 mb-2">
               <TextInput
@@ -54,8 +56,10 @@ export function ImportPreviewLogement({
                 onChangeText={(t) => onUpdate(d => ({
                   ...d, logement: { ...d.logement!, code_postal: t }
                 }))}
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white"
+                className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
+                style={{ includeFontPadding: false }}
                 placeholder="Code postal"
+                placeholderTextColor="#9CA3AF"
                 keyboardType="numeric"
               />
               <TextInput
@@ -63,8 +67,10 @@ export function ImportPreviewLogement({
                 onChangeText={(t) => onUpdate(d => ({
                   ...d, logement: { ...d.logement!, ville: t }
                 }))}
-                className="flex-[2] border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white"
+                className="flex-[2] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
+                style={{ includeFontPadding: false }}
                 placeholder="Ville"
+                placeholderTextColor="#9CA3AF"
               />
             </View>
             <TextInput
@@ -72,24 +78,26 @@ export function ImportPreviewLogement({
               onChangeText={(t) => onUpdate(d => ({
                 ...d, logement: { ...d.logement!, surface: t ? parseFloat(t) : undefined }
               }))}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white"
+              className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
+              style={{ includeFontPadding: false }}
               placeholder="Surface (m²)"
+              placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
             />
           </View>
         ) : (
-          <View className="bg-gray-50 rounded-lg p-3 mb-3">
-            <Text className="text-xs text-gray-500 mb-1">Extrait du PDF :</Text>
+          <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3">
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">Extrait du PDF :</Text>
             {extractedData.logement.adresse && (
-              <Text className="text-gray-700">{extractedData.logement.adresse}</Text>
+              <Text className="text-gray-700 dark:text-gray-200">{extractedData.logement.adresse}</Text>
             )}
             {(extractedData.logement.code_postal || extractedData.logement.ville) && (
-              <Text className="text-gray-500 text-sm">
+              <Text className="text-gray-500 dark:text-gray-400 text-sm">
                 {extractedData.logement.code_postal} {extractedData.logement.ville}
               </Text>
             )}
             {extractedData.logement.surface && (
-              <Text className="text-gray-500 text-sm">{extractedData.logement.surface} m²</Text>
+              <Text className="text-gray-500 dark:text-gray-400 text-sm">{extractedData.logement.surface} m²</Text>
             )}
           </View>
         )
@@ -97,13 +105,13 @@ export function ImportPreviewLogement({
 
       {/* Logement sélectionné ou matché */}
       {selectedLogement ? (
-        <View className="bg-green-50 border border-green-200 rounded-lg p-3">
+        <View className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-3">
           <View className="flex-row items-center">
             <Check size={16} color={COLORS.green[600]} />
-            <Text className="text-green-800 font-medium ml-2">Logement associé</Text>
+            <Text className="text-green-800 dark:text-green-300 font-medium ml-2">Logement associé</Text>
           </View>
-          <Text className="text-green-700 mt-1">{selectedLogement.nom}</Text>
-          <Text className="text-green-600 text-sm">{selectedLogement.adresse}, {selectedLogement.ville}</Text>
+          <Text className="text-green-700 dark:text-green-300 mt-1">{selectedLogement.nom}</Text>
+          <Text className="text-green-600 dark:text-green-400 text-sm">{selectedLogement.adresse}, {selectedLogement.ville}</Text>
           <TouchableOpacity
             onPress={() => {
               setSelectedLogement(null);
@@ -111,20 +119,20 @@ export function ImportPreviewLogement({
             }}
             className="mt-2"
           >
-            <Text className="text-primary-600 text-sm font-medium">Changer de logement</Text>
+            <Text className="text-primary-600 dark:text-primary-400 text-sm font-medium">Changer de logement</Text>
           </TouchableOpacity>
         </View>
       ) : matchedLogement ? (
-        <View className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <View className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
               <AlertCircle size={16} color={COLORS.blue[600]} />
-              <Text className="text-blue-800 font-medium ml-2">Logement similaire trouvé</Text>
+              <Text className="text-blue-800 dark:text-blue-300 font-medium ml-2">Logement similaire trouvé</Text>
             </View>
             <Badge label={`${Math.round(matchedLogement.score * 100)}% match`} variant="blue" />
           </View>
-          <Text className="text-blue-700 mt-1">{matchedLogement.logement.nom}</Text>
-          <Text className="text-blue-600 text-sm">
+          <Text className="text-blue-700 dark:text-blue-300 mt-1">{matchedLogement.logement.nom}</Text>
+          <Text className="text-blue-600 dark:text-blue-400 text-sm">
             {matchedLogement.logement.adresse}, {matchedLogement.logement.ville}
           </Text>
           <View className="flex-row gap-2 mt-3">
@@ -137,23 +145,23 @@ export function ImportPreviewLogement({
             <TouchableOpacity
               onPress={onCreateLogementFromPdf}
               disabled={creatingLogement}
-              className="flex-1 h-9 border border-blue-300 rounded-lg items-center justify-center"
+              className="flex-1 h-9 border border-blue-300 dark:border-blue-600 rounded-lg items-center justify-center"
             >
               {creatingLogement ? (
                 <ActivityIndicator size="small" color={COLORS.blue[600]} />
               ) : (
-                <Text className="text-blue-700 font-medium text-sm">Créer nouveau</Text>
+                <Text className="text-blue-700 dark:text-blue-300 font-medium text-sm">Créer nouveau</Text>
               )}
             </TouchableOpacity>
           </View>
         </View>
       ) : extractedData.logement ? (
-        <View className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+        <View className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
           <View className="flex-row items-center">
             <Plus size={16} color={COLORS.amber[600]} />
-            <Text className="text-amber-800 font-medium ml-2">Aucun logement correspondant</Text>
+            <Text className="text-amber-800 dark:text-amber-300 font-medium ml-2">Aucun logement correspondant</Text>
           </View>
-          <Text className="text-amber-700 text-sm mt-1">
+          <Text className="text-amber-700 dark:text-amber-400 text-sm mt-1">
             Ce logement n'existe pas encore dans votre liste.
           </Text>
           <View className="flex-row mt-3" style={{ gap: 8 }}>
@@ -173,18 +181,18 @@ export function ImportPreviewLogement({
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onGoToLogementStep}
-              className="flex-1 h-10 border border-amber-300 rounded-lg items-center justify-center px-2"
+              className="flex-1 h-10 border border-amber-300 dark:border-amber-600 rounded-lg items-center justify-center px-2"
             >
-              <Text className="text-amber-700 font-medium text-sm">Choisir existant</Text>
+              <Text className="text-amber-700 dark:text-amber-300 font-medium text-sm">Choisir existant</Text>
             </TouchableOpacity>
           </View>
         </View>
       ) : (
         <TouchableOpacity
           onPress={onGoToLogementStep}
-          className="py-3 border border-dashed border-gray-300 rounded-lg items-center"
+          className="py-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg items-center"
         >
-          <Text className="text-gray-600">Sélectionner un logement</Text>
+          <Text className="text-gray-600 dark:text-gray-300">Sélectionner un logement</Text>
         </TouchableOpacity>
       )}
     </Card>

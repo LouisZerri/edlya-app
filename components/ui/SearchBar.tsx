@@ -10,14 +10,14 @@ interface SearchBarProps {
 
 export function SearchBar({ value, onChangeText, placeholder = 'Rechercher...' }: SearchBarProps) {
   return (
-    <View className="flex-row items-center bg-gray-100 rounded-xl px-3 py-2">
+    <View className="flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2">
       <Search size={18} color={COLORS.gray[400]} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={COLORS.gray[400]}
-        className="flex-1 ml-2 text-gray-900"
+        className="flex-1 ml-2 text-gray-900 dark:text-gray-100"
         autoCapitalize="none"
         autoCorrect={false}
       />

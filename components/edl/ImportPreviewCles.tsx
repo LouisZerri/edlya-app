@@ -29,14 +29,14 @@ export function ImportPreviewCles({
     <Card className="mb-4">
       <View className="flex-row items-center mb-3">
         <Key size={20} color={COLORS.gray[600]} />
-        <Text className="font-semibold text-gray-800 ml-2">
+        <Text className="font-semibold text-gray-800 dark:text-gray-200 ml-2">
           Clés ({extractedData.cles.reduce((sum, c) => sum + c.nombre, 0)})
         </Text>
       </View>
       {extractedData.cles.map((cle, idx) => (
-        <View key={idx} className="py-2 border-b border-gray-100 last:border-0">
+        <View key={idx} className="py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
           <View className="flex-row items-center justify-between">
-            <Text className="text-gray-700">{CLE_LABELS[cle.type as CleType] || cle.type}</Text>
+            <Text className="text-gray-700 dark:text-gray-200">{CLE_LABELS[cle.type as CleType] || cle.type}</Text>
             {isEditing ? (
               <View className="flex-row items-center">
                 <TouchableOpacity
@@ -45,20 +45,20 @@ export function ImportPreviewCles({
                     cles[idx] = { ...cles[idx], nombre: Math.max(0, cle.nombre - 1) };
                     return { ...d, cles };
                   })}
-                  className="w-8 h-8 bg-gray-100 rounded items-center justify-center"
+                  className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center"
                 >
-                  <Text className="text-gray-600 font-bold">-</Text>
+                  <Text className="text-gray-600 dark:text-gray-300 font-bold">-</Text>
                 </TouchableOpacity>
-                <Text className="mx-3 font-bold text-gray-800">{cle.nombre}</Text>
+                <Text className="mx-3 font-bold text-gray-800 dark:text-gray-200">{cle.nombre}</Text>
                 <TouchableOpacity
                   onPress={() => onUpdate(d => {
                     const cles = [...(d.cles || [])];
                     cles[idx] = { ...cles[idx], nombre: cle.nombre + 1 };
                     return { ...d, cles };
                   })}
-                  className="w-8 h-8 bg-primary-100 rounded items-center justify-center"
+                  className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded items-center justify-center"
                 >
-                  <Text className="text-primary-600 font-bold">+</Text>
+                  <Text className="text-primary-600 dark:text-primary-400 font-bold">+</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => removeCle(idx)} className="p-1 ml-2">
                   <Trash2 size={16} color={COLORS.red[500]} />

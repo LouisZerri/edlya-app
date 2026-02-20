@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator, Image } from 'react-native';
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useColorScheme } from 'nativewind';
 import { ApolloProvider } from '@apollo/client/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { apolloClient, initializeApollo } from '../graphql/client';
 import { useAuthStore } from '../stores/authStore';
 import { useNetworkStore } from '../stores/networkStore';
 import { useToastStore } from '../stores/toastStore';
+import { useThemeStore } from '../stores/themeStore';
 import { ToastContainer, OfflineBanner } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { processQueue as processMutationQueue } from '../utils/offlineSyncManager';
@@ -39,7 +41,7 @@ function useProtectedRoute() {
 
 function LoadingScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
+    <View className="flex-1 items-center justify-center bg-white dark:bg-gray-950">
       <View className="items-center">
         <Image
           source={require('../assets/edlya-icon.png')}
@@ -117,13 +119,27 @@ export default function RootLayout() {
   const initialize = useAuthStore(state => state.initialize);
   const isLoading = useAuthStore(state => state.isLoading);
   const [cacheReady, setCacheReady] = useState(false);
+  const { colorScheme, setColorScheme } = useColorScheme();
+  const themePreference = useThemeStore(state => state.preference);
+  const initializeTheme = useThemeStore(state => state.initialize);
 
   useEffect(() => {
     Promise.all([
       initialize(),
       initializeApollo(),
-    ]).then(() => setCacheReady(true));
+      initializeTheme(),
+    ]).then(() => {
+      // Apply saved theme immediately on startup
+      const pref = useThemeStore.getState().preference;
+      setColorScheme(pref);
+      setCacheReady(true);
+    });
   }, []);
+
+  // Sync theme preference → NativeWind
+  useEffect(() => {
+    setColorScheme(themePreference);
+  }, [themePreference]);
 
   // Initialize network listener
   useEffect(() => {
@@ -137,7 +153,7 @@ export default function RootLayout() {
   if (isLoading || !cacheReady) {
     return (
       <SafeAreaProvider>
-        <StatusBar style="dark" />
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         <LoadingScreen />
       </SafeAreaProvider>
     );
@@ -147,8 +163,8 @@ export default function RootLayout() {
     <ErrorBoundary>
       <ApolloProvider client={apolloClient}>
         <SafeAreaProvider>
-          <View className="flex-1">
-            <StatusBar style="dark" />
+          <View className="flex-1 dark:bg-gray-950">
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
             <OfflineBanner />
             <RootLayoutNav />
             <ToastContainer />

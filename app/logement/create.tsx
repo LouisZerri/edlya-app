@@ -83,7 +83,7 @@ export default function CreateLogementScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top']}>
       <Header title="Nouveau logement" showBack />
 
       <KeyboardAvoidingView
@@ -216,7 +216,7 @@ export default function CreateLogementScreen() {
           />
         </ScrollView>
 
-        <View className="p-4 border-t border-gray-100">
+        <View className="p-4 border-t border-gray-100 dark:border-gray-700">
           <Button
             label="Créer le logement"
             onPress={handleSubmit(onSubmit)}

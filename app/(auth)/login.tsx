@@ -45,7 +45,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -61,14 +61,14 @@ export default function LoginScreen() {
                 style={{ width: 100, height: 100 }}
                 resizeMode="contain"
               />
-              <Text className="text-gray-500 mt-4">Gestion d'états des lieux</Text>
+              <Text className="text-gray-500 dark:text-gray-400 mt-4">Gestion d'états des lieux</Text>
             </View>
 
-            <Text className="text-xl font-semibold text-gray-900 mb-6">Connexion</Text>
+            <Text className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Connexion</Text>
 
             {error ? (
-              <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <Text className="text-red-700 text-sm">{error}</Text>
+              <View className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4">
+                <Text className="text-red-700 dark:text-red-300 text-sm">{error}</Text>
               </View>
             ) : null}
 
@@ -120,7 +120,7 @@ export default function LoginScreen() {
             />
 
             <View className="flex-row justify-center mt-6">
-              <Text className="text-gray-500">Pas encore de compte ? </Text>
+              <Text className="text-gray-500 dark:text-gray-400">Pas encore de compte ? </Text>
               <Link href="/(auth)/register" asChild>
                 <TouchableOpacity>
                   <Text className="text-primary-600 font-medium">S'inscrire</Text>

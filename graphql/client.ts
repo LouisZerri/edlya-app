@@ -14,6 +14,13 @@ export const cache = new InMemoryCache({
         etatDesLieuxes: { merge: true },
       },
     },
+    EtatDesLieux: {
+      fields: {
+        pieces: { merge: true },
+        compteurs: { merge: true },
+        cles: { merge: true },
+      },
+    },
   },
 });
 

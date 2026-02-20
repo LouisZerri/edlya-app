@@ -15,7 +15,7 @@ interface ButtonProps {
 
 const variantStyles: Record<ButtonVariant, { bg: string; text: string; border?: string }> = {
   primary: { bg: 'bg-primary-600', text: 'text-white' },
-  secondary: { bg: 'bg-white', text: 'text-gray-700', border: 'border border-gray-300' },
+  secondary: { bg: 'bg-white dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-200', border: 'border border-gray-300 dark:border-gray-600' },
   danger: { bg: 'bg-red-600', text: 'text-white' },
   success: { bg: 'bg-green-600', text: 'text-white' },
 };

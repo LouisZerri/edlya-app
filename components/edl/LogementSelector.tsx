@@ -28,9 +28,9 @@ export function LogementSelector({
 }: LogementSelectorProps) {
   return (
     <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-      <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-        <Text className="text-blue-800 font-medium">Sélectionnez le logement</Text>
-        <Text className="text-blue-700 text-sm mt-1">
+      <View className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-4 mb-4">
+        <Text className="text-blue-800 dark:text-blue-300 font-medium">Sélectionnez le logement</Text>
+        <Text className="text-blue-700 dark:text-blue-400 text-sm mt-1">
           L'EDL sera créé pour ce logement avec les données extraites du PDF.
         </Text>
       </View>
@@ -39,11 +39,11 @@ export function LogementSelector({
         <TouchableOpacity
           onPress={onCreateLogementFromPdf}
           disabled={creatingLogement}
-          className="mb-4 p-4 bg-primary-50 border-2 border-dashed border-primary-300 rounded-xl"
+          className="mb-4 p-4 bg-primary-50 dark:bg-primary-900/20 border-2 border-dashed border-primary-300 dark:border-primary-700 rounded-xl"
           activeOpacity={0.7}
         >
           <View className="flex-row items-center">
-            <View className="w-12 h-12 bg-primary-100 rounded-xl items-center justify-center">
+            <View className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl items-center justify-center">
               {creatingLogement ? (
                 <ActivityIndicator size="small" color={COLORS.primary[600]} />
               ) : (
@@ -51,8 +51,8 @@ export function LogementSelector({
               )}
             </View>
             <View className="flex-1 ml-3">
-              <Text className="font-semibold text-primary-700">Créer un nouveau logement</Text>
-              <Text className="text-primary-600 text-sm">À partir des données du PDF</Text>
+              <Text className="font-semibold text-primary-700 dark:text-primary-300">Créer un nouveau logement</Text>
+              <Text className="text-primary-600 dark:text-primary-400 text-sm">À partir des données du PDF</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -62,9 +62,9 @@ export function LogementSelector({
         <Card className="mb-4">
           <View className="flex-row items-center">
             <AlertCircle size={20} color={COLORS.amber[600]} />
-            <Text className="text-amber-800 ml-2">Aucun logement disponible</Text>
+            <Text className="text-amber-800 dark:text-amber-300 ml-2">Aucun logement disponible</Text>
           </View>
-          <Text className="text-gray-600 text-sm mt-2">
+          <Text className="text-gray-600 dark:text-gray-300 text-sm mt-2">
             Créez d'abord un logement avant de pouvoir importer un EDL.
           </Text>
           <View className="mt-3">
@@ -79,38 +79,39 @@ export function LogementSelector({
       ) : (
         <>
           {logements.length > 0 && (
-            <Text className="text-gray-500 text-sm mb-3">Ou sélectionnez un logement existant :</Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-sm mb-3">Ou sélectionnez un logement existant :</Text>
           )}
           {logements.map((logement) => {
             const isMatched = matchedLogement?.logement.id === logement.id;
+            const isSelected = selectedLogement?.id === logement.id;
             return (
               <TouchableOpacity
                 key={logement.id}
                 onPress={() => setSelectedLogement(logement)}
-                className={`mb-3 p-4 bg-white rounded-xl border-2 ${
-                  selectedLogement?.id === logement.id
-                    ? 'border-primary-500 bg-primary-50'
+                className={`mb-3 p-4 rounded-xl border-2 ${
+                  isSelected
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                     : isMatched
-                    ? 'border-blue-300 bg-blue-50'
-                    : 'border-gray-100'
+                    ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900'
                 }`}
                 activeOpacity={0.7}
               >
                 <View className="flex-row items-center">
                   <View className={`w-12 h-12 rounded-xl items-center justify-center ${
-                    selectedLogement?.id === logement.id ? 'bg-primary-100' :
-                    isMatched ? 'bg-blue-100' : 'bg-gray-100'
+                    isSelected ? 'bg-primary-100 dark:bg-primary-900/30' :
+                    isMatched ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-800'
                   }`}>
                     <Home size={24} color={
-                      selectedLogement?.id === logement.id ? COLORS.primary[600] :
+                      isSelected ? COLORS.primary[600] :
                       isMatched ? COLORS.blue[600] : COLORS.gray[500]
                     } />
                   </View>
                   <View className="flex-1 ml-3">
                     <View className="flex-row items-center">
                       <Text className={`font-semibold ${
-                        selectedLogement?.id === logement.id ? 'text-primary-700' :
-                        isMatched ? 'text-blue-700' : 'text-gray-900'
+                        isSelected ? 'text-primary-700 dark:text-primary-300' :
+                        isMatched ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-gray-100'
                       }`}>
                         {logement.nom}
                       </Text>
@@ -120,10 +121,10 @@ export function LogementSelector({
                         </View>
                       )}
                     </View>
-                    <Text className="text-gray-500 text-sm">{logement.adresse}</Text>
-                    <Text className="text-gray-400 text-xs">{logement.ville}</Text>
+                    <Text className="text-gray-500 dark:text-gray-400 text-sm">{logement.adresse}</Text>
+                    <Text className="text-gray-400 dark:text-gray-500 text-xs">{logement.ville}</Text>
                   </View>
-                  {selectedLogement?.id === logement.id && (
+                  {isSelected && (
                     <View className="w-6 h-6 bg-primary-500 rounded-full items-center justify-center">
                       <Check size={16} color="white" />
                     </View>

@@ -143,7 +143,7 @@ export default function CreateEdlScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top']}>
       <Header title="Nouvel état des lieux" showBack />
 
       <KeyboardAvoidingView
@@ -168,18 +168,18 @@ export default function CreateEdlScreen() {
 
           {/* Type Toggle */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">Type *</Text>
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type *</Text>
             <View className="flex-row gap-3">
               <TouchableOpacity
                 onPress={() => setValue('type', 'entree')}
                 className={`flex-1 p-4 rounded-xl border-2 flex-row items-center justify-center ${
                   selectedType === 'entree'
                     ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 bg-white'
+                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900'
                 }`}
               >
                 <Text className="text-2xl mr-2">📥</Text>
-                <Text className={selectedType === 'entree' ? 'text-blue-700 font-medium' : 'text-gray-600'}>
+                <Text className={selectedType === 'entree' ? 'text-blue-700 font-medium' : 'text-gray-600 dark:text-gray-300'}>
                   Entrée
                 </Text>
               </TouchableOpacity>
@@ -189,11 +189,11 @@ export default function CreateEdlScreen() {
                 className={`flex-1 p-4 rounded-xl border-2 flex-row items-center justify-center ${
                   selectedType === 'sortie'
                     ? 'border-orange-500 bg-orange-50'
-                    : 'border-gray-200 bg-white'
+                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900'
                 }`}
               >
                 <Text className="text-2xl mr-2">📤</Text>
-                <Text className={selectedType === 'sortie' ? 'text-orange-700 font-medium' : 'text-gray-600'}>
+                <Text className={selectedType === 'sortie' ? 'text-orange-700 font-medium' : 'text-gray-600 dark:text-gray-300'}>
                   Sortie
                 </Text>
               </TouchableOpacity>
@@ -214,7 +214,7 @@ export default function CreateEdlScreen() {
             )}
           />
 
-          <Text className="text-base font-semibold text-gray-800 mt-4 mb-3">Locataire</Text>
+          <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-4 mb-3">Locataire</Text>
 
           <Controller
             control={control}
@@ -274,12 +274,12 @@ export default function CreateEdlScreen() {
             )}
           />
 
-          <Text className="text-xs text-gray-500 mt-1 mb-4">
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
             Génère automatiquement les pièces standard pour ce type de logement
           </Text>
         </ScrollView>
 
-        <View className="p-4 border-t border-gray-100">
+        <View className="p-4 border-t border-gray-100 dark:border-gray-700">
           <Button
             label="Créer l'état des lieux"
             onPress={handleSubmit(onSubmit)}

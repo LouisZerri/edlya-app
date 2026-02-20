@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps, TouchableOpacity, Animated } from 'react-native';
 import { Mic, MicOff } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 import Constants from 'expo-constants';
-import { COLORS } from '../../utils/constants';
+import { COLORS, DARK_COLORS } from '../../utils/constants';
 
 interface InputWithVoiceProps extends Omit<TextInputProps, 'onChangeText'> {
   label: string;
@@ -30,6 +31,8 @@ export function InputWithVoice({
   appendMode = true,
   ...props
 }: InputWithVoiceProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
@@ -152,7 +155,7 @@ export function InputWithVoice({
   return (
     <View style={styles.container}>
       <View style={styles.labelRow}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: isDark ? DARK_COLORS.textSecondary : COLORS.gray[700] }]}>{label}</Text>
         {voiceAvailable && (
           <Animated.View style={{ transform: [{ scale: isListening ? pulseAnim : 1 }] }}>
             <TouchableOpacity
@@ -174,11 +177,12 @@ export function InputWithVoice({
         value={value}
         onChangeText={onChangeText}
         placeholder={isListening ? 'Parlez maintenant...' : placeholder}
-        placeholderTextColor={isListening ? COLORS.primary[500] : COLORS.gray[400]}
+        placeholderTextColor={isListening ? COLORS.primary[500] : (isDark ? '#6B7280' : COLORS.gray[400])}
         multiline={multiline}
         numberOfLines={numberOfLines}
         style={[
           styles.input,
+          isDark && { backgroundColor: DARK_COLORS.inputBg, color: DARK_COLORS.text, borderColor: DARK_COLORS.inputBorder },
           multiline && styles.multiline,
           error && styles.inputError,
           isListening && styles.inputListening,
@@ -212,7 +216,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color: COLORS.gray[700],
   },
   voiceButton: {
     width: 36,
@@ -221,8 +224,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary[50],
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.primary[200],
   },
   voiceButtonActive: {
     backgroundColor: COLORS.red[500],

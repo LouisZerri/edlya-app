@@ -17,7 +17,7 @@ export function ImportPreviewLocataire({ extractedData, isEditing, onUpdate }: I
     <Card className="mb-4">
       <View className="flex-row items-center mb-3">
         <User size={20} color={COLORS.amber[600]} />
-        <Text className="font-semibold text-gray-800 ml-2">Locataire</Text>
+        <Text className="font-semibold text-gray-800 dark:text-gray-200 ml-2">Locataire</Text>
       </View>
       {isEditing ? (
         <View>
@@ -26,16 +26,20 @@ export function ImportPreviewLocataire({ extractedData, isEditing, onUpdate }: I
             onChangeText={(t) => onUpdate(d => ({
               ...d, locataire: { ...d.locataire!, nom: t }
             }))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white mb-2"
+            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 mb-2"
+            style={{ includeFontPadding: false }}
             placeholder="Nom du locataire"
+            placeholderTextColor="#9CA3AF"
           />
           <TextInput
             value={extractedData.locataire.email || ''}
             onChangeText={(t) => onUpdate(d => ({
               ...d, locataire: { ...d.locataire!, email: t }
             }))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white mb-2"
+            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 mb-2"
+            style={{ includeFontPadding: false }}
             placeholder="Email"
+            placeholderTextColor="#9CA3AF"
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -44,21 +48,23 @@ export function ImportPreviewLocataire({ extractedData, isEditing, onUpdate }: I
             onChangeText={(t) => onUpdate(d => ({
               ...d, locataire: { ...d.locataire!, telephone: t }
             }))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white"
+            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800"
+            style={{ includeFontPadding: false }}
             placeholder="Téléphone"
+            placeholderTextColor="#9CA3AF"
             keyboardType="phone-pad"
           />
         </View>
       ) : (
         <>
           {extractedData.locataire.nom && (
-            <Text className="text-gray-700 font-medium">{extractedData.locataire.nom}</Text>
+            <Text className="text-gray-700 dark:text-gray-200 font-medium">{extractedData.locataire.nom}</Text>
           )}
           {extractedData.locataire.email && (
-            <Text className="text-gray-500 text-sm">{extractedData.locataire.email}</Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-sm">{extractedData.locataire.email}</Text>
           )}
           {extractedData.locataire.telephone && (
-            <Text className="text-gray-500 text-sm">{extractedData.locataire.telephone}</Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-sm">{extractedData.locataire.telephone}</Text>
           )}
         </>
       )}

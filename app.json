@@ -6,7 +6,7 @@
     "scheme": "edlya",
     "orientation": "portrait",
     "icon": "./assets/edlya-icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/edlya-splash.png",

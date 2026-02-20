@@ -60,10 +60,10 @@ export default function EdlScreen() {
     <TouchableOpacity
       onPress={() => setFilter(type)}
       className={`px-4 py-2 rounded-full mr-2 ${
-        filter === type ? 'bg-primary-600' : 'bg-gray-100'
+        filter === type ? 'bg-primary-600' : 'bg-gray-100 dark:bg-gray-800'
       }`}
     >
-      <Text className={filter === type ? 'text-white font-medium' : 'text-gray-600'}>
+      <Text className={filter === type ? 'text-white font-medium' : 'text-gray-600 dark:text-gray-300'}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -86,23 +86,23 @@ export default function EdlScreen() {
 
           <View className="flex-1 ml-3 mr-2">
             <View className="flex-row items-center justify-between gap-2">
-              <Text className="font-semibold text-gray-900 flex-1" numberOfLines={1}>
+              <Text className="font-semibold text-gray-900 dark:text-gray-100 flex-1" numberOfLines={1}>
                 {item.logement?.nom || 'Logement'}
               </Text>
               <Badge label={statutBadge.label} variant={statutBadge.variant} />
             </View>
-            <Text className="text-sm text-gray-500 mt-0.5">{item.locataireNom}</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{item.locataireNom}</Text>
 
             <View className="flex-row items-center mt-2 gap-3">
               <View className="flex-row items-center">
                 <Calendar size={12} color={COLORS.gray[400]} />
-                <Text className="text-xs text-gray-400 ml-1">
+                <Text className="text-sm text-gray-400 ml-1">
                   {formatDate(item.dateRealisation)}
                 </Text>
               </View>
               <View className="flex-row items-center">
                 <DoorOpen size={12} color={COLORS.gray[400]} />
-                <Text className="text-xs text-gray-400 ml-1">
+                <Text className="text-sm text-gray-400 ml-1">
                   {(item.pieces as { totalCount?: number })?.totalCount || item.pieces?.length || 0} pièces
                 </Text>
               </View>
@@ -116,7 +116,7 @@ export default function EdlScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header
         title="États des lieux"
         rightAction={
@@ -126,7 +126,7 @@ export default function EdlScreen() {
         }
       />
 
-      <View className="bg-white px-4 py-3 border-b border-gray-100">
+      <View className="bg-white dark:bg-gray-900 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
         <SearchBar
           value={search}
           onChangeText={setSearch}
@@ -150,7 +150,7 @@ export default function EdlScreen() {
         ListEmptyComponent={
           !loading ? (
             <Card>
-              <Text className="text-gray-500 text-center py-8">
+              <Text className="text-gray-500 dark:text-gray-400 text-center py-8">
                 {search.trim()
                   ? `Aucun EDL trouvé pour "${search}"`
                   : 'Aucun état des lieux pour le moment.\nCréez votre premier EDL !'}

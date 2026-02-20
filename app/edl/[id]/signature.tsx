@@ -214,17 +214,17 @@ export default function SignatureEdlScreen() {
     <Card className="mb-4">
       <View className="flex-row items-center mb-3">
         {icon}
-        <Text className="text-base font-semibold text-gray-800 ml-2">{title}</Text>
+        <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">{title}</Text>
         {isSaved && (
-          <View className="ml-auto bg-green-100 px-2 py-1 rounded-full">
-            <Text className="text-green-700 text-xs font-medium">Enregistrée</Text>
+          <View className="ml-auto bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+            <Text className="text-green-700 dark:text-green-300 text-xs font-medium">Enregistrée</Text>
           </View>
         )}
       </View>
 
-      <View className="h-48 border border-dashed border-gray-300 rounded-xl overflow-hidden bg-white">
+      <View className="h-48 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden bg-white dark:bg-gray-900">
         {isSaved && signature ? (
-          <View className="flex-1 bg-gray-50 p-2">
+          <View className="flex-1 bg-gray-50 dark:bg-gray-900 p-2">
             <Image
               source={{ uri: signature }}
               style={{ flex: 1 }}
@@ -254,20 +254,20 @@ export default function SignatureEdlScreen() {
               signatureRef.current?.clearSignature();
               onClear();
             }}
-            className="flex-1 flex-row items-center justify-center py-2.5 border border-gray-300 rounded-lg"
+            className="flex-1 flex-row items-center justify-center py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg"
           >
             <Trash2 size={18} color={COLORS.gray[600]} />
-            <Text className="text-gray-700 font-medium ml-2">Effacer</Text>
+            <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Effacer</Text>
           </TouchableOpacity>
         )}
 
         {!signature && !isSaved && (
           <TouchableOpacity
             onPress={() => signatureRef.current?.readSignature()}
-            className="flex-1 flex-row items-center justify-center py-2.5 bg-gray-100 rounded-lg"
+            className="flex-1 flex-row items-center justify-center py-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg"
           >
             <Check size={18} color={COLORS.gray[700]} />
-            <Text className="text-gray-700 font-medium ml-2">Valider</Text>
+            <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Valider</Text>
           </TouchableOpacity>
         )}
 
@@ -288,10 +288,10 @@ export default function SignatureEdlScreen() {
               signatureRef.current?.clearSignature();
               onClear();
             }}
-            className="flex-1 flex-row items-center justify-center py-2.5 border border-gray-300 rounded-lg"
+            className="flex-1 flex-row items-center justify-center py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg"
           >
             <Trash2 size={18} color={COLORS.gray[600]} />
-            <Text className="text-gray-700 font-medium ml-2">Modifier</Text>
+            <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Modifier</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -301,7 +301,7 @@ export default function SignatureEdlScreen() {
   const canSendLink = bailleurSaved && !locataireSaved && edl?.locataireEmail;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header title="Signatures" showBack />
 
       <ScrollView
@@ -311,8 +311,8 @@ export default function SignatureEdlScreen() {
         nestedScrollEnabled={true}
       >
         {/* Info */}
-        <View className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4">
-          <Text className="text-blue-800 text-sm">
+        <View className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-3 mb-4">
+          <Text className="text-blue-800 dark:text-blue-300 text-sm">
             1. Signez en tant que bailleur{'\n'}
             2. Envoyez le lien au locataire par email{'\n'}
             3. Le locataire signe depuis son appareil
@@ -339,14 +339,14 @@ export default function SignatureEdlScreen() {
           <Card className="mb-4">
             <View className="flex-row items-center mb-3">
               <Users size={20} color={COLORS.amber[600]} />
-              <Text className="text-base font-semibold text-gray-800 ml-2">
+              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">
                 Signature du locataire
               </Text>
             </View>
 
             {edl?.locataireEmail ? (
               <>
-                <Text className="text-gray-600 text-sm mb-3">
+                <Text className="text-gray-600 dark:text-gray-300 text-sm mb-3">
                   Un lien de signature sera envoyé à :{'\n'}
                   <Text className="font-medium">{edl.locataireEmail}</Text>
                 </Text>
@@ -359,8 +359,8 @@ export default function SignatureEdlScreen() {
                 />
               </>
             ) : (
-              <View className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <Text className="text-amber-800 text-sm">
+              <View className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <Text className="text-amber-800 dark:text-amber-300 text-sm">
                   Ajoutez l'email du locataire dans les informations de l'EDL pour pouvoir lui envoyer le lien de signature.
                 </Text>
               </View>
@@ -373,15 +373,15 @@ export default function SignatureEdlScreen() {
           <Card className="mb-4">
             <View className="flex-row items-center mb-3">
               <Users size={20} color={COLORS.green[600]} />
-              <Text className="text-base font-semibold text-gray-800 ml-2">
+              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">
                 Signature du locataire
               </Text>
-              <View className="ml-auto bg-green-100 px-2 py-1 rounded-full">
-                <Text className="text-green-700 text-xs font-medium">Enregistrée</Text>
+              <View className="ml-auto bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                <Text className="text-green-700 dark:text-green-300 text-xs font-medium">Enregistrée</Text>
               </View>
             </View>
             {signatureLocataire && (
-              <View className="h-32 bg-gray-50 rounded-lg p-2">
+              <View className="h-32 bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
                 <Image
                   source={{ uri: signatureLocataire }}
                   style={{ flex: 1 }}
@@ -394,10 +394,10 @@ export default function SignatureEdlScreen() {
 
         {/* Recap */}
         <Card>
-          <Text className="font-semibold text-gray-800 mb-3">Récapitulatif</Text>
+          <Text className="font-semibold text-gray-800 dark:text-gray-200 mb-3">Récapitulatif</Text>
           <View className="space-y-2">
             <View className="flex-row items-center justify-between">
-              <Text className="text-gray-600">Bailleur</Text>
+              <Text className="text-gray-600 dark:text-gray-300">Bailleur</Text>
               {bailleurSaved ? (
                 <View className="flex-row items-center">
                   <Check size={16} color={COLORS.green[600]} />
@@ -408,7 +408,7 @@ export default function SignatureEdlScreen() {
               )}
             </View>
             <View className="flex-row items-center justify-between mt-2">
-              <Text className="text-gray-600">Locataire</Text>
+              <Text className="text-gray-600 dark:text-gray-300">Locataire</Text>
               {locataireSaved ? (
                 <View className="flex-row items-center">
                   <Check size={16} color={COLORS.green[600]} />
@@ -423,11 +423,11 @@ export default function SignatureEdlScreen() {
       </ScrollView>
 
       {bailleurSaved && locataireSaved && (
-        <View className="p-4 bg-white border-t border-gray-100">
-          <View className="bg-green-50 border border-green-200 rounded-xl p-4 flex-row items-center">
+        <View className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
+          <View className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl p-4 flex-row items-center">
             <Check size={24} color={COLORS.green[600]} />
             <View className="ml-3">
-              <Text className="text-green-800 font-semibold">État des lieux signé</Text>
+              <Text className="text-green-800 dark:text-green-300 font-semibold">État des lieux signé</Text>
               <Text className="text-green-600 text-sm">Les deux parties ont signé</Text>
             </View>
           </View>

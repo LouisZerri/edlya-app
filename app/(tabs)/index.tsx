@@ -81,7 +81,7 @@ export default function HomeScreen() {
   }, [refetchStats, refetchEdl, fetchLogementsSansEdl]);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <ScrollView
         className="flex-1"
         refreshControl={

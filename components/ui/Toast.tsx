@@ -5,25 +5,25 @@ import { useToastStore, ToastType } from '../../stores/toastStore';
 
 const toastConfig: Record<ToastType, { bg: string; icon: typeof CheckCircle; iconColor: string; textColor: string }> = {
   success: {
-    bg: 'bg-green-600',
+    bg: 'bg-green-600 dark:bg-green-800',
     icon: CheckCircle,
     iconColor: '#ffffff',
     textColor: 'text-white',
   },
   error: {
-    bg: 'bg-red-600',
+    bg: 'bg-red-600 dark:bg-red-800',
     icon: AlertCircle,
     iconColor: '#ffffff',
     textColor: 'text-white',
   },
   info: {
-    bg: 'bg-blue-600',
+    bg: 'bg-blue-600 dark:bg-blue-800',
     icon: Info,
     iconColor: '#ffffff',
     textColor: 'text-white',
   },
   warning: {
-    bg: 'bg-amber-500',
+    bg: 'bg-amber-500 dark:bg-amber-700',
     icon: AlertTriangle,
     iconColor: '#ffffff',
     textColor: 'text-white',

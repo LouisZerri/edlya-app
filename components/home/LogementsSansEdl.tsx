@@ -21,22 +21,22 @@ export function LogementsSansEdl({ logements }: LogementsSansEdlProps) {
 
   return (
     <View className="mx-4 mt-4">
-      <Text className="text-base font-semibold text-gray-800 mb-3">
+      <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">
         Logements sans EDL
       </Text>
       {logements.map((logement) => (
         <TouchableOpacity
           key={logement.id}
           onPress={() => router.push(`/edl/create?logementId=${logement.id}`)}
-          className="flex-row items-center bg-white rounded-xl p-3 mb-2 border border-gray-100"
+          className="flex-row items-center bg-white dark:bg-gray-900 rounded-xl p-3 mb-2 border border-gray-100 dark:border-gray-700"
           activeOpacity={0.7}
         >
           <View className="w-10 h-10 bg-amber-50 rounded-lg items-center justify-center">
             <Home size={20} color={COLORS.amber[600]} />
           </View>
           <View className="flex-1 ml-3">
-            <Text className="font-medium text-gray-800">{logement.nom}</Text>
-            <Text className="text-gray-500 text-xs">
+            <Text className="font-medium text-gray-800 dark:text-gray-200">{logement.nom}</Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-xs">
               {logement.adresse}{logement.ville ? `, ${logement.ville}` : ''}
             </Text>
           </View>

@@ -30,24 +30,24 @@ export function Select({
 
   return (
     <View className="mb-4">
-      <Text className="text-base font-medium text-gray-700 mb-1.5">{label}</Text>
+      <Text className="text-base font-medium text-gray-700 dark:text-gray-300 mb-1.5">{label}</Text>
 
       <TouchableOpacity
         onPress={() => setIsOpen(true)}
         className={`
-          px-4 border rounded-xl flex-row items-center justify-between bg-white
-          ${error ? 'border-red-300' : 'border-gray-200'}
+          px-4 border rounded-xl flex-row items-center justify-between bg-white dark:bg-gray-800
+          ${error ? 'border-red-300' : 'border-gray-200 dark:border-gray-600'}
         `}
         style={{ height: 52 }}
       >
-        <Text className={`text-base ${selectedOption ? 'text-gray-900' : 'text-gray-400'}`}>
+        <Text className={`text-base ${selectedOption ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}>
           {selectedOption?.label || placeholder}
         </Text>
         <ChevronDown size={22} color={COLORS.gray[400]} />
       </TouchableOpacity>
 
       {error && (
-        <Text className="text-sm text-red-600 mt-1.5">{error}</Text>
+        <Text className="text-sm text-red-600 dark:text-red-400 mt-1.5">{error}</Text>
       )}
 
       <Modal
@@ -61,9 +61,9 @@ export function Select({
           activeOpacity={1}
           onPress={() => setIsOpen(false)}
         >
-          <View className="bg-white rounded-t-2xl max-h-96">
-            <View className="p-4 border-b border-gray-100">
-              <Text className="text-lg font-semibold text-center">{label}</Text>
+          <View className="bg-white dark:bg-gray-900 rounded-t-2xl max-h-96">
+            <View className="p-4 border-b border-gray-100 dark:border-gray-700">
+              <Text className="text-lg font-semibold text-center text-gray-900 dark:text-gray-100">{label}</Text>
             </View>
             <FlatList
               data={options}
@@ -74,9 +74,9 @@ export function Select({
                     onChange(item.value);
                     setIsOpen(false);
                   }}
-                  className="flex-row items-center justify-between px-4 py-4 border-b border-gray-50"
+                  className="flex-row items-center justify-between px-4 py-4 border-b border-gray-50 dark:border-gray-800"
                 >
-                  <Text className="text-base text-gray-900">{item.label}</Text>
+                  <Text className="text-base text-gray-900 dark:text-gray-100">{item.label}</Text>
                   {item.value === value && (
                     <Check size={22} color={COLORS.primary[600]} />
                   )}

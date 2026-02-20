@@ -64,6 +64,17 @@ export const COLORS = {
   },
 };
 
+export const DARK_COLORS = {
+  bg: '#030712',
+  surface: '#111827',
+  surfaceAlt: '#1F2937',
+  border: '#374151',
+  text: '#F9FAFB',
+  textSecondary: '#9CA3AF',
+  inputBg: '#1F2937',
+  inputBorder: '#374151',
+};
+
 export const SPACING = {
   screenPadding: 16,
   cardPadding: 16,

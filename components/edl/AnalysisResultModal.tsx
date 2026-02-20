@@ -26,17 +26,17 @@ export function AnalysisResultModal({
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-white rounded-t-3xl p-4 max-h-[80%]">
+        <View className="bg-white dark:bg-gray-900 rounded-t-3xl p-4 max-h-[80%]">
           {/* Header */}
           <View className="flex-row items-center justify-between mb-4">
             <View className="flex-row items-center">
               <Sparkles size={24} color="#9333EA" />
-              <Text className="text-lg font-bold text-gray-900 ml-2">
+              <Text className="text-lg font-bold text-gray-900 dark:text-gray-100 ml-2">
                 Analyse IA
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} className="p-2">
-              <Text className="text-gray-500">Fermer</Text>
+              <Text className="text-gray-500 dark:text-gray-400">Fermer</Text>
             </TouchableOpacity>
           </View>
 
@@ -44,21 +44,21 @@ export function AnalysisResultModal({
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Confiance */}
               <View className="flex-row items-center mb-4">
-                <Text className="text-gray-500 text-sm">Confiance :</Text>
-                <View className="flex-1 h-2 bg-gray-200 rounded-full ml-2">
+                <Text className="text-gray-500 dark:text-gray-400 text-sm">Confiance :</Text>
+                <View className="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded-full ml-2">
                   <View
                     className="h-2 bg-purple-500 rounded-full"
                     style={{ width: `${(analysisResult.confiance || 0) * 100}%` }}
                   />
                 </View>
-                <Text className="text-gray-700 text-sm ml-2">
+                <Text className="text-gray-700 dark:text-gray-300 text-sm ml-2">
                   {Math.round((analysisResult.confiance || 0) * 100)}%
                 </Text>
               </View>
 
               {/* État détecté */}
-              <View className="bg-gray-50 rounded-xl p-4 mb-4">
-                <Text className="text-sm text-gray-500 mb-1">État détecté</Text>
+              <View className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-4">
+                <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">État détecté</Text>
                 <View className="flex-row items-center">
                   <Badge
                     label={ELEMENT_ETAT_LABELS[analysisResult.etat_global as ElementEtat] || analysisResult.etat_global}
@@ -75,23 +75,23 @@ export function AnalysisResultModal({
 
               {/* Dégradations détectées */}
               {analysisResult.degradations_detectees?.length > 0 && (
-                <View className="bg-red-50 rounded-xl p-4 mb-4">
+                <View className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4 mb-4">
                   <View className="flex-row items-center mb-2">
                     <AlertTriangle size={16} color={COLORS.red[600]} />
-                    <Text className="text-sm font-medium text-red-800 ml-1">
+                    <Text className="text-sm font-medium text-red-800 dark:text-red-300 ml-1">
                       Dégradations détectées ({analysisResult.degradations_detectees.length})
                     </Text>
                   </View>
                   {analysisResult.degradations_detectees.map((deg, index) => (
-                    <View key={index} className="bg-white rounded-lg p-3 mb-2">
-                      <Text className="font-medium text-gray-900">{deg.type}</Text>
+                    <View key={index} className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-2">
+                      <Text className="font-medium text-gray-900 dark:text-gray-100">{deg.type}</Text>
                       {deg.localisation && (
-                        <Text className="text-sm text-gray-500 mt-0.5">
+                        <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                           📍 {deg.localisation}
                         </Text>
                       )}
                       {deg.description && (
-                        <Text className="text-sm text-gray-600 mt-1">
+                        <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                           {deg.description}
                         </Text>
                       )}
@@ -106,15 +106,15 @@ export function AnalysisResultModal({
 
               {/* Estimation réparation */}
               {analysisResult.estimation_reparation?.necessaire && (
-                <View className="bg-amber-50 rounded-xl p-4 mb-4">
-                  <Text className="text-sm font-medium text-amber-800 mb-2">
+                <View className="bg-amber-50 dark:bg-amber-900/30 rounded-xl p-4 mb-4">
+                  <Text className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">
                     💰 Estimation réparation
                   </Text>
-                  <Text className="text-2xl font-bold text-amber-900">
+                  <Text className="text-2xl font-bold text-amber-900 dark:text-amber-200">
                     {analysisResult.estimation_reparation.cout_estime_min}€ - {analysisResult.estimation_reparation.cout_estime_max}€
                   </Text>
                   {analysisResult.estimation_reparation.type_intervention && (
-                    <Text className="text-sm text-amber-700 mt-1">
+                    <Text className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                       Type : {analysisResult.estimation_reparation.type_intervention}
                     </Text>
                   )}
@@ -123,11 +123,11 @@ export function AnalysisResultModal({
 
               {/* Observations */}
               {analysisResult.observations && (
-                <View className="bg-blue-50 rounded-xl p-4 mb-4">
-                  <Text className="text-sm font-medium text-blue-800 mb-1">
+                <View className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 mb-4">
+                  <Text className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">
                     📝 Observations IA
                   </Text>
-                  <Text className="text-gray-700">
+                  <Text className="text-gray-700 dark:text-gray-300">
                     {analysisResult.observations}
                   </Text>
                 </View>
@@ -137,9 +137,9 @@ export function AnalysisResultModal({
               <View className="flex-row gap-3 mt-2 mb-4">
                 <TouchableOpacity
                   onPress={onClose}
-                  className="flex-1 py-3 rounded-xl border border-gray-300 items-center"
+                  className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-gray-600 items-center"
                 >
-                  <Text className="text-gray-600 font-medium">Ignorer</Text>
+                  <Text className="text-gray-600 dark:text-gray-300 font-medium">Ignorer</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={onApply}

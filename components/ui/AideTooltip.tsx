@@ -51,7 +51,7 @@ export function AideTooltip({
       <TouchableOpacity
         onPress={handlePress}
         disabled={isLoading}
-        className="p-2 rounded-lg bg-primary-50"
+        className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30"
         activeOpacity={0.7}
       >
         <Sparkles size={18} color={COLORS.primary[600]} />
@@ -71,13 +71,13 @@ export function AideTooltip({
           <TouchableOpacity
             activeOpacity={1}
             onPress={() => {}}
-            className="bg-white rounded-2xl overflow-hidden"
+            className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden"
           >
             {/* Header */}
-            <View className="flex-row items-center justify-between p-4 border-b border-gray-100">
+            <View className="flex-row items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
               <View className="flex-row items-center">
                 <Sparkles size={20} color={COLORS.primary[600]} />
-                <Text className="text-lg font-semibold text-gray-900 ml-2">
+                <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100 ml-2">
                   Suggestion IA
                 </Text>
               </View>
@@ -91,7 +91,7 @@ export function AideTooltip({
               {isLoading && (
                 <View className="items-center py-8">
                   <ActivityIndicator size="large" color={COLORS.primary[600]} />
-                  <Text className="text-sm text-gray-500 mt-3">
+                  <Text className="text-sm text-gray-500 dark:text-gray-400 mt-3">
                     Analyse en cours...
                   </Text>
                 </View>
@@ -104,8 +104,8 @@ export function AideTooltip({
               )}
 
               {suggestion && !isLoading && (
-                <View className="bg-primary-50 p-3 rounded-xl">
-                  <Text className="text-sm text-gray-800 leading-5">
+                <View className="bg-primary-50 dark:bg-primary-900/30 p-3 rounded-xl">
+                  <Text className="text-sm text-gray-800 dark:text-gray-200 leading-5">
                     {suggestion}
                   </Text>
                 </View>
@@ -114,13 +114,13 @@ export function AideTooltip({
 
             {/* Actions */}
             {suggestion && !isLoading && (
-              <View className="flex-row p-4 border-t border-gray-100 gap-3">
+              <View className="flex-row p-4 border-t border-gray-100 dark:border-gray-700 gap-3">
                 <TouchableOpacity
                   onPress={handleIgnore}
-                  className="flex-1 py-3 rounded-xl border border-gray-300 items-center"
+                  className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-gray-600 items-center"
                   activeOpacity={0.7}
                 >
-                  <Text className="text-base font-semibold text-gray-700">
+                  <Text className="text-base font-semibold text-gray-700 dark:text-gray-300">
                     Ignorer
                   </Text>
                 </TouchableOpacity>
@@ -137,13 +137,13 @@ export function AideTooltip({
             )}
 
             {error && !isLoading && (
-              <View className="p-4 border-t border-gray-100">
+              <View className="p-4 border-t border-gray-100 dark:border-gray-700">
                 <TouchableOpacity
                   onPress={handleIgnore}
-                  className="py-3 rounded-xl border border-gray-300 items-center"
+                  className="py-3 rounded-xl border border-gray-300 dark:border-gray-600 items-center"
                   activeOpacity={0.7}
                 >
-                  <Text className="text-base font-semibold text-gray-700">
+                  <Text className="text-base font-semibold text-gray-700 dark:text-gray-300">
                     Fermer
                   </Text>
                 </TouchableOpacity>
