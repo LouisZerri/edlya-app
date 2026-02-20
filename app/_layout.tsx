@@ -1,14 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator, Image } from 'react-native';
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ApolloProvider } from '@apollo/client/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { apolloClient } from '../graphql/client';
+import { apolloClient, initializeApollo } from '../graphql/client';
 import { useAuthStore } from '../stores/authStore';
-import { ToastContainer } from '../components/ui';
+import { useNetworkStore } from '../stores/networkStore';
+import { useToastStore } from '../stores/toastStore';
+import { ToastContainer, OfflineBanner } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { COLORS } from '../utils/constants';
+import { processQueue as processMutationQueue } from '../utils/offlineSyncManager';
+import { processPhotoQueue } from '../utils/photoSyncManager';
+import { getQueueLength } from '../utils/offlineMutationQueue';
+import { usePhotoQueueStore } from '../stores/photoQueueStore';
+import { COLORS, API_URL } from '../utils/constants';
 import '../global.css';
 
 function useProtectedRoute() {
@@ -18,17 +24,14 @@ function useProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuthStore();
 
   useEffect(() => {
-    // Attendre que la navigation soit prête
     if (!navigationState?.key) return;
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
     if (!isAuthenticated && !inAuthGroup) {
-      // Pas connecté et pas sur une page auth → rediriger vers login
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
-      // Connecté mais sur une page auth → rediriger vers accueil
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, isLoading, segments, navigationState?.key]);
@@ -67,15 +70,71 @@ function RootLayoutNav() {
   );
 }
 
+function useOfflineSync() {
+  const isConnected = useNetworkStore(state => state.isConnected);
+  const wasOffline = useRef(false);
+
+  useEffect(() => {
+    if (isConnected && wasOffline.current) {
+      // Wait for network to stabilize before syncing
+      const timer = setTimeout(async () => {
+        // Verify network is actually working before syncing
+        try {
+          await fetch(`${API_URL}/graphql`, { method: 'HEAD' });
+        } catch {
+          // Network not ready yet, wait longer
+          await new Promise(r => setTimeout(r, 5000));
+        }
+
+        try {
+          const mutationCount = await getQueueLength();
+          const photoCount = usePhotoQueueStore.getState().getQueueLength();
+
+          if (mutationCount > 0 || photoCount > 0) {
+            useToastStore.getState().info(`Synchronisation : ${mutationCount} modification(s), ${photoCount} photo(s)...`);
+
+            if (mutationCount > 0) {
+              await processMutationQueue();
+            }
+            if (photoCount > 0) {
+              await processPhotoQueue();
+            }
+
+            useToastStore.getState().success('Données synchronisées !');
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+          useToastStore.getState().error(`Erreur sync : ${msg}`);
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+    wasOffline.current = !isConnected;
+  }, [isConnected]);
+}
+
 export default function RootLayout() {
   const initialize = useAuthStore(state => state.initialize);
   const isLoading = useAuthStore(state => state.isLoading);
+  const [cacheReady, setCacheReady] = useState(false);
 
   useEffect(() => {
-    initialize();
+    Promise.all([
+      initialize(),
+      initializeApollo(),
+    ]).then(() => setCacheReady(true));
   }, []);
 
-  if (isLoading) {
+  // Initialize network listener
+  useEffect(() => {
+    const unsubscribe = useNetworkStore.getState().initialize();
+    return unsubscribe;
+  }, []);
+
+  // Sync on reconnect
+  useOfflineSync();
+
+  if (isLoading || !cacheReady) {
     return (
       <SafeAreaProvider>
         <StatusBar style="dark" />
@@ -90,6 +149,7 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <View className="flex-1">
             <StatusBar style="dark" />
+            <OfflineBanner />
             <RootLayoutNav />
             <ToastContainer />
           </View>

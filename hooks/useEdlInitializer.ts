@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ElementEtat, LocalPhoto } from '../types';
 import { PieceNode, CompteurNode, CleNode, EdlNode, GraphQLEdge, ElementNode, PhotoNode } from '../types/graphql';
 import { BASE_URL, UPLOADS_URL } from '../utils/constants';
@@ -69,8 +69,14 @@ export function useEdlInitializer(edl: EdlNode | undefined): EdlInitializerState
   const [elementPhotos, setElementPhotos] = useState<Record<string, LocalPhoto[]>>({});
   const [compteurPhotos, setCompteurPhotos] = useState<Record<string, LocalPhoto[]>>({});
 
+  // Only initialize state ONCE from server data.
+  // Subsequent edl changes (from Apollo cache updates after auto-save)
+  // must NOT overwrite local state, or locally-added photos get lost.
+  const isInitialized = useRef(false);
+
   useEffect(() => {
-    if (!edl) return;
+    if (!edl || isInitialized.current) return;
+    isInitialized.current = true;
 
     const pieces = edl.pieces?.edges?.map((e: GraphQLEdge<PieceNode>) => e.node) || [];
     const compteurs = edl.compteurs?.edges?.map((e: GraphQLEdge<CompteurNode>) => e.node) || [];

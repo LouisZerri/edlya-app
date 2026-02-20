@@ -53,7 +53,7 @@ export function PhotoGallery({
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
   const { getCurrentLocation } = useLocation();
-  const { uploadPhoto } = usePhotoUpload();
+  const { uploadPhoto, deletePhotoFromServer } = usePhotoUpload();
 
   const dimension = SIZES[thumbnailSize];
 
@@ -92,18 +92,11 @@ export function PhotoGallery({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
 
-        // Get location if available
+        // EXIF coordinates (synchronous, always available)
         let latitude: number | undefined;
         let longitude: number | undefined;
 
-        if (useCamera) {
-          const location = await getCurrentLocation();
-          if (location) {
-            latitude = location.latitude;
-            longitude = location.longitude;
-          }
-        } else if (asset.exif) {
-          // Try to get from EXIF data
+        if (!useCamera && asset.exif) {
           const exif = asset.exif as Record<string, unknown>;
           if (exif.GPSLatitude && exif.GPSLongitude) {
             latitude = exif.GPSLatitude as number;
@@ -111,6 +104,7 @@ export function PhotoGallery({
           }
         }
 
+        // Add photo IMMEDIATELY (before any async location call)
         const newPhoto: LocalPhoto = {
           id: generateId(),
           localUri: asset.uri,
@@ -126,6 +120,23 @@ export function PhotoGallery({
         // Auto-upload if enabled
         if (autoUpload) {
           uploadPhoto(elementId, newPhoto, uploadType);
+        }
+
+        // Try GPS location in background (fire-and-forget, never blocks UI)
+        if (useCamera) {
+          getCurrentLocation()
+            .then(location => {
+              if (location) {
+                onPhotosChange(
+                  updatedPhotos.map(p =>
+                    p.id === newPhoto.id
+                      ? { ...p, latitude: location.latitude, longitude: location.longitude }
+                      : p
+                  )
+                );
+              }
+            })
+            .catch(() => {});
         }
       }
     } catch (error) {
@@ -153,14 +164,22 @@ export function PhotoGallery({
   };
 
   const handleDelete = (photoId: string) => {
+    const photo = photos.find(p => p.id === photoId);
     Alert.alert('Supprimer', 'Supprimer cette photo ?', [
       { text: 'Annuler', style: 'cancel' },
       {
         text: 'Supprimer',
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
+          // Delete from server if it was uploaded
+          if (photo?.remoteId) {
+            const deleted = await deletePhotoFromServer(photo);
+            if (!deleted) {
+              Alert.alert('Erreur', 'Impossible de supprimer la photo du serveur');
+              return;
+            }
+          }
           const filteredPhotos = photos.filter(p => p.id !== photoId);
-          // Reorder
           const reorderedPhotos = filteredPhotos.map((p, index) => ({
             ...p,
             ordre: index + 1,
@@ -192,7 +211,16 @@ export function PhotoGallery({
     onPhotosChange(updatedPhotos);
   };
 
-  const handleDeleteFromViewer = (photoId: string) => {
+  const handleDeleteFromViewer = async (photoId: string) => {
+    const photo = photos.find(p => p.id === photoId);
+    // Delete from server if it was uploaded
+    if (photo?.remoteId) {
+      const deleted = await deletePhotoFromServer(photo);
+      if (!deleted) {
+        Alert.alert('Erreur', 'Impossible de supprimer la photo du serveur');
+        return;
+      }
+    }
     const filteredPhotos = photos.filter(p => p.id !== photoId);
     const reorderedPhotos = filteredPhotos.map((p, index) => ({
       ...p,

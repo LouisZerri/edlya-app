@@ -40,6 +40,8 @@ import {
 import { displayDateToApi } from '../utils/format';
 import { getErrorMessage } from '../utils/error';
 import { useToastStore } from '../stores/toastStore';
+import { useNetworkStore } from '../stores/networkStore';
+import { addToQueue } from '../utils/offlineMutationQueue';
 import { usePhotoUpload } from './usePhotoUpload';
 import { EdlFormData } from './useEdlInitializer';
 
@@ -54,6 +56,8 @@ interface UseEdlMutationsParams {
   localCles: CleNode[];
   setLocalCles: React.Dispatch<React.SetStateAction<CleNode[]>>;
   compteurValues: Record<string, string>;
+  compteurNumeros: Record<string, string>;
+  compteurComments: Record<string, string>;
   setCompteurValues: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   cleValues: Record<string, number>;
   setCleValues: React.Dispatch<React.SetStateAction<Record<string, number>>>;
@@ -79,6 +83,8 @@ export function useEdlMutations({
   localCles,
   setLocalCles,
   compteurValues,
+  compteurNumeros,
+  compteurComments,
   setCompteurValues,
   cleValues,
   setCleValues,
@@ -95,6 +101,14 @@ export function useEdlMutations({
   const router = useRouter();
   const { success, error: showError } = useToastStore();
   const { uploadPhoto } = usePhotoUpload();
+
+  const requireOnline = (): boolean => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return false;
+    }
+    return true;
+  };
 
   const [saving, setSaving] = useState(false);
   const [showAddPiece, setShowAddPiece] = useState(false);
@@ -116,7 +130,117 @@ export function useEdlMutations({
   const [createElement] = useMutation(CREATE_ELEMENT);
   const [deleteElementMutation] = useMutation(DELETE_ELEMENT);
 
+  const queueAllMutations = async () => {
+    await addToQueue({
+      mutationName: 'UPDATE_ETAT_DES_LIEUX',
+      variables: {
+        input: {
+          id: `/api/etat_des_lieuxes/${edlId}`,
+          locataireNom: formData.locataireNom,
+          locataireEmail: formData.locataireEmail || null,
+          locataireTelephone: formData.locataireTelephone || null,
+          dateRealisation: displayDateToApi(formData.dateRealisation),
+          observationsGenerales: formData.observationsGenerales || null,
+        },
+      },
+    });
+
+    for (const piece of localPieces) {
+      const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
+      for (const element of elements) {
+        const hasStateChange = elementStates[element.id] !== element.etat;
+        const hasObsChange = elementObservations[element.id] !== (element.observations || '');
+        const currentDegs = Array.isArray(elementDegradations[element.id]) ? elementDegradations[element.id] : [];
+        const originalDegs = Array.isArray(element.degradations) ? element.degradations : [];
+        const hasDegChange = JSON.stringify(currentDegs) !== JSON.stringify(originalDegs);
+
+        if (hasStateChange || hasObsChange || hasDegChange) {
+          await addToQueue({
+            mutationName: 'UPDATE_ELEMENT',
+            variables: {
+              input: {
+                id: element.id,
+                etat: elementStates[element.id],
+                observations: elementObservations[element.id] || null,
+                degradations: currentDegs,
+              },
+            },
+          });
+        }
+      }
+    }
+
+    for (const compteur of localCompteurs) {
+      const hasIndexChange = compteurValues[compteur.id] !== compteur.indexValue;
+      const hasNumeroChange = compteurNumeros[compteur.id] !== (compteur.numero || '');
+      const hasCommentChange = compteurComments[compteur.id] !== (compteur.commentaire || '');
+
+      if (hasIndexChange || hasNumeroChange || hasCommentChange) {
+        await addToQueue({
+          mutationName: 'UPDATE_COMPTEUR',
+          variables: {
+            input: {
+              id: compteur.id,
+              indexValue: compteurValues[compteur.id],
+              numero: compteurNumeros[compteur.id] || null,
+              commentaire: compteurComments[compteur.id] || null,
+            },
+          },
+        });
+      }
+    }
+
+    for (const cle of localCles) {
+      if (cleValues[cle.id] !== cle.nombre) {
+        await addToQueue({
+          mutationName: 'UPDATE_CLE',
+          variables: {
+            input: {
+              id: cle.id,
+              nombre: cleValues[cle.id],
+            },
+          },
+        });
+      }
+    }
+  };
+
   const handleSave = async () => {
+    if (!useNetworkStore.getState().isConnected) {
+      await queueAllMutations();
+
+      // Persist and queue pending photos
+      let photoCount = 0;
+      for (const piece of localPieces) {
+        const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
+        for (const element of elements) {
+          const photos = elementPhotos[element.id] || [];
+          for (const photo of photos) {
+            if (photo.uploadStatus === 'pending' || photo.uploadStatus === 'error') {
+              const result = await uploadPhoto(element.id, photo);
+              if (result.success) photoCount++;
+            }
+          }
+        }
+      }
+      for (const compteur of localCompteurs) {
+        const photos = compteurPhotos[compteur.id] || [];
+        for (const photo of photos) {
+          if (photo.uploadStatus === 'pending' || photo.uploadStatus === 'error') {
+            const result = await uploadPhoto(compteur.id, photo, 'compteur');
+            if (result.success) photoCount++;
+          }
+        }
+      }
+
+      const msg = photoCount > 0
+        ? `Modifications + ${photoCount} photo(s) sauvegardées localement`
+        : 'Modifications sauvegardées localement';
+      success(msg);
+      router.back();
+      return;
+    }
+
     setSaving(true);
     try {
       await updateEdl({
@@ -200,6 +324,7 @@ export function useEdlMutations({
   };
 
   const confirmAddPiece = async () => {
+    if (!requireOnline()) return;
     if (!newPieceName.trim()) {
       showError('Veuillez entrer un nom');
       return;
@@ -228,6 +353,7 @@ export function useEdlMutations({
   };
 
   const handleAddCompteur = (type: CompteurType) => {
+    if (!requireOnline()) return;
     Alert.alert('Ajouter compteur', `Ajouter un compteur ${COMPTEUR_CONFIG[type].label} ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -254,6 +380,7 @@ export function useEdlMutations({
   };
 
   const handleAddCle = (type: CleType) => {
+    if (!requireOnline()) return;
     Alert.alert('Ajouter clé', `Ajouter une clé ${CLE_LABELS[type]} ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -280,6 +407,7 @@ export function useEdlMutations({
   };
 
   const handleDeletePiece = (pieceId: string, nom: string) => {
+    if (!requireOnline()) return;
     Alert.alert('Supprimer', `Supprimer la pièce "${nom}" ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -299,6 +427,7 @@ export function useEdlMutations({
   };
 
   const handleDeleteCompteur = (compteurId: string, label: string) => {
+    if (!requireOnline()) return;
     Alert.alert('Supprimer', `Supprimer le compteur "${label}" ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -318,6 +447,7 @@ export function useEdlMutations({
   };
 
   const handleDeleteCle = (cleId: string, label: string) => {
+    if (!requireOnline()) return;
     Alert.alert('Supprimer', `Supprimer la clé "${label}" ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -337,6 +467,7 @@ export function useEdlMutations({
   };
 
   const handleAddElement = async (pieceId: string) => {
+    if (!requireOnline()) return;
     if (!newElementName.trim()) {
       showError('Veuillez entrer un nom');
       return;
@@ -372,6 +503,7 @@ export function useEdlMutations({
   };
 
   const handleDeleteElement = (elementId: string, elementName: string, pieceId: string) => {
+    if (!requireOnline()) return;
     Alert.alert('Supprimer', `Supprimer l'élément "${elementName}" ?`, [
       { text: 'Annuler', style: 'cancel' },
       {

@@ -11,3 +11,4 @@ export { Select } from './Select';
 export { FaqModal } from './FaqModal';
 export { ToastContainer } from './Toast';
 export { RemoteThumbnail } from './RemoteThumbnail';
+export { OfflineBanner } from './OfflineBanner';

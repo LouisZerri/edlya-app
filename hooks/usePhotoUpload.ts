@@ -1,50 +1,19 @@
 import { useCallback, useState } from 'react';
-import { Image as RNImage } from 'react-native';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { useAuthStore } from '../stores/authStore';
 import { usePhotoStore } from '../stores/photoStore';
 import { useToastStore } from '../stores/toastStore';
+import { useNetworkStore } from '../stores/networkStore';
+import { usePhotoQueueStore } from '../stores/photoQueueStore';
+import { persistPhoto } from '../utils/photoFileManager';
+import { compressPhoto } from '../utils/imageCompressor';
 import { LocalPhoto } from '../types';
 import { API_URL } from '../utils/constants';
-
-const MAX_DIMENSION = 1200;
-const JPEG_QUALITY = 0.7;
-
-function getImageSize(uri: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    RNImage.getSize(uri, (width, height) => resolve({ width, height }), reject);
-  });
-}
-
-async function compressPhoto(uri: string): Promise<string> {
-  try {
-    const { width, height } = await getImageSize(uri);
-    const needsResize = width > MAX_DIMENSION || height > MAX_DIMENSION;
-
-    const context = ImageManipulator.manipulate(uri);
-
-    if (needsResize) {
-      const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
-      context.resize({
-        width: Math.round(width * ratio),
-        height: Math.round(height * ratio),
-      });
-    }
-
-    const image = await context.renderAsync();
-    const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: JPEG_QUALITY });
-    context.release();
-
-    return saved.uri;
-  } catch (err) {
-    return uri;
-  }
-}
 
 type UploadType = 'element' | 'compteur';
 
 interface PhotoUploadResult {
   success: boolean;
+  queued?: boolean;
   remoteId?: string;
   remoteUrl?: string;
   error?: string;
@@ -55,6 +24,7 @@ interface UsePhotoUploadReturn {
   uploadPhoto: (entityId: string, photo: LocalPhoto, type?: UploadType) => Promise<PhotoUploadResult>;
   uploadAllPending: (entityId: string, type?: UploadType) => Promise<void>;
   retryFailed: (entityId: string, photoId: string, type?: UploadType) => Promise<PhotoUploadResult>;
+  deletePhotoFromServer: (photo: LocalPhoto) => Promise<boolean>;
 }
 
 export function usePhotoUpload(): UsePhotoUploadReturn {
@@ -76,26 +46,46 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
       setUploadStatus(entityId, photo.id, 'uploading');
       updateUploadProgress(entityId, photo.id, 0);
 
-      // Extract numeric ID from IRI (e.g., "/api/elements/123" -> "123")
+      // Compress photo
+      const compressedUri = await compressPhoto(photo.localUri);
+
+      // Persist to documentDirectory (survives between sessions)
+      const permanentPath = await persistPhoto(compressedUri, photo.id);
+
+      const { isConnected } = useNetworkStore.getState();
+
+      if (!isConnected) {
+        // Offline: queue for later upload
+        usePhotoQueueStore.getState().addToQueue({
+          id: photo.id,
+          elementId: entityId,
+          localPath: permanentPath,
+          uploadType: type,
+          legende: photo.legende,
+          latitude: photo.latitude,
+          longitude: photo.longitude,
+          ordre: photo.ordre,
+        });
+        setUploadStatus(entityId, photo.id, 'pending');
+        success('Photo sauvegardée localement');
+        return { success: true, queued: true };
+      }
+
+      // Online: upload from permanent path
       const numericId = entityId.includes('/')
         ? entityId.split('/').pop()
         : entityId;
 
-      // Determine endpoint and ID field based on type
       const endpoint = type === 'compteur'
         ? `${API_URL}/upload/compteur-photo`
         : `${API_URL}/upload/photo`;
       const idField = type === 'compteur' ? 'compteur_id' : 'element_id';
 
-      // Compress photo before upload
-      const compressedUri = await compressPhoto(photo.localUri);
-
-      // Create FormData
       const formData = new FormData();
       formData.append(idField, numericId || entityId);
 
       formData.append('photo', {
-        uri: compressedUri,
+        uri: permanentPath,
         name: `photo_${photo.id}.jpg`,
         type: 'image/jpeg',
       } as any);
@@ -111,7 +101,6 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
       }
       formData.append('ordre', photo.ordre.toString());
 
-      // Use XMLHttpRequest for progress tracking
       const result = await new Promise<PhotoUploadResult>((resolve) => {
         const xhr = new XMLHttpRequest();
 
@@ -203,10 +192,32 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
     return uploadPhoto(entityId, photo, type);
   }, [getPhotosForElement, uploadPhoto]);
 
+  const deletePhotoFromServer = useCallback(async (photo: LocalPhoto): Promise<boolean> => {
+    // Local-only photo (never uploaded) — nothing to delete on server
+    if (!photo.remoteId) return true;
+
+    if (!token) return false;
+
+    const numericId = photo.remoteId.includes('/')
+      ? photo.remoteId.split('/').pop()
+      : photo.remoteId;
+
+    try {
+      const response = await fetch(`${API_URL}/upload/photo/${numericId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }, [token]);
+
   return {
     isUploading,
     uploadPhoto,
     uploadAllPending,
     retryFailed,
+    deletePhotoFromServer,
   };
 }

@@ -5,8 +5,11 @@ import { ElementEtat } from '../types';
 import { EdlNode, PieceNode, CompteurNode, CleNode, GraphQLEdge, ElementNode } from '../types/graphql';
 import { displayDateToApi } from '../utils/format';
 import { EdlFormData } from './useEdlInitializer';
+import { useNetworkStore } from '../stores/networkStore';
+import { addToQueue } from '../utils/offlineMutationQueue';
+import { getQueueLength } from '../utils/offlineMutationQueue';
 
-export type AutoSaveStatus = 'idle' | 'modified' | 'saving' | 'saved' | 'error';
+export type AutoSaveStatus = 'idle' | 'modified' | 'saving' | 'saved' | 'queued' | 'syncing' | 'error';
 
 interface UseEdlAutoSaveParams {
   edlId: string;
@@ -50,85 +53,170 @@ export function useEdlAutoSave({
 
   const performAutoSave = useCallback(async () => {
     if (!edl || !isInitialized.current) return;
-    setAutoSaveStatus('saving');
-    try {
-      await updateEdl({
-        variables: {
-          input: {
-            id: `/api/etat_des_lieuxes/${edlId}`,
-            locataireNom: formData.locataireNom,
-            locataireEmail: formData.locataireEmail || null,
-            locataireTelephone: formData.locataireTelephone || null,
-            dateRealisation: displayDateToApi(formData.dateRealisation),
-            observationsGenerales: formData.observationsGenerales || null,
+
+    const { isConnected } = useNetworkStore.getState();
+
+    if (isConnected) {
+      // Online: save directly
+      setAutoSaveStatus('saving');
+      try {
+        await updateEdl({
+          variables: {
+            input: {
+              id: `/api/etat_des_lieuxes/${edlId}`,
+              locataireNom: formData.locataireNom,
+              locataireEmail: formData.locataireEmail || null,
+              locataireTelephone: formData.locataireTelephone || null,
+              dateRealisation: displayDateToApi(formData.dateRealisation),
+              observationsGenerales: formData.observationsGenerales || null,
+            },
           },
-        },
-      });
+        });
 
-      // Update elements that changed
-      for (const piece of localPieces) {
-        const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
-        for (const element of elements) {
-          const hasStateChange = elementStates[element.id] !== element.etat;
-          const hasObsChange = elementObservations[element.id] !== (element.observations || '');
-          const currentDegs = Array.isArray(elementDegradations[element.id]) ? elementDegradations[element.id] : [];
-          const originalDegs = Array.isArray(element.degradations) ? element.degradations : [];
-          const hasDegChange = JSON.stringify(currentDegs) !== JSON.stringify(originalDegs);
+        for (const piece of localPieces) {
+          const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
+          for (const element of elements) {
+            const hasStateChange = elementStates[element.id] !== element.etat;
+            const hasObsChange = elementObservations[element.id] !== (element.observations || '');
+            const currentDegs = Array.isArray(elementDegradations[element.id]) ? elementDegradations[element.id] : [];
+            const originalDegs = Array.isArray(element.degradations) ? element.degradations : [];
+            const hasDegChange = JSON.stringify(currentDegs) !== JSON.stringify(originalDegs);
 
-          if (hasStateChange || hasObsChange || hasDegChange) {
-            await updateElement({
+            if (hasStateChange || hasObsChange || hasDegChange) {
+              await updateElement({
+                variables: {
+                  input: {
+                    id: element.id,
+                    etat: elementStates[element.id],
+                    observations: elementObservations[element.id] || null,
+                    degradations: currentDegs,
+                  },
+                },
+              });
+            }
+          }
+        }
+
+        for (const compteur of localCompteurs) {
+          const hasIndexChange = compteurValues[compteur.id] !== compteur.indexValue;
+          const hasNumeroChange = compteurNumeros[compteur.id] !== (compteur.numero || '');
+          const hasCommentChange = compteurComments[compteur.id] !== (compteur.commentaire || '');
+
+          if (hasIndexChange || hasNumeroChange || hasCommentChange) {
+            await updateCompteur({
               variables: {
                 input: {
-                  id: element.id,
-                  etat: elementStates[element.id],
-                  observations: elementObservations[element.id] || null,
-                  degradations: currentDegs,
+                  id: compteur.id,
+                  indexValue: compteurValues[compteur.id],
+                  numero: compteurNumeros[compteur.id] || null,
+                  commentaire: compteurComments[compteur.id] || null,
                 },
               },
             });
           }
         }
-      }
 
-      // Update compteurs
-      for (const compteur of localCompteurs) {
-        const hasIndexChange = compteurValues[compteur.id] !== compteur.indexValue;
-        const hasNumeroChange = compteurNumeros[compteur.id] !== (compteur.numero || '');
-        const hasCommentChange = compteurComments[compteur.id] !== (compteur.commentaire || '');
-
-        if (hasIndexChange || hasNumeroChange || hasCommentChange) {
-          await updateCompteur({
-            variables: {
-              input: {
-                id: compteur.id,
-                indexValue: compteurValues[compteur.id],
-                numero: compteurNumeros[compteur.id] || null,
-                commentaire: compteurComments[compteur.id] || null,
+        for (const cle of localCles) {
+          if (cleValues[cle.id] !== cle.nombre) {
+            await updateCle({
+              variables: {
+                input: {
+                  id: cle.id,
+                  nombre: cleValues[cle.id],
+                },
               },
-            },
-          });
+            });
+          }
         }
-      }
 
-      // Update cles
-      for (const cle of localCles) {
-        if (cleValues[cle.id] !== cle.nombre) {
-          await updateCle({
-            variables: {
-              input: {
-                id: cle.id,
-                nombre: cleValues[cle.id],
-              },
-            },
-          });
-        }
+        setAutoSaveStatus('saved');
+        setTimeout(() => setAutoSaveStatus('idle'), 2000);
+        return;
+      } catch {
+        // Network failed while we thought we were online — fall through to offline queue
       }
-
-      setAutoSaveStatus('saved');
-      setTimeout(() => setAutoSaveStatus('idle'), 2000);
-    } catch {
-      setAutoSaveStatus('error');
     }
+
+    // Offline or network error fallback: queue mutations
+    try {
+        await addToQueue({
+          mutationName: 'UPDATE_ETAT_DES_LIEUX',
+          variables: {
+            input: {
+              id: `/api/etat_des_lieuxes/${edlId}`,
+              locataireNom: formData.locataireNom,
+              locataireEmail: formData.locataireEmail || null,
+              locataireTelephone: formData.locataireTelephone || null,
+              dateRealisation: displayDateToApi(formData.dateRealisation),
+              observationsGenerales: formData.observationsGenerales || null,
+            },
+          },
+        });
+
+        for (const piece of localPieces) {
+          const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
+          for (const element of elements) {
+            const hasStateChange = elementStates[element.id] !== element.etat;
+            const hasObsChange = elementObservations[element.id] !== (element.observations || '');
+            const currentDegs = Array.isArray(elementDegradations[element.id]) ? elementDegradations[element.id] : [];
+            const originalDegs = Array.isArray(element.degradations) ? element.degradations : [];
+            const hasDegChange = JSON.stringify(currentDegs) !== JSON.stringify(originalDegs);
+
+            if (hasStateChange || hasObsChange || hasDegChange) {
+              await addToQueue({
+                mutationName: 'UPDATE_ELEMENT',
+                variables: {
+                  input: {
+                    id: element.id,
+                    etat: elementStates[element.id],
+                    observations: elementObservations[element.id] || null,
+                    degradations: currentDegs,
+                  },
+                },
+              });
+            }
+          }
+        }
+
+        for (const compteur of localCompteurs) {
+          const hasIndexChange = compteurValues[compteur.id] !== compteur.indexValue;
+          const hasNumeroChange = compteurNumeros[compteur.id] !== (compteur.numero || '');
+          const hasCommentChange = compteurComments[compteur.id] !== (compteur.commentaire || '');
+
+          if (hasIndexChange || hasNumeroChange || hasCommentChange) {
+            await addToQueue({
+              mutationName: 'UPDATE_COMPTEUR',
+              variables: {
+                input: {
+                  id: compteur.id,
+                  indexValue: compteurValues[compteur.id],
+                  numero: compteurNumeros[compteur.id] || null,
+                  commentaire: compteurComments[compteur.id] || null,
+                },
+              },
+            });
+          }
+        }
+
+        for (const cle of localCles) {
+          if (cleValues[cle.id] !== cle.nombre) {
+            await addToQueue({
+              mutationName: 'UPDATE_CLE',
+              variables: {
+                input: {
+                  id: cle.id,
+                  nombre: cleValues[cle.id],
+                },
+              },
+            });
+          }
+        }
+
+        const count = await getQueueLength();
+        setAutoSaveStatus('queued');
+      } catch {
+        setAutoSaveStatus('error');
+      }
   }, [edl, edlId, formData, localPieces, localCompteurs, localCles, compteurValues, compteurNumeros, compteurComments, cleValues, elementStates, elementObservations, elementDegradations, updateEdl, updateElement, updateCompteur, updateCle]);
 
   const triggerAutoSave = useCallback(() => {
@@ -159,5 +247,5 @@ export function useEdlAutoSave({
     triggerAutoSave();
   }, [formData, compteurValues, compteurNumeros, compteurComments, cleValues, elementStates, elementObservations, elementDegradations]);
 
-  return { autoSaveStatus };
+  return { autoSaveStatus, setAutoSaveStatus };
 }

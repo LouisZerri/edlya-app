@@ -54,28 +54,25 @@ export function usePhotoAnalysis(): UsePhotoAnalysisReturn {
     setIsAnalyzing(true);
 
     try {
+      const isRemoteUrl = photoUri.startsWith('http://') || photoUri.startsWith('https://');
+      const compressedUri = photoUri;
+
       const formData = new FormData();
 
       // Get file extension and mime type
-      const uriParts = photoUri.split('.');
+      const uriParts = compressedUri.split('.');
       const fileType = uriParts[uriParts.length - 1]?.toLowerCase() || 'jpg';
       const mimeType = fileType === 'png' ? 'image/png' : 'image/jpeg';
       const fileName = `photo_analyse_${Date.now()}.${fileType}`;
 
-      // Check if it's a remote URL or local file
-      const isRemoteUrl = photoUri.startsWith('http://') || photoUri.startsWith('https://');
-
       if (Platform.OS === 'web') {
-        // On web: fetch the image and create a blob
-        const imageResponse = await fetch(photoUri);
+        const imageResponse = await fetch(compressedUri);
         const blob = await imageResponse.blob();
         formData.append('photo', blob, fileName);
       } else if (isRemoteUrl) {
-        // On React Native with remote URL: fetch as base64 and create blob-like object
-        const imageResponse = await fetch(photoUri);
+        // Remote URL: fetch and convert to base64
+        const imageResponse = await fetch(compressedUri);
         const blob = await imageResponse.blob();
-
-        // Convert blob to base64 data URI for React Native
         const reader = new FileReader();
         const base64Promise = new Promise<string>((resolve, reject) => {
           reader.onloadend = () => resolve(reader.result as string);
@@ -90,9 +87,9 @@ export function usePhotoAnalysis(): UsePhotoAnalysisReturn {
           type: mimeType,
         } as any);
       } else {
-        // On React Native with local file: pass URI directly
+        // Local file: pass compressed URI directly
         formData.append('photo', {
-          uri: photoUri,
+          uri: compressedUri,
           name: fileName,
           type: mimeType,
         } as any);

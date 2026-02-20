@@ -29,7 +29,7 @@ export default function EditEdlScreen() {
 
   const { data, loading } = useQuery<GetEdlDetailData>(GET_ETAT_DES_LIEUX, {
     variables: { id: `/api/etat_des_lieuxes/${id}` },
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'cache-and-network',
   });
   const edl = data?.etatDesLieux;
 
@@ -65,6 +65,8 @@ export default function EditEdlScreen() {
     localCles: state.localCles,
     setLocalCles: state.setLocalCles,
     compteurValues: state.compteurValues,
+    compteurNumeros: state.compteurNumeros,
+    compteurComments: state.compteurComments,
     setCompteurValues: state.setCompteurValues,
     cleValues: state.cleValues,
     setCleValues: state.setCleValues,

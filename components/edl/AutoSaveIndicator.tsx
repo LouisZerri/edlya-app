@@ -24,6 +24,18 @@ export function AutoSaveIndicator({ status }: AutoSaveIndicatorProps) {
           <Text className="text-xs text-green-600 ml-1">Sauvegardé</Text>
         </View>
       )}
+      {status === 'queued' && (
+        <View className="flex-row items-center">
+          <CloudOff size={14} color={COLORS.amber[500]} />
+          <Text className="text-xs text-amber-600 ml-1">Sauvegardé localement</Text>
+        </View>
+      )}
+      {status === 'syncing' && (
+        <View className="flex-row items-center">
+          <ActivityIndicator size="small" color={COLORS.amber[500]} />
+          <Text className="text-xs text-amber-600 ml-1">Synchronisation...</Text>
+        </View>
+      )}
       {status === 'error' && (
         <View className="flex-row items-center">
           <CloudOff size={14} color={COLORS.red[500]} />

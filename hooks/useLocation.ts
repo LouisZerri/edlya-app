@@ -52,9 +52,14 @@ export function useLocation(): UseLocationReturn {
         }
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      const location = await Promise.race([
+        Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Location timeout')), 5000)
+        ),
+      ]);
 
       return {
         latitude: location.coords.latitude,
