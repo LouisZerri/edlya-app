@@ -3,11 +3,18 @@ import { ElementType, ElementEtat, EdlType, EdlStatut, CompteurType, CleType } f
 // Generic GraphQL connection types
 export interface GraphQLEdge<T> {
   node: T;
+  cursor?: string;
+}
+
+export interface GraphQLPageInfo {
+  endCursor: string | null;
+  hasNextPage: boolean;
 }
 
 export interface GraphQLConnection<T> {
   edges: GraphQLEdge<T>[];
   totalCount?: number;
+  pageInfo?: GraphQLPageInfo;
 }
 
 // Node types (as returned by GraphQL API)

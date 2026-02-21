@@ -17,6 +17,7 @@ import { processPhotoQueue } from '../utils/photoSyncManager';
 import { getQueueLength } from '../utils/offlineMutationQueue';
 import { usePhotoQueueStore } from '../stores/photoQueueStore';
 import { COLORS, API_URL } from '../utils/constants';
+import { hasSeenOnboarding, OnboardingScreen } from './onboarding';
 import '../global.css';
 
 function useProtectedRoute() {
@@ -60,14 +61,14 @@ function RootLayoutNav() {
   useProtectedRoute();
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 200 }}>
       <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="edl/[id]" />
-      <Stack.Screen name="edl/create" />
-      <Stack.Screen name="logement/[id]" />
-      <Stack.Screen name="logement/create" />
-      <Stack.Screen name="import" />
+      <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+      <Stack.Screen name="edl/[id]" options={{ animation: 'fade', animationDuration: 350 }} />
+      <Stack.Screen name="edl/create" options={{ animation: 'slide_from_bottom', animationDuration: 250 }} />
+      <Stack.Screen name="logement/[id]" options={{ animation: 'fade_from_bottom', animationDuration: 250 }} />
+      <Stack.Screen name="logement/create" options={{ animation: 'slide_from_bottom', animationDuration: 250 }} />
+      <Stack.Screen name="import" options={{ animation: 'slide_from_bottom', animationDuration: 250 }} />
     </Stack>
   );
 }
@@ -119,6 +120,7 @@ export default function RootLayout() {
   const initialize = useAuthStore(state => state.initialize);
   const isLoading = useAuthStore(state => state.isLoading);
   const [cacheReady, setCacheReady] = useState(false);
+  const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
   const { colorScheme, setColorScheme } = useColorScheme();
   const themePreference = useThemeStore(state => state.preference);
   const initializeTheme = useThemeStore(state => state.initialize);
@@ -128,13 +130,24 @@ export default function RootLayout() {
       initialize(),
       initializeApollo(),
       initializeTheme(),
-    ]).then(() => {
+      hasSeenOnboarding(),
+    ]).then(([, , , seen]) => {
       // Apply saved theme immediately on startup
       const pref = useThemeStore.getState().preference;
       setColorScheme(pref);
+      setOnboardingSeen(seen);
       setCacheReady(true);
     });
   }, []);
+
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  // Re-check onboarding flag when user logs in
+  useEffect(() => {
+    if (isAuthenticated) {
+      hasSeenOnboarding().then(setOnboardingSeen);
+    }
+  }, [isAuthenticated]);
 
   // Sync theme preference → NativeWind
   useEffect(() => {
@@ -155,6 +168,15 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         <LoadingScreen />
+      </SafeAreaProvider>
+    );
+  }
+
+  if (isAuthenticated && onboardingSeen === false) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <OnboardingScreen onComplete={() => setOnboardingSeen(true)} />
       </SafeAreaProvider>
     );
   }

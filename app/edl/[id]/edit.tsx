@@ -7,6 +7,7 @@ import { Header, Button } from '../../../components/ui';
 import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
 import { GetEdlDetailData } from '../../../types/graphql';
 import {
+  EdlProgressBar,
   EdlTabBar,
   TabType,
   EdlInfosTab,
@@ -214,6 +215,15 @@ export default function EditEdlScreen() {
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header title="Modifier EDL" showBack />
 
+      <EdlProgressBar
+        formData={state.formData}
+        localPieces={state.localPieces}
+        localCompteurs={state.localCompteurs}
+        localCles={state.localCles}
+        compteurValues={state.compteurValues}
+        cleValues={state.cleValues}
+        elementStates={state.elementStates}
+      />
       <EdlTabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <KeyboardAvoidingView

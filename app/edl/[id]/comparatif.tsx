@@ -1,9 +1,9 @@
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Download, AlertTriangle, ArrowRight, AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 import { TouchableOpacity } from 'react-native';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Header, Card, Badge, Button } from '../../../components/ui';
 import { COLORS } from '../../../utils/constants';
 import { COMPTEUR_CONFIG, ELEMENT_ETAT_LABELS, CLE_LABELS, ElementEtat, CleType } from '../../../types';
@@ -18,11 +18,27 @@ export default function ComparatifScreen() {
   const { isExporting, exportPdf } = usePdfExport();
   const [refreshing, setRefreshing] = useState(false);
 
+  // Page entrance animation
+  const pageOpacity = useRef(new Animated.Value(0)).current;
+  const pageSlide = useRef(new Animated.Value(30)).current;
+  const hasAnimated = useRef(false);
+
   useEffect(() => {
     if (id) {
       loadComparatif(id);
     }
   }, [id]);
+
+  // Trigger page animation when data arrives
+  useEffect(() => {
+    if (comparatif && !hasAnimated.current) {
+      hasAnimated.current = true;
+      Animated.parallel([
+        Animated.timing(pageOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(pageSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [comparatif]);
 
   const onRefresh = useCallback(async () => {
     if (!id) return;
@@ -93,8 +109,9 @@ export default function ComparatifScreen() {
         }
       />
 
-      <ScrollView
+      <Animated.ScrollView
         className="flex-1"
+        style={{ opacity: pageOpacity, transform: [{ translateY: pageSlide }] }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -310,7 +327,7 @@ export default function ComparatifScreen() {
         )}
 
         <View className="h-4" />
-      </ScrollView>
+      </Animated.ScrollView>
 
       <View className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
         <Button

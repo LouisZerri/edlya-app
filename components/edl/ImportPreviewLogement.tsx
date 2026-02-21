@@ -45,8 +45,8 @@ export function ImportPreviewLogement({
               onChangeText={(t) => onUpdate(d => ({
                 ...d, logement: { ...d.logement!, adresse: t }
               }))}
-              className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 mb-2"
-              style={{ includeFontPadding: false }}
+              className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 mb-2"
+              style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
               placeholder="Adresse"
               placeholderTextColor="#9CA3AF"
             />
@@ -56,8 +56,8 @@ export function ImportPreviewLogement({
                 onChangeText={(t) => onUpdate(d => ({
                   ...d, logement: { ...d.logement!, code_postal: t }
                 }))}
-                className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
-                style={{ includeFontPadding: false }}
+                className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
+                style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
                 placeholder="Code postal"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="numeric"
@@ -67,8 +67,8 @@ export function ImportPreviewLogement({
                 onChangeText={(t) => onUpdate(d => ({
                   ...d, logement: { ...d.logement!, ville: t }
                 }))}
-                className="flex-[2] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
-                style={{ includeFontPadding: false }}
+                className="flex-[2] border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
+                style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
                 placeholder="Ville"
                 placeholderTextColor="#9CA3AF"
               />
@@ -78,8 +78,8 @@ export function ImportPreviewLogement({
               onChangeText={(t) => onUpdate(d => ({
                 ...d, logement: { ...d.logement!, surface: t ? parseFloat(t) : undefined }
               }))}
-              className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
-              style={{ includeFontPadding: false }}
+              className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900"
+              style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
               placeholder="Surface (m²)"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"

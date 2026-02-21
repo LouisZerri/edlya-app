@@ -41,6 +41,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (token && user) {
         set({ token, user, isAuthenticated: true, isLoading: false });
+
+        // Vérifier en arrière-plan que le token est encore valide
+        fetch(`${API_URL}/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then(async (res) => {
+          if (res.ok) {
+            const freshUser = await res.json();
+            await setUser(freshUser);
+            set({ user: freshUser });
+          } else if (res.status === 401) {
+            await clearAuth();
+            set({ user: null, token: null, isAuthenticated: false });
+          }
+        }).catch(() => {
+          // Hors-ligne : on garde la session locale
+        });
       } else {
         set({ isLoading: false });
       }

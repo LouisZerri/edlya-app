@@ -1,12 +1,13 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Trash2, Sparkles } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { Trash2, Sparkles, Zap, X } from 'lucide-react-native';
 import { Select, InputWithVoice, AideTooltip } from '../ui';
 import { PhotoGallery } from '../photo';
 import { ElementType, ElementEtat, LocalPhoto, ELEMENT_TYPE_LABELS, ELEMENT_ETAT_LABELS } from '../../types';
 import { ElementNode } from '../../types/graphql';
 import { COLORS } from '../../utils/constants';
 import { DEGRADATIONS_SUGGESTIONS } from '../../utils/degradations';
+import { OBSERVATION_SUGGESTIONS } from '../../utils/observationSuggestions';
 
 const etatOptions = Object.entries(ELEMENT_ETAT_LABELS).map(([value, label]) => ({
   value,
@@ -47,9 +48,11 @@ export const ElementCard = React.memo(function ElementCard({
   onDelete,
 }: ElementCardProps) {
   const suggestions = DEGRADATIONS_SUGGESTIONS[element.type] || DEGRADATIONS_SUGGESTIONS.autre;
+  const observationSuggestions = OBSERVATION_SUGGESTIONS[element.type] || OBSERVATION_SUGGESTIONS.autre;
   const currentDegradations = Array.isArray(elementDegradations[element.id])
     ? elementDegradations[element.id]
     : [];
+  const [showObsSuggestions, setShowObsSuggestions] = useState(false);
 
   return (
     <View className="py-3 border-t border-gray-100 dark:border-gray-700">
@@ -129,33 +132,85 @@ export const ElementCard = React.memo(function ElementCard({
         )}
       </View>
 
-      {/* Observations + Aide IA */}
+      {/* Observations + Suggestions rapides + Aide IA */}
       <View className="mt-3">
-        <View className="flex-row items-end gap-2">
-          <View className="flex-1">
-            <InputWithVoice
-              label="Observations"
-              value={elementObservations[element.id] || ''}
-              onChangeText={(text) =>
-                setElementObservations(prev => ({ ...prev, [element.id]: text }))
-              }
-              placeholder="Dictez ou saisissez..."
-              numberOfLines={2}
-            />
-          </View>
-          <View className="mb-4">
-            <AideTooltip
-              element={element.nom}
-              etat={elementStates[element.id] || element.etat}
-              observation={elementObservations[element.id]}
-              degradations={currentDegradations}
-              onApply={(text) =>
-                setElementObservations(prev => ({ ...prev, [element.id]: text }))
-              }
-            />
-          </View>
+        <InputWithVoice
+          label="Observations"
+          value={elementObservations[element.id] || ''}
+          onChangeText={(text) =>
+            setElementObservations(prev => ({ ...prev, [element.id]: text }))
+          }
+          placeholder="Dictez ou saisissez..."
+          numberOfLines={2}
+        />
+        <View className="flex-row gap-2 -mt-2">
+          <TouchableOpacity
+            onPress={() => setShowObsSuggestions(true)}
+            className="flex-row items-center px-3 py-2 bg-amber-50 dark:bg-amber-900/30 rounded-lg border border-amber-200 dark:border-amber-700"
+          >
+            <Zap size={14} color={COLORS.amber[600]} />
+            <Text className="text-amber-700 dark:text-amber-300 text-xs font-medium ml-1.5">Rapide</Text>
+          </TouchableOpacity>
+          <AideTooltip
+            element={element.nom}
+            etat={elementStates[element.id] || element.etat}
+            observation={elementObservations[element.id]}
+            degradations={currentDegradations}
+            onApply={(text) =>
+              setElementObservations(prev => ({ ...prev, [element.id]: text }))
+            }
+          />
         </View>
       </View>
+
+      {/* Modal suggestions observations */}
+      <Modal
+        visible={showObsSuggestions}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowObsSuggestions(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowObsSuggestions(false)}
+          className="flex-1 bg-black/50 justify-end"
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {}}
+            className="bg-white dark:bg-gray-900 rounded-t-2xl"
+          >
+            <View className="flex-row items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
+              <View>
+                <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">Observations rapides</Text>
+                <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{element.nom}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowObsSuggestions(false)}>
+                <X size={24} color={COLORS.gray[400]} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView className="px-5 py-3" style={{ maxHeight: 350 }}>
+              {observationSuggestions.map((obs) => (
+                <TouchableOpacity
+                  key={obs}
+                  onPress={() => {
+                    const current = elementObservations[element.id] || '';
+                    const newValue = current ? `${current}. ${obs}` : obs;
+                    setElementObservations(prev => ({ ...prev, [element.id]: newValue }));
+                    setShowObsSuggestions(false);
+                  }}
+                  className="py-3.5 border-b border-gray-50 dark:border-gray-800"
+                  activeOpacity={0.6}
+                >
+                  <Text className="text-gray-800 dark:text-gray-200">{obs}</Text>
+                </TouchableOpacity>
+              ))}
+              <View className="h-4" />
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Photos */}
       <View className="mt-2">

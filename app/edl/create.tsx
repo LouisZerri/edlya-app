@@ -1,14 +1,14 @@
 import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useQuery, useMutation } from '@apollo/client/react';
+import { useQuery, useLazyQuery, useMutation } from '@apollo/client/react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Home } from 'lucide-react-native';
-import { Header, Input, Select, Button, EmptyState } from '../../components/ui';
-import { GET_LOGEMENTS } from '../../graphql/queries/logements';
+import { Header, Input, Select, Button, EmptyState, DatePicker } from '../../components/ui';
+import { GET_LOGEMENTS, GET_LOGEMENT } from '../../graphql/queries/logements';
 import { CREATE_ETAT_DES_LIEUX } from '../../graphql/mutations/edl';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
 import { useToastStore } from '../../stores/toastStore';
@@ -19,6 +19,22 @@ import { useAuthStore } from '../../stores/authStore';
 interface LogementsData {
   logements?: {
     edges: Array<{ node: { id: string; nom: string } }>;
+  };
+}
+
+interface LogementDetailData {
+  logement?: {
+    etatDesLieux?: {
+      edges: Array<{
+        node: {
+          id: string;
+          type: string;
+          locataireNom: string;
+          locataireEmail?: string;
+          locataireTelephone?: string;
+        };
+      }>;
+    };
   };
 }
 
@@ -77,6 +93,8 @@ export default function CreateEdlScreen() {
     refetchQueries: [{ query: GET_ETATS_DES_LIEUX }],
   });
 
+  const [fetchLogement] = useLazyQuery<LogementDetailData>(GET_LOGEMENT);
+
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<EdlForm>({
     resolver: zodResolver(edlSchema),
     defaultValues: {
@@ -91,6 +109,24 @@ export default function CreateEdlScreen() {
   });
 
   const selectedType = watch('type');
+  const selectedLogement = watch('logement');
+
+  // Pré-remplir les infos locataire depuis le dernier EDL d'entrée quand type = sortie
+  useEffect(() => {
+    if (selectedType !== 'sortie' || !selectedLogement) return;
+
+    fetchLogement({ variables: { id: selectedLogement } }).then(({ data }) => {
+      const edlEntree = data?.logement?.etatDesLieux?.edges
+        ?.map(e => e.node)
+        .find(edl => edl.type === 'entree');
+
+      if (edlEntree) {
+        setValue('locataireNom', edlEntree.locataireNom || '');
+        if (edlEntree.locataireEmail) setValue('locataireEmail', edlEntree.locataireEmail);
+        if (edlEntree.locataireTelephone) setValue('locataireTelephone', edlEntree.locataireTelephone);
+      }
+    });
+  }, [selectedType, selectedLogement]);
 
   const onSubmit = async (data: EdlForm) => {
     setLoading(true);
@@ -217,11 +253,10 @@ export default function CreateEdlScreen() {
             control={control}
             name="dateRealisation"
             render={({ field: { onChange, value } }) => (
-              <Input
+              <DatePicker
                 label="Date *"
                 value={value}
-                onChangeText={onChange}
-                placeholder="25/01/2024"
+                onChange={onChange}
                 error={errors.dateRealisation?.message}
               />
             )}

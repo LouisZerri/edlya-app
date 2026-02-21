@@ -1,0 +1,75 @@
+/** Observations pré-remplies par type d'élément, pour accélérer la saisie sur le terrain. */
+export const OBSERVATION_SUGGESTIONS: Record<string, string[]> = {
+  sol: [
+    'Bon état général',
+    'Usure normale d\'usage',
+    'Traces légères de meubles',
+    'Parquet en bon état',
+    'Carrelage propre, joints corrects',
+    'Moquette propre, sans tache',
+    'Lino usé par endroits',
+  ],
+  mur: [
+    'Bon état général',
+    'Peinture propre et uniforme',
+    'Quelques traces légères',
+    'Trous de chevilles rebouchés',
+    'Papier peint en bon état',
+    'Légères marques d\'usage',
+  ],
+  plafond: [
+    'Bon état général',
+    'Peinture propre et uniforme',
+    'Légère trace d\'humidité ancienne',
+    'Quelques micro-fissures',
+  ],
+  menuiserie: [
+    'Bon état, ouverture/fermeture OK',
+    'Joints en bon état',
+    'Vitrage intact',
+    'Volet roulant fonctionnel',
+    'Poignée fonctionnelle',
+    'Légères traces d\'usage',
+  ],
+  electricite: [
+    'Fonctionne correctement',
+    'Toutes les prises testées OK',
+    'Interrupteurs fonctionnels',
+    'Éclairage fonctionnel',
+  ],
+  plomberie: [
+    'Fonctionne correctement',
+    'Pas de fuite constatée',
+    'Robinetterie en bon état',
+    'Évacuation correcte',
+    'Joints en bon état',
+  ],
+  chauffage: [
+    'Fonctionne correctement',
+    'Radiateur en bon état',
+    'Thermostat fonctionnel',
+  ],
+  equipement: [
+    'Bon état général',
+    'Complet et fonctionnel',
+    'Usure normale',
+    'Propre',
+  ],
+  mobilier: [
+    'Bon état général',
+    'Propre, sans tache',
+    'Usure normale d\'usage',
+    'Complet',
+  ],
+  electromenager: [
+    'Fonctionne correctement',
+    'Propre',
+    'Bon état général',
+  ],
+  autre: [
+    'Bon état général',
+    'Usure normale',
+    'Propre et fonctionnel',
+    'RAS',
+  ],
+};

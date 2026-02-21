@@ -1,7 +1,9 @@
+export { AddressAutocomplete } from './AddressAutocomplete';
 export { AideTooltip } from './AideTooltip';
 export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
+export { DatePicker } from './DatePicker';
 export { Header } from './Header';
 export { IconButton } from './IconButton';
 export { Input } from './Input';
@@ -16,3 +18,5 @@ export { EmptyState } from './EmptyState';
 export { Skeleton, SkeletonCard, SkeletonList } from './Skeleton';
 export { AnimatedListItem } from './AnimatedListItem';
 export { Fab } from './Fab';
+export { SwipeableRow } from './SwipeableRow';
+export { ConfirmSheet } from './ConfirmSheet';

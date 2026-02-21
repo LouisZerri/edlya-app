@@ -26,8 +26,8 @@ export function ImportPreviewLocataire({ extractedData, isEditing, onUpdate }: I
             onChangeText={(t) => onUpdate(d => ({
               ...d, locataire: { ...d.locataire!, nom: t }
             }))}
-            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 mb-2"
-            style={{ includeFontPadding: false }}
+            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 mb-2"
+            style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
             placeholder="Nom du locataire"
             placeholderTextColor="#9CA3AF"
           />
@@ -36,8 +36,8 @@ export function ImportPreviewLocataire({ extractedData, isEditing, onUpdate }: I
             onChangeText={(t) => onUpdate(d => ({
               ...d, locataire: { ...d.locataire!, email: t }
             }))}
-            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 mb-2"
-            style={{ includeFontPadding: false }}
+            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 mb-2"
+            style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
             placeholder="Email"
             placeholderTextColor="#9CA3AF"
             keyboardType="email-address"
@@ -48,8 +48,8 @@ export function ImportPreviewLocataire({ extractedData, isEditing, onUpdate }: I
             onChangeText={(t) => onUpdate(d => ({
               ...d, locataire: { ...d.locataire!, telephone: t }
             }))}
-            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800"
-            style={{ includeFontPadding: false }}
+            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800"
+            style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
             placeholder="Téléphone"
             placeholderTextColor="#9CA3AF"
             keyboardType="phone-pad"

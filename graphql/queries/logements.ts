@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client';
 
 export const GET_LOGEMENTS = gql`
-  query GetLogements {
-    logements {
+  query GetLogements($first: Int, $after: String) {
+    logements(first: $first, after: $after) {
       edges {
         node {
           id
@@ -16,7 +16,13 @@ export const GET_LOGEMENTS = gql`
           photoPrincipale
           createdAt
         }
+        cursor
       }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      totalCount
     }
   }
 `;
@@ -44,6 +50,8 @@ export const GET_LOGEMENT = gql`
             statut
             dateRealisation
             locataireNom
+            locataireEmail
+            locataireTelephone
           }
         }
       }

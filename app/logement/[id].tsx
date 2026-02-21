@@ -1,10 +1,10 @@
-import { View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { MapPin, Ruler, DoorOpen, Trash2, Edit3, Save, X, Home, Plus, FileText, ChevronRight, Calendar } from 'lucide-react-native';
-import { Header, Card, Badge, Input, Select, Button } from '../../components/ui';
+import { Header, Card, Badge, Input, Select, Button, AddressAutocomplete } from '../../components/ui';
 import { GET_LOGEMENT, GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { UPDATE_LOGEMENT, DELETE_LOGEMENT } from '../../graphql/mutations/logements';
 import { COLORS } from '../../utils/constants';
@@ -31,6 +31,8 @@ interface EdlNode {
   statut: string;
   dateRealisation: string;
   locataireNom: string;
+  locataireEmail?: string;
+  locataireTelephone?: string;
 }
 
 interface LogementData {
@@ -60,6 +62,11 @@ export default function LogementDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Page entrance animation
+  const pageOpacity = useRef(new Animated.Value(0)).current;
+  const pageSlide = useRef(new Animated.Value(30)).current;
+  const hasAnimated = useRef(false);
+
   // Champs éditables
   const [editNom, setEditNom] = useState('');
   const [editAdresse, setEditAdresse] = useState('');
@@ -72,6 +79,7 @@ export default function LogementDetailScreen() {
 
   const { data, refetch, loading } = useQuery<LogementDetailData>(GET_LOGEMENT, {
     variables: { id: `/api/logements/${id}` },
+    fetchPolicy: 'cache-and-network',
   });
 
   const [updateLogement, { loading: saving }] = useMutation(UPDATE_LOGEMENT, {
@@ -83,6 +91,17 @@ export default function LogementDetailScreen() {
   });
 
   const logement = data?.logement;
+
+  // Trigger page animation when data arrives
+  useEffect(() => {
+    if (logement && !hasAnimated.current) {
+      hasAnimated.current = true;
+      Animated.parallel([
+        Animated.timing(pageOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(pageSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [logement]);
 
   const startEditing = () => {
     if (!logement) return;
@@ -182,9 +201,10 @@ export default function LogementDetailScreen() {
         }
       />
 
-      <ScrollView
+      <Animated.ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
+        style={{ opacity: pageOpacity, transform: [{ translateY: pageSlide }] }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -200,10 +220,15 @@ export default function LogementDetailScreen() {
                 onChangeText={setEditNom}
                 placeholder="Ex: Appartement Rue de la Paix"
               />
-              <Input
+              <AddressAutocomplete
                 label="Adresse"
                 value={editAdresse}
                 onChangeText={setEditAdresse}
+                onSelect={(suggestion) => {
+                  setEditAdresse(suggestion.adresse);
+                  setEditCodePostal(suggestion.codePostal);
+                  setEditVille(suggestion.ville);
+                }}
                 placeholder="12 rue de la Paix"
               />
               <View className="flex-row gap-3">
@@ -292,7 +317,9 @@ export default function LogementDetailScreen() {
             {/* Hero */}
             <View className="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-700">
               <View className="flex-row items-center">
-                <View className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-2xl items-center justify-center">
+                <View
+                  className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-2xl items-center justify-center"
+                >
                   <Home size={28} color={COLORS.primary[600]} />
                 </View>
                 <View className="flex-1 ml-4">
@@ -424,7 +451,7 @@ export default function LogementDetailScreen() {
             <View className="h-4" />
           </>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }

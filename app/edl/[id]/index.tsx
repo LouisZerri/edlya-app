@@ -1,20 +1,36 @@
-import { View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState, useCallback } from 'react';
-import { Edit, Pen, BarChart3, Download, User, Zap, Key, DoorOpen, Trash2, Camera, CheckCircle, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react-native';
-import { Header, Card, Badge, IconButton, RemoteThumbnail } from '../../../components/ui';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Edit, Pen, BarChart3, Download, User, Zap, Key, DoorOpen, Trash2, Camera, CheckCircle, ChevronDown, ChevronUp, MessageSquare, ChevronRight } from 'lucide-react-native';
+import { Header, Card, Badge, RemoteThumbnail, ConfirmSheet } from '../../../components/ui';
 import { GET_ETAT_DES_LIEUX, GET_ETATS_DES_LIEUX } from '../../../graphql/queries/edl';
-import { DELETE_ETAT_DES_LIEUX } from '../../../graphql/mutations/edl';
-import { STATUT_BADGE, TYPE_CONFIG, COMPTEUR_CONFIG, CLE_LABELS, ELEMENT_ETAT_LABELS } from '../../../types';
-import { COLORS } from '../../../utils/constants';
+import { DELETE_ETAT_DES_LIEUX, UPDATE_ETAT_DES_LIEUX } from '../../../graphql/mutations/edl';
+import { STATUT_BADGE, TYPE_CONFIG, COMPTEUR_CONFIG, CLE_LABELS, ELEMENT_ETAT_LABELS, EdlStatut } from '../../../types';
+import { COLORS, BASE_URL, UPLOADS_URL } from '../../../utils/constants';
 import { formatDate } from '../../../utils/format';
 import { useToastStore } from '../../../stores/toastStore';
 import { usePdfExport } from '../../../hooks/usePdfExport';
-
 import { GetEdlDetailData, PieceNode, CompteurNode, CleNode, ElementNode, PhotoNode, GraphQLEdge } from '../../../types/graphql';
-import { BASE_URL, UPLOADS_URL } from '../../../utils/constants';
+
+const NEXT_STATUT: Partial<Record<EdlStatut, { statut: EdlStatut; label: string; message: string }>> = {
+  brouillon: {
+    statut: 'en_cours',
+    label: 'En cours',
+    message: 'L\'état des lieux sera marqué comme "En cours". Vous pourrez continuer à le modifier.',
+  },
+  en_cours: {
+    statut: 'termine',
+    label: 'Terminé',
+    message: 'L\'état des lieux sera marqué comme "Terminé". Pensez à le faire signer ensuite.',
+  },
+  termine: {
+    statut: 'signe',
+    label: 'Signé',
+    message: 'L\'état des lieux sera marqué comme "Signé". Cette action est définitive.',
+  },
+};
 
 function photoUrl(chemin: string): string {
   if (chemin?.startsWith('http')) return chemin;
@@ -35,15 +51,23 @@ export default function EdlDetailScreen() {
   const { isExporting, exportPdf } = usePdfExport();
   const [refreshing, setRefreshing] = useState(false);
   const [expandedPieces, setExpandedPieces] = useState<string[]>([]);
+  const [showStatutConfirm, setShowStatutConfirm] = useState(false);
+
+  // Page entrance animation
+  const pageOpacity = useRef(new Animated.Value(0)).current;
+  const pageSlide = useRef(new Animated.Value(30)).current;
+  const hasAnimated = useRef(false);
 
   const { data, refetch, loading } = useQuery<GetEdlDetailData>(GET_ETAT_DES_LIEUX, {
     variables: { id: `/api/etat_des_lieuxes/${id}` },
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'cache-and-network',
   });
 
   const [deleteEdl] = useMutation(DELETE_ETAT_DES_LIEUX, {
     refetchQueries: [{ query: GET_ETATS_DES_LIEUX }],
   });
+
+  const [updateEdl] = useMutation(UPDATE_ETAT_DES_LIEUX);
 
   const handleDelete = () => {
     Alert.alert(
@@ -86,6 +110,38 @@ export default function EdlDetailScreen() {
   const edl = data?.etatDesLieux;
   const typeConfig = edl ? TYPE_CONFIG[edl.type as keyof typeof TYPE_CONFIG] : null;
   const statutBadge = edl ? STATUT_BADGE[edl.statut as keyof typeof STATUT_BADGE] : null;
+  const nextStatut = edl ? NEXT_STATUT[edl.statut as EdlStatut] : null;
+
+  // Trigger page animation when data arrives
+  useEffect(() => {
+    if (edl && !hasAnimated.current) {
+      hasAnimated.current = true;
+      Animated.parallel([
+        Animated.timing(pageOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(pageSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [edl]);
+
+  const handleStatutChange = async () => {
+    if (!nextStatut || !edl) return;
+    try {
+      await updateEdl({
+        variables: {
+          input: {
+            id: `/api/etat_des_lieuxes/${id}`,
+            statut: nextStatut.statut,
+          },
+        },
+      });
+      success(`Statut changé en "${nextStatut.label}"`);
+      refetch();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors du changement de statut';
+      showError(msg);
+    }
+    setShowStatutConfirm(false);
+  };
 
   const pieces = edl?.pieces?.edges?.map((e: GraphQLEdge<PieceNode>) => e.node) || [];
   const compteurs = edl?.compteurs?.edges?.map((e: GraphQLEdge<CompteurNode>) => e.node) || [];
@@ -121,8 +177,9 @@ export default function EdlDetailScreen() {
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header title="État des lieux" showBack />
 
-      <ScrollView
+      <Animated.ScrollView
         className="flex-1"
+        style={{ opacity: pageOpacity, transform: [{ translateY: pageSlide }] }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -140,7 +197,18 @@ export default function EdlDetailScreen() {
               </Text>
               <View className="flex-row items-center gap-2 mt-2">
                 <Badge label={typeConfig?.label || edl?.type || ''} variant={edl?.type === 'entree' ? 'blue' : 'orange'} />
-                <Badge label={statutBadge?.label || edl?.statut || ''} variant={statutBadge?.variant || 'gray'} />
+                {nextStatut ? (
+                  <TouchableOpacity
+                    onPress={() => setShowStatutConfirm(true)}
+                    className="flex-row items-center"
+                    activeOpacity={0.7}
+                  >
+                    <Badge label={statutBadge?.label || edl?.statut || ''} variant={statutBadge?.variant || 'gray'} />
+                    <ChevronRight size={14} color={COLORS.gray[400]} style={{ marginLeft: 2 }} />
+                  </TouchableOpacity>
+                ) : (
+                  <Badge label={statutBadge?.label || edl?.statut || ''} variant={statutBadge?.variant || 'gray'} />
+                )}
               </View>
             </View>
           </View>
@@ -158,38 +226,64 @@ export default function EdlDetailScreen() {
         </View>
 
         {/* Actions */}
-        <View className="bg-white dark:bg-gray-900 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-          <View className="flex-row justify-around">
-            <IconButton
-              icon={<Edit size={20} color="white" />}
-              label="Modifier"
-              variant="primary"
-              onPress={() => router.push(`/edl/${id}/edit`)}
-            />
-            {edl?.statut !== 'signe' && (
-              <IconButton
-                icon={<Pen size={20} color="white" />}
-                label="Signer"
-                variant="success"
-                onPress={() => router.push(`/edl/${id}/signature`)}
-              />
-            )}
-            {edl?.type === 'sortie' && (
-              <IconButton
-                icon={<BarChart3 size={20} color="white" />}
-                label="Comparatif"
-                variant="warning"
-                onPress={() => router.push(`/edl/${id}/comparatif`)}
-              />
-            )}
-            <IconButton
-              icon={<Download size={20} color="white" />}
-              label={isExporting ? '...' : 'PDF'}
-              variant="dark"
-              onPress={() => id && exportPdf(id, 'edl')}
-            />
-          </View>
-        </View>
+        <Card className="mx-4 mt-4">
+          {[
+            edl?.statut !== 'termine' && edl?.statut !== 'signe' && {
+              key: 'edit',
+              icon: <Edit size={20} color={COLORS.primary[600]} />,
+              iconBg: 'bg-primary-50 dark:bg-primary-900/30',
+              title: 'Modifier',
+              subtitle: 'Éditer les informations',
+              onPress: () => router.push(`/edl/${id}/edit`),
+            },
+            edl?.statut !== 'signe' && {
+              key: 'sign',
+              icon: <Pen size={20} color={COLORS.green[600]} />,
+              iconBg: 'bg-green-50 dark:bg-green-900/30',
+              title: 'Signer',
+              subtitle: 'Signatures bailleur et locataire',
+              onPress: () => router.push(`/edl/${id}/signature`),
+            },
+            edl?.type === 'sortie' && {
+              key: 'comparatif',
+              icon: <BarChart3 size={20} color={COLORS.amber[600]} />,
+              iconBg: 'bg-amber-50 dark:bg-amber-900/30',
+              title: 'Comparatif',
+              subtitle: 'Entrée vs sortie',
+              onPress: () => router.push(`/edl/${id}/comparatif`),
+            },
+            {
+              key: 'pdf',
+              icon: <Download size={20} color={COLORS.gray[600]} />,
+              iconBg: 'bg-gray-100 dark:bg-gray-800',
+              title: isExporting ? 'Export en cours...' : 'Exporter en PDF',
+              subtitle: 'Télécharger le document',
+              onPress: () => id && exportPdf(id, 'edl'),
+              disabled: isExporting,
+            },
+          ]
+            .filter(Boolean)
+            .map((action, index, arr) => {
+              if (!action || typeof action === 'boolean') return null;
+              return (
+                <TouchableOpacity
+                  key={action.key}
+                  onPress={action.onPress}
+                  disabled={action.disabled}
+                  className={`flex-row items-center py-2 ${index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''}`}
+                >
+                  <View className={`w-10 h-10 rounded-xl items-center justify-center ${action.iconBg}`}>
+                    {action.icon}
+                  </View>
+                  <View className="flex-1 ml-3">
+                    <Text className="font-medium text-gray-800 dark:text-gray-200">{action.title}</Text>
+                    <Text className="text-sm text-gray-500 dark:text-gray-400">{action.subtitle}</Text>
+                  </View>
+                  <ChevronRight size={20} color={COLORS.gray[400]} />
+                </TouchableOpacity>
+              );
+            })}
+        </Card>
 
         {/* Locataire */}
         <Card className="mx-4 mt-4">
@@ -461,7 +555,17 @@ export default function EdlDetailScreen() {
             <Text className="text-red-600 font-medium ml-2">Supprimer cet état des lieux</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      <ConfirmSheet
+        visible={showStatutConfirm}
+        title="Changer le statut ?"
+        message={nextStatut?.message || ''}
+        confirmLabel={`Passer en "${nextStatut?.label || ''}"`}
+        onConfirm={handleStatutChange}
+        onCancel={() => setShowStatutConfirm(false)}
+        variant="info"
+      />
     </SafeAreaView>
   );
 }

@@ -198,13 +198,22 @@ export function PhotoViewer({
           contentOffset={{ x: initialIndex * SCREEN_WIDTH, y: 0 }}
           style={styles.scrollView}
         >
-          {photos.map((photo, index) => (
+          {photos.map((photo) => (
             <View key={photo.id} style={styles.imageContainer}>
-              <Image
-                source={{ uri: photo.localUri }}
-                style={styles.image}
-                resizeMode="contain"
-              />
+              <ScrollView
+                maximumZoomScale={4}
+                minimumZoomScale={1}
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.zoomContainer}
+                centerContent
+              >
+                <Image
+                  source={{ uri: photo.localUri }}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              </ScrollView>
             </View>
           ))}
         </ScrollView>
@@ -305,6 +314,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   imageContainer: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomContainer: {
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
     justifyContent: 'center',

@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client';
 
 export const GET_ETATS_DES_LIEUX = gql`
-  query GetEtatsDesLieux {
-    etatDesLieuxes {
+  query GetEtatsDesLieux($first: Int, $after: String) {
+    etatDesLieuxes(first: $first, after: $after) {
       edges {
         node {
           id
@@ -10,6 +10,7 @@ export const GET_ETATS_DES_LIEUX = gql`
           dateRealisation
           locataireNom
           statut
+          createdAt
           logement {
             id
             nom
@@ -20,7 +21,13 @@ export const GET_ETATS_DES_LIEUX = gql`
             totalCount
           }
         }
+        cursor
       }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      totalCount
     }
   }
 `;

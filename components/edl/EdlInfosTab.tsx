@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { Input, InputWithVoice } from '../ui';
+import { Input, InputWithVoice, DatePicker } from '../ui';
 import { EdlFormData } from '../../hooks/useEdlInitializer';
 
 interface EdlInfosTabProps {
@@ -28,10 +28,10 @@ export function EdlInfosTab({ formData, setFormData }: EdlInfosTabProps) {
         onChangeText={(text) => setFormData(prev => ({ ...prev, locataireTelephone: text }))}
         keyboardType="phone-pad"
       />
-      <Input
+      <DatePicker
         label="Date de réalisation"
         value={formData.dateRealisation}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, dateRealisation: text }))}
+        onChange={(text) => setFormData(prev => ({ ...prev, dateRealisation: text }))}
       />
       <InputWithVoice
         label="Observations generales"

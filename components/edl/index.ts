@@ -1,4 +1,5 @@
 export { AutoSaveIndicator } from './AutoSaveIndicator';
+export { EdlProgressBar } from './EdlProgressBar';
 export { EdlTabBar } from './EdlTabBar';
 export type { TabType } from './EdlTabBar';
 export { EdlInfosTab } from './EdlInfosTab';

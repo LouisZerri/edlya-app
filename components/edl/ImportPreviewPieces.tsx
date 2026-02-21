@@ -72,8 +72,8 @@ export const ImportPreviewPieces = React.memo(function ImportPreviewPieces({
                   <TextInput
                     value={piece.nom}
                     onChangeText={(t) => updatePiece(idx, 'nom', t)}
-                    className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 text-base font-medium"
-                    style={{ includeFontPadding: false }}
+                    className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 font-medium"
+                    style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
                     onTouchStart={(e) => e.stopPropagation()}
                   />
                 ) : (
@@ -106,8 +106,8 @@ export const ImportPreviewPieces = React.memo(function ImportPreviewPieces({
                           <TextInput
                             value={el.nom}
                             onChangeText={(t) => updateElement(idx, elIdx, 'nom', t)}
-                            className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800"
-                            style={{ includeFontPadding: false }}
+                            className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800"
+                            style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
                             placeholderTextColor="#9CA3AF"
                           />
                           <TouchableOpacity onPress={() => removeElement(idx, elIdx)} className="p-2 ml-2">
@@ -138,8 +138,8 @@ export const ImportPreviewPieces = React.memo(function ImportPreviewPieces({
                         <TextInput
                           value={el.observations || ''}
                           onChangeText={(t) => updateElement(idx, elIdx, 'observations', t)}
-                          className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2.5 text-base text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800"
-                          style={{ includeFontPadding: false }}
+                          className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800"
+                          style={{ includeFontPadding: false, height: 44, textAlignVertical: 'center', fontSize: 16 }}
                           placeholder="Observations..."
                           placeholderTextColor="#9CA3AF"
                         />

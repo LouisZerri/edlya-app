@@ -6,7 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
-import { Header, Input, Select, Button } from '../../components/ui';
+import { Header, Input, Select, Button, AddressAutocomplete } from '../../components/ui';
 import { CREATE_LOGEMENT } from '../../graphql/mutations/logements';
 import { GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { useToastStore } from '../../stores/toastStore';
@@ -41,7 +41,7 @@ export default function CreateLogementScreen() {
     refetchQueries: [{ query: GET_LOGEMENTS }],
   });
 
-  const { control, handleSubmit, formState: { errors } } = useForm<LogementForm>({
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<LogementForm>({
     resolver: zodResolver(logementSchema),
     defaultValues: {
       nom: '',
@@ -109,10 +109,15 @@ export default function CreateLogementScreen() {
             control={control}
             name="adresse"
             render={({ field: { onChange, value } }) => (
-              <Input
+              <AddressAutocomplete
                 label="Adresse *"
                 value={value}
                 onChangeText={onChange}
+                onSelect={(suggestion) => {
+                  onChange(suggestion.adresse);
+                  setValue('codePostal', suggestion.codePostal);
+                  setValue('ville', suggestion.ville);
+                }}
                 placeholder="10 rue de la Paix"
                 error={errors.adresse?.message}
               />

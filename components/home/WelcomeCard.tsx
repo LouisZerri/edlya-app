@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
@@ -17,6 +18,93 @@ function formatToday(): string {
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
+const ARC_SIZE = 64;
+const ARC_RADIUS = ARC_SIZE / 2;
+const ARC_TOP_PADDING = 12;
+
+function SunMoonDial() {
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const ms = (60 - now.getSeconds()) * 1000;
+    const timeout = setTimeout(() => {
+      setNow(new Date());
+    }, ms);
+    return () => clearTimeout(timeout);
+  }, [now]);
+
+  const hour = now.getHours() + now.getMinutes() / 60;
+
+  const isDay = hour >= 6 && hour < 18;
+  const emoji = isDay ? '☀️' : '🌙';
+
+  // Progress along the arc: 0 (left) to 1 (right), zenith (0.5) à midi / minuit
+  const progress = isDay
+    ? (hour - 6) / 12                                   // 6h→18h, zénith à 12h
+    : (hour >= 18 ? hour - 18 : hour + 6) / 12;         // 18h→6h, zénith à 0h
+
+  // Angle: π (left) to 0 (right) along a semicircle
+  const angle = Math.PI * (1 - progress);
+  const x = ARC_RADIUS + ARC_RADIUS * 0.85 * Math.cos(angle);
+  const y = ARC_TOP_PADDING + ARC_RADIUS - ARC_RADIUS * 0.85 * Math.sin(angle);
+
+  // Dots along the arc path
+  const dots = Array.from({ length: 9 }, (_, i) => {
+    const a = Math.PI * (1 - i / 8);
+    return {
+      x: ARC_RADIUS + ARC_RADIUS * 0.85 * Math.cos(a),
+      y: ARC_TOP_PADDING + ARC_RADIUS - ARC_RADIUS * 0.85 * Math.sin(a),
+    };
+  });
+
+  const timeStr = `${String(Math.floor(hour)).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  return (
+    <View style={{ width: ARC_SIZE, height: ARC_TOP_PADDING + ARC_RADIUS + 20 }}>
+      {/* Arc dots */}
+      {dots.map((dot, i) => (
+        <View
+          key={i}
+          style={{
+            position: 'absolute',
+            left: dot.x - 1.5,
+            top: dot.y - 1.5,
+            width: 3,
+            height: 3,
+            borderRadius: 1.5,
+            backgroundColor: 'rgba(255,255,255,0.25)',
+          }}
+        />
+      ))}
+      {/* Sun/Moon emoji */}
+      <Text
+        style={{
+          position: 'absolute',
+          left: x - 10,
+          top: y - 10,
+          fontSize: 18,
+        }}
+      >
+        {emoji}
+      </Text>
+      {/* Digital time */}
+      <Text
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          width: ARC_SIZE,
+          textAlign: 'center',
+          fontSize: 11,
+          fontWeight: '600',
+          color: 'rgba(255,255,255,0.7)',
+        }}
+      >
+        {timeStr}
+      </Text>
+    </View>
+  );
+}
+
 export function WelcomeCard({ user, stats }: WelcomeCardProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -33,11 +121,11 @@ export function WelcomeCard({ user, stats }: WelcomeCardProps) {
       colors={isDark ? ['#1e1b4b', '#272063', '#312e81'] : ['#4338CA', '#4F46E5', '#6366F1']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
+      style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24, borderRadius: 24 }}
     >
       {/* Greeting */}
       <View className="flex-row items-center justify-between">
-        <View>
+        <View className="flex-1">
           <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{formatToday()}</Text>
           <View className="flex-row items-center" style={{ marginTop: 4, gap: 8 }}>
             <Text className="text-white text-2xl font-bold">
@@ -46,6 +134,7 @@ export function WelcomeCard({ user, stats }: WelcomeCardProps) {
             <Text style={{ fontSize: 26 }}>👋</Text>
           </View>
         </View>
+        <SunMoonDial />
       </View>
 
       {/* Stats row */}

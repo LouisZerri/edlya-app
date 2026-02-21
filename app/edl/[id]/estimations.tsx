@@ -1,11 +1,11 @@
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, Modal, TextInput, KeyboardAvoidingView, Platform, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Download, Info, Sparkles, AlertCircle, Send, X, Plus, Trash2, List, ChevronRight } from 'lucide-react-native';
 import { TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Header, Card, Button } from '../../../components/ui';
 import { COLORS } from '../../../utils/constants';
 import { formatCurrency } from '../../../utils/format';
@@ -43,6 +43,12 @@ export default function EstimationsScreen() {
   const { isSharing, shareByEmail } = useShareEdl();
 
   const [refreshing, setRefreshing] = useState(false);
+
+  // Page entrance animation
+  const pageOpacity = useRef(new Animated.Value(0)).current;
+  const pageSlide = useRef(new Animated.Value(30)).current;
+  const hasAnimated = useRef(false);
+
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
@@ -57,6 +63,17 @@ export default function EstimationsScreen() {
       devis.loadSuggestions();
     }
   }, [id]);
+
+  // Trigger page animation when data arrives
+  useEffect(() => {
+    if (estimations && !hasAnimated.current) {
+      hasAnimated.current = true;
+      Animated.parallel([
+        Animated.timing(pageOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(pageSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [estimations]);
 
   // Pré-remplir les lignes de devis depuis les dégradations
   useEffect(() => {
@@ -173,8 +190,9 @@ export default function EstimationsScreen() {
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <Header title="Devis" showBack />
 
-      <ScrollView
+      <Animated.ScrollView
         className="flex-1"
+        style={{ opacity: pageOpacity, transform: [{ translateY: pageSlide }] }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -437,7 +455,7 @@ export default function EstimationsScreen() {
         </View>
 
         <View className="h-4" />
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Footer */}
       <View className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">

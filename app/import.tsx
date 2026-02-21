@@ -37,6 +37,7 @@ export default function ImportScreen() {
   const [selectedLogement, setSelectedLogement] = useState<LogementNode | null>(null);
   const [matchedLogement, setMatchedLogement] = useState<{ logement: LogementNode; score: number } | null>(null);
   const [creatingLogement, setCreatingLogement] = useState(false);
+  const [logementCreated, setLogementCreated] = useState<{ id: string; nom: string } | null>(null);
   const [importId, setImportId] = useState<string | null>(null);
   const token = useAuthStore(state => state.token);
 
@@ -149,7 +150,9 @@ export default function ImportScreen() {
         },
       });
       if (result.data?.createLogement?.logement) {
-        setSelectedLogement(result.data.createLogement.logement);
+        const created = result.data.createLogement.logement;
+        setSelectedLogement(created);
+        setLogementCreated({ id: created.id, nom: created.nom });
         success('Logement créé automatiquement !');
         await refetchLogements();
       }
@@ -179,6 +182,7 @@ export default function ImportScreen() {
     setExtractedImages([]);
     setSelectedLogement(null);
     setMatchedLogement(null);
+    setLogementCreated(null);
     hasMatchedRef.current = false;
   };
 
@@ -330,7 +334,7 @@ export default function ImportScreen() {
   // Creating step
   const renderCreatingStep = () => (
     <View className="flex-1 items-center justify-center">
-      <View className="w-20 h-20 bg-primary-100 rounded-full items-center justify-center mb-4">
+      <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#E0E7FF', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
         <ActivityIndicator size="large" color={COLORS.primary[600]} />
       </View>
       <Text className="text-xl font-semibold text-gray-800 dark:text-gray-200">Création en cours...</Text>
@@ -363,6 +367,7 @@ export default function ImportScreen() {
             matchedLogement={matchedLogement}
             extractedData={extractedData}
             creatingLogement={creatingLogement}
+            logementCreated={logementCreated}
             onCreateLogementFromPdf={handleCreateLogementFromPdf}
             onNavigateToCreate={() => router.push('/logement/create')}
           />
@@ -408,9 +413,8 @@ export default function ImportScreen() {
             <TouchableOpacity
               onPress={handleCreateEdl}
               disabled={!selectedLogement || isCreating}
-              className={`flex-1 py-3 rounded-xl items-center ${
-                selectedLogement && !isCreating ? 'bg-green-600' : 'bg-gray-300'
-              }`}
+              className="flex-1 py-3 rounded-xl items-center bg-green-600"
+              style={{ opacity: selectedLogement && !isCreating ? 1 : 0.4 }}
             >
               <Text className="text-white font-semibold">
                 {isCreating ? "Création..." : "Créer l'EDL"}
