@@ -14,6 +14,7 @@ import { EtatDesLieux, EdlStatut, STATUT_BADGE, TYPE_CONFIG } from '../../types'
 import { COLORS } from '../../utils/constants';
 import { formatDate } from '../../utils/format';
 import { useToastStore } from '../../stores/toastStore';
+import { cancelEdlReminders } from '../../hooks/useNotifications';
 
 const PAGE_SIZE = 20;
 
@@ -64,6 +65,8 @@ export default function EdlScreen() {
     if (!deleteTarget) return;
     try {
       await deleteEdl({ variables: { input: { id: deleteTarget.id } } });
+      const edlId = deleteTarget.id.split('/').pop();
+      if (edlId) cancelEdlReminders(edlId);
       showSuccess('État des lieux supprimé');
     } catch {
       showError('Erreur lors de la suppression');
@@ -248,9 +251,6 @@ export default function EdlScreen() {
             onLongPress={() => handleLongPressEdl(item)}
             className="rounded-none border-0"
           >
-            {Date.now() - new Date(item.createdAt).getTime() < 24 * 60 * 60 * 1000 && (
-              <View className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-red-500 z-10" />
-            )}
             <View className="flex-row items-center">
               <View className={`w-12 h-12 rounded-xl items-center justify-center ${typeConfig.bg}`}>
                 <Text className="text-2xl">{typeConfig.icon}</Text>

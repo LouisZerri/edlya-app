@@ -56,9 +56,6 @@ export function RecentEdlList({ edls }: RecentEdlListProps) {
                 onPress={() => router.push(`/edl/${edlId}`)}
                 className="mb-3"
               >
-                {Date.now() - new Date(item.createdAt).getTime() < 24 * 60 * 60 * 1000 && (
-                  <View className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-gray-900 z-10" />
-                )}
                 <View className="flex-row items-center">
                   <View className={`w-12 h-12 rounded-xl items-center justify-center ${typeConfig.bg}`}>
                     <Text className="text-2xl">{typeConfig.icon}</Text>

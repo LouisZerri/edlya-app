@@ -17,6 +17,7 @@ import { processPhotoQueue } from '../utils/photoSyncManager';
 import { getQueueLength } from '../utils/offlineMutationQueue';
 import { usePhotoQueueStore } from '../stores/photoQueueStore';
 import { COLORS, API_URL } from '../utils/constants';
+import { initializeNotifications, useNotificationNavigation } from '../hooks/useNotifications';
 import OnboardingScreen, { hasSeenOnboarding } from './onboarding';
 import '../global.css';
 
@@ -59,6 +60,7 @@ function LoadingScreen() {
 
 function RootLayoutNav() {
   useProtectedRoute();
+  useNotificationNavigation();
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 200 }}>
@@ -131,6 +133,7 @@ export default function RootLayout() {
       initializeApollo(),
       initializeTheme(),
       hasSeenOnboarding(),
+      initializeNotifications(),
     ]).then(([, , , seen]) => {
       // Apply saved theme immediately on startup
       const pref = useThemeStore.getState().preference;

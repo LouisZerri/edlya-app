@@ -12,6 +12,7 @@ import { COLORS, BASE_URL, UPLOADS_URL } from '../../../utils/constants';
 import { formatDate } from '../../../utils/format';
 import { useToastStore } from '../../../stores/toastStore';
 import { usePdfExport } from '../../../hooks/usePdfExport';
+import { cancelEdlReminders, scheduleTermineReminder } from '../../../hooks/useNotifications';
 import { GetEdlDetailData, PieceNode, CompteurNode, CleNode, ElementNode, PhotoNode, GraphQLEdge } from '../../../types/graphql';
 
 const NEXT_STATUT: Partial<Record<EdlStatut, { statut: EdlStatut; label: string; message: string }>> = {
@@ -83,6 +84,7 @@ export default function EdlDetailScreen() {
               await deleteEdl({
                 variables: { input: { id: `/api/etat_des_lieuxes/${id}` } },
               });
+              cancelEdlReminders(id!);
               success('État des lieux supprimé !');
               router.replace('/(tabs)/edl');
             } catch (err: unknown) {
@@ -135,6 +137,16 @@ export default function EdlDetailScreen() {
         },
       });
       success(`Statut changé en "${nextStatut.label}"`);
+
+      // Gestion des notifications de rappel
+      const logementNom = edl.logement?.nom || '';
+      if (nextStatut.statut === 'termine') {
+        cancelEdlReminders(id!);
+        scheduleTermineReminder(id!, logementNom);
+      } else if (nextStatut.statut === 'signe') {
+        cancelEdlReminders(id!);
+      }
+
       refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur lors du changement de statut';
@@ -258,7 +270,7 @@ export default function EdlDetailScreen() {
               iconBg: 'bg-gray-100 dark:bg-gray-800',
               title: isExporting ? 'Export en cours...' : 'Exporter en PDF',
               subtitle: 'Télécharger le document',
-              onPress: () => id && exportPdf(id, 'edl'),
+              onPress: () => id && exportPdf(id, 'edl', { logement: edl?.logement?.nom, locataire: edl?.locataireNom, type: edl?.type }),
               disabled: isExporting,
             },
           ]

@@ -16,6 +16,7 @@ import { useToastStore } from '../../stores/toastStore';
 import { apiDateToDisplay, displayDateToApi } from '../../utils/format';
 import { API_URL } from '../../utils/constants';
 import { useAuthStore } from '../../stores/authStore';
+import { scheduleBrouillonReminder } from '../../hooks/useNotifications';
 
 interface LogementsData {
   logements?: {
@@ -225,6 +226,8 @@ export default function CreateEdlScreen() {
         }
 
         success('État des lieux créé avec succès !');
+        const logementNom = logements.find(l => l.value === data.logement)?.label ?? '';
+        scheduleBrouillonReminder(id!, logementNom);
         router.replace(`/edl/${id}`);
       } else {
         router.back();

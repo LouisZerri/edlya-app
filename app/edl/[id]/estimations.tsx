@@ -9,10 +9,13 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { Header, Card, Button } from '../../../components/ui';
 import { COLORS } from '../../../utils/constants';
 import { formatCurrency } from '../../../utils/format';
+import { useQuery } from '@apollo/client/react';
 import { useEstimations } from '../../../hooks/useEstimations';
 import { useDevis, LigneDevis, CoutSuggestion } from '../../../hooks/useDevis';
 import { usePdfExport } from '../../../hooks/usePdfExport';
 import { useShareEdl } from '../../../hooks/useShareEdl';
+import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
+import { GetEdlDetailData } from '../../../types/graphql';
 
 const UNITE_LABELS: Record<string, string> = {
   m2: 'm\u00B2',
@@ -41,6 +44,11 @@ export default function EstimationsScreen() {
   const devis = useDevis();
   const { isExporting, exportPdf } = usePdfExport();
   const { isSharing, shareByEmail } = useShareEdl();
+  const { data: edlData } = useQuery<GetEdlDetailData>(GET_ETAT_DES_LIEUX, {
+    variables: { id: `/api/etat_des_lieuxes/${id}` },
+    fetchPolicy: 'cache-first',
+  });
+  const edl = edlData?.etatDesLieux;
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -468,7 +476,9 @@ export default function EstimationsScreen() {
               quantite: l.quantite,
               unite: l.unite,
               prix_unitaire: l.prix_unitaire,
-            }))
+            })),
+            logement: edl?.logement?.nom,
+            locataire: edl?.locataireNom,
           })}
           fullWidth
           loading={isExporting}

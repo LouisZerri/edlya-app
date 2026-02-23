@@ -15,9 +15,16 @@ export interface LigneDevisPdf {
   prix_unitaire: number;
 }
 
+interface PdfOptions {
+  lignes?: LigneDevisPdf[];
+  logement?: string;
+  locataire?: string;
+  type?: string;
+}
+
 interface UsePdfExportReturn {
   isExporting: boolean;
-  exportPdf: (edlId: string, type: PdfType, options?: { lignes?: LigneDevisPdf[] }) => Promise<void>;
+  exportPdf: (edlId: string, type: PdfType, options?: PdfOptions) => Promise<void>;
 }
 
 export function usePdfExport(): UsePdfExportReturn {
@@ -25,7 +32,7 @@ export function usePdfExport(): UsePdfExportReturn {
   const token = useAuthStore(state => state.token);
   const { error: showError, success: showSuccess } = useToastStore();
 
-  const exportPdf = useCallback(async (edlId: string, type: PdfType, options?: { lignes?: LigneDevisPdf[] }) => {
+  const exportPdf = useCallback(async (edlId: string, type: PdfType, options?: PdfOptions) => {
     if (!token) {
       showError('Non authentifié');
       return;
@@ -37,6 +44,18 @@ export function usePdfExport(): UsePdfExportReturn {
       // Extraire l'ID numérique si nécessaire
       const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
 
+      // Construire un slug lisible pour le nom de fichier
+      const slug = [options?.logement, options?.locataire]
+        .filter(Boolean)
+        .join('_')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        .replace(/^_|_$/g, '')
+        .toLowerCase() || numericId;
+
+      const typeLabel = options?.type === 'entree' ? 'entree' : options?.type === 'sortie' ? 'sortie' : '';
+      const suffix = typeLabel ? `_${typeLabel}` : '';
+
       // Construire l'URL selon le type
       let url: string;
       let filename: string;
@@ -46,15 +65,15 @@ export function usePdfExport(): UsePdfExportReturn {
       switch (type) {
         case 'edl':
           url = `${API_URL}/edl/${numericId}/pdf`;
-          filename = `etat_des_lieux_${numericId}.pdf`;
+          filename = `edl_${slug}${suffix}.pdf`;
           break;
         case 'comparatif':
           url = `${API_URL}/edl/${numericId}/comparatif/pdf`;
-          filename = `comparatif_${numericId}.pdf`;
+          filename = `comparatif_${slug}.pdf`;
           break;
         case 'estimations':
           url = `${API_URL}/edl/${numericId}/estimations/pdf`;
-          filename = `devis_reparations_${numericId}.pdf`;
+          filename = `devis_${slug}.pdf`;
           method = 'POST';
           body = JSON.stringify({ lignes: options?.lignes ?? [] });
           break;

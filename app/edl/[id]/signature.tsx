@@ -342,7 +342,7 @@ export default function SignatureEdlScreen() {
           </Text>
 
           <TouchableOpacity
-            onPress={() => exportPdf(numericId, 'edl')}
+            onPress={() => exportPdf(numericId, 'edl', { logement: edl?.logement?.nom, locataire: edl?.locataireNom, type: edl?.type })}
             disabled={isExporting}
             className="w-full flex-row items-center justify-center py-3.5 bg-primary-600 rounded-xl mb-3"
           >

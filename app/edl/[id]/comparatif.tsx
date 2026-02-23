@@ -97,7 +97,7 @@ export default function ComparatifScreen() {
         showBack
         rightAction={
           <TouchableOpacity
-            onPress={() => id && exportPdf(id, 'comparatif')}
+            onPress={() => id && exportPdf(id, 'comparatif', { logement: comparatif?.logement?.nom, locataire: comparatif?.sortie?.locataireNom || comparatif?.entree?.locataireNom })}
             disabled={isExporting}
           >
             {isExporting ? (
