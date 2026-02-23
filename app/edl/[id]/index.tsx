@@ -289,9 +289,18 @@ export default function EdlDetailScreen() {
         <Card className="mx-4 mt-4">
           <View className="flex-row items-center mb-3">
             <User size={20} color={COLORS.primary[600]} />
-            <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">Locataire</Text>
+            <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">
+              {edl?.autresLocataires && edl.autresLocataires.length > 0 ? 'Locataires' : 'Locataire'}
+            </Text>
           </View>
           <Text className="font-medium text-gray-900 dark:text-gray-100">{edl?.locataireNom}</Text>
+          {edl?.autresLocataires && edl.autresLocataires.length > 0 && (
+            <View className="mt-1">
+              {edl.autresLocataires.map((nom: string, index: number) => (
+                <Text key={index} className="text-sm text-gray-700 dark:text-gray-300">{nom}</Text>
+              ))}
+            </View>
+          )}
           {edl?.locataireEmail && (
             <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">{edl.locataireEmail}</Text>
           )}

@@ -151,7 +151,7 @@ interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
-export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 

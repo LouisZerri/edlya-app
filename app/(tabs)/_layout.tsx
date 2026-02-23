@@ -1,11 +1,23 @@
 import { Tabs } from 'expo-router';
 import { Home, Building2, FileText, User } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
+import { useQuery } from '@apollo/client/react';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
+import { GET_USER_STATS } from '../../graphql/queries/stats';
+
+interface StatsData {
+  enAttente: { totalCount: number };
+}
 
 export default function TabsLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  const { data } = useQuery<StatsData>(GET_USER_STATS, {
+    fetchPolicy: 'cache-and-network',
+    pollInterval: 30000,
+  });
+  const enAttente = data?.enAttente?.totalCount || 0;
 
   return (
     <Tabs
@@ -46,6 +58,15 @@ export default function TabsLayout() {
         options={{
           title: 'EDL',
           tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
+          tabBarBadge: enAttente > 0 ? enAttente : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: COLORS.primary[600],
+            fontSize: 11,
+            fontWeight: '600',
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+          },
         }}
       />
       <Tabs.Screen

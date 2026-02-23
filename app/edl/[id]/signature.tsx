@@ -1,15 +1,18 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState, useEffect, useCallback, memo } from 'react';
 import { useQuery } from '@apollo/client/react';
 import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
-import { Check, Trash2, User, Users } from 'lucide-react-native';
-import { Header, Card, Button } from '../../../components/ui';
+import { Check, Trash2, User, Users, Download, ChevronDown } from 'lucide-react-native';
+import { Header, Card, Badge } from '../../../components/ui';
 import { COLORS, API_URL } from '../../../utils/constants';
+import { ELEMENT_ETAT_LABELS, ElementEtat, TYPE_CONFIG } from '../../../types';
+import { formatDate } from '../../../utils/format';
 import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
 import { useToastStore } from '../../../stores/toastStore';
 import { useAuthStore } from '../../../stores/authStore';
+import { usePdfExport } from '../../../hooks/usePdfExport';
 
 // Types GraphQL
 interface EtatDesLieuxData {
@@ -17,13 +20,40 @@ interface EtatDesLieuxData {
     id: string;
     type: string;
     statut: string;
+    dateRealisation: string;
     locataireNom: string;
     locataireEmail?: string;
     locataireTelephone?: string;
+    autresLocataires?: string[];
     signatureBailleur?: string;
     signatureLocataire?: string;
     dateSignatureBailleur?: string;
     dateSignatureLocataire?: string;
+    logement: {
+      nom: string;
+      adresse: string;
+      ville: string;
+    };
+    pieces: {
+      edges: {
+        node: {
+          id: string;
+          nom: string;
+          elements: {
+            edges: {
+              node: {
+                id: string;
+                nom: string;
+                etat: string;
+                degradations?: string[];
+              };
+            }[];
+          };
+        };
+      }[];
+    };
+    compteurs: { edges: { node: { id: string } }[] };
+    cles: { edges: { node: { id: string } }[] };
   };
 }
 
@@ -62,13 +92,18 @@ const SignatureCanvas = memo(({
 
 export default function SignatureEdlScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { success, error: showError } = useToastStore();
   const token = useAuthStore(state => state.token);
+  const { isExporting, exportPdf } = usePdfExport();
+  const numericId = id?.includes('/') ? id.split('/').pop()! : id;
   const [loading, setLoading] = useState(false);
+  const [recapOpen, setRecapOpen] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
   const isSigningRef = useRef(false);
 
   const bailleurRef = useRef<SignatureViewRef>(null);
+  const locataireRef = useRef<SignatureViewRef>(null);
 
   // Contrôle du scroll via ref (pas de re-render)
   const disableScroll = useCallback(() => {
@@ -132,7 +167,7 @@ export default function SignatureEdlScreen() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erreur ${response.status}`);
+        throw new Error(errorData.error || `Erreur ${response.status}`);
       }
 
       setBailleurSaved(true);
@@ -151,39 +186,26 @@ export default function SignatureEdlScreen() {
 
     setLoading(true);
     try {
-      showError('La signature locataire doit être faite via le lien envoyé par email');
-      setLoading(false);
-      return;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur lors de la sauvegarde';
-      showError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSendLink = async () => {
-    if (!token) return;
-
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/edl/${id}/signature/envoyer-lien`, {
+      const response = await fetch(`${API_URL}/edl/${id}/signature/locataire`, {
         method: 'POST',
         headers: {
           'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ signature: signatureLocataire }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erreur ${response.status}`);
+        throw new Error(errorData.error || `Erreur ${response.status}`);
       }
 
-      success('Lien de signature envoyé au locataire !');
+      setLocataireSaved(true);
+      await refetch();
+      success('Signature locataire enregistrée — État des lieux signé !');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur lors de l\'envoi';
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la sauvegarde';
       showError(msg);
     } finally {
       setLoading(false);
@@ -199,7 +221,6 @@ export default function SignatureEdlScreen() {
     onOK,
     onClear,
     onSave,
-    isLocataire = false,
   }: {
     title: string;
     icon: React.ReactNode;
@@ -209,7 +230,6 @@ export default function SignatureEdlScreen() {
     onOK: (sig: string) => void;
     onClear: () => void;
     onSave: () => void;
-    isLocataire?: boolean;
   }): React.ReactElement => (
     <Card className="mb-4">
       <View className="flex-row items-center mb-3">
@@ -271,14 +291,20 @@ export default function SignatureEdlScreen() {
           </TouchableOpacity>
         )}
 
-        {signature && !isSaved && !isLocataire && (
+        {signature && !isSaved && (
           <TouchableOpacity
             onPress={onSave}
             disabled={loading}
-            className="flex-1 flex-row items-center justify-center py-2.5 bg-green-600 rounded-lg"
+            className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${loading ? 'bg-green-400' : 'bg-green-600'}`}
           >
-            <Check size={18} color="white" />
-            <Text className="text-white font-medium ml-2">Enregistrer</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Check size={18} color="white" />
+            )}
+            <Text className="text-white font-medium ml-2">
+              {loading ? 'Enregistrement...' : 'Enregistrer'}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -298,7 +324,50 @@ export default function SignatureEdlScreen() {
     </Card>
   );
 
-  const canSendLink = bailleurSaved && !locataireSaved && edl?.locataireEmail;
+  if (bailleurSaved && locataireSaved) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
+        <Header title="Signatures" showBack />
+
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 items-center justify-center mb-6">
+            <Check size={40} color={COLORS.green[600]} />
+          </View>
+
+          <Text className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+            État des lieux signé
+          </Text>
+          <Text className="text-gray-500 dark:text-gray-400 text-center mb-8">
+            Les deux parties ont signé l'état des lieux
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => exportPdf(numericId, 'edl')}
+            disabled={isExporting}
+            className="w-full flex-row items-center justify-center py-3.5 bg-primary-600 rounded-xl mb-3"
+          >
+            {isExporting ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Download size={20} color="white" />
+            )}
+            <Text className="text-white font-semibold ml-2">
+              {isExporting ? 'Téléchargement...' : 'Télécharger le PDF'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.replace(`/edl/${id}`)}
+            className="w-full flex-row items-center justify-center py-3.5 border border-gray-300 dark:border-gray-600 rounded-xl"
+          >
+            <Text className="text-gray-700 dark:text-gray-300 font-semibold">
+              Retour à l'état des lieux
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
@@ -314,10 +383,140 @@ export default function SignatureEdlScreen() {
         <View className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-3 mb-4">
           <Text className="text-blue-800 dark:text-blue-300 text-sm">
             1. Signez en tant que bailleur{'\n'}
-            2. Envoyez le lien au locataire par email{'\n'}
-            3. Le locataire signe depuis son appareil
+            2. Passez le téléphone au locataire pour qu'il signe
           </Text>
         </View>
+
+        {/* Récapitulatif EDL */}
+        {edl && (
+          <Card className="mb-4">
+            <TouchableOpacity
+              onPress={() => setRecapOpen(!recapOpen)}
+              className="flex-row items-center justify-between"
+              activeOpacity={0.7}
+            >
+              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                Récapitulatif de l'EDL
+              </Text>
+              <View style={{ transform: [{ rotate: recapOpen ? '180deg' : '0deg' }] }}>
+                <ChevronDown size={20} color={COLORS.gray[500]} />
+              </View>
+            </TouchableOpacity>
+
+            {recapOpen && (
+              <View className="mt-3">
+                <Text className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {edl.logement.nom}
+                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {edl.logement.adresse}, {edl.logement.ville}
+                </Text>
+
+                <View className="flex-row items-center mt-2 gap-1">
+                  <Badge
+                    label={TYPE_CONFIG[edl.type as keyof typeof TYPE_CONFIG]?.label || edl.type}
+                    variant={edl.type === 'entree' ? 'blue' : 'orange'}
+                  />
+                  <Text className="text-xs text-gray-400">•</Text>
+                  <Text className="text-xs text-gray-600 dark:text-gray-300">
+                    {formatDate(edl.dateRealisation)}
+                  </Text>
+                  <Text className="text-xs text-gray-400">•</Text>
+                  <Text className="text-xs text-gray-600 dark:text-gray-300">
+                    {edl.locataireNom}
+                  </Text>
+                  {edl.autresLocataires && edl.autresLocataires.length > 0 && (
+                    <Text className="text-xs text-gray-500 dark:text-gray-400">
+                      et {edl.autresLocataires.length} autre{edl.autresLocataires.length > 1 ? 's' : ''}
+                    </Text>
+                  )}
+                </View>
+
+                {edl.autresLocataires && edl.autresLocataires.length > 0 && (
+                  <View className="bg-primary-50 dark:bg-primary-900/20 rounded-xl px-4 py-3 mt-3">
+                    <Text className="text-sm font-semibold text-primary-700 dark:text-primary-300 mb-1">
+                      Locataires :
+                    </Text>
+                    <Text className="text-sm text-primary-600 dark:text-primary-400">
+                      {edl.locataireNom}, {edl.autresLocataires.join(', ')}
+                    </Text>
+                    <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 italic">
+                      Représenté(s) par {edl.locataireNom} (signataire)
+                    </Text>
+                  </View>
+                )}
+
+                <View className="flex-row mt-3 gap-3">
+                  <View className="flex-row items-center">
+                    <Text className="text-xs text-gray-500 dark:text-gray-400">
+                      🚪 {edl.pieces.edges.length} pièce{edl.pieces.edges.length > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center">
+                    <Text className="text-xs text-gray-500 dark:text-gray-400">
+                      ⚡ {edl.compteurs.edges.length} compteur{edl.compteurs.edges.length > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center">
+                    <Text className="text-xs text-gray-500 dark:text-gray-400">
+                      🔑 {edl.cles.edges.length} clé{edl.cles.edges.length > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                </View>
+
+                {(() => {
+                  const piecesAvecDeg = edl.pieces.edges
+                    .map(({ node: piece }) => ({
+                      nom: piece.nom,
+                      elements: piece.elements.edges
+                        .filter(({ node: el }) => el.degradations && el.degradations.length > 0)
+                        .map(({ node: el }) => el),
+                    }))
+                    .filter(p => p.elements.length > 0);
+
+                  const totalDeg = piecesAvecDeg.reduce((sum, p) =>
+                    sum + p.elements.reduce((s, el) => s + (el.degradations?.length ?? 0), 0), 0);
+
+                  if (totalDeg === 0) return null;
+                  return (
+                    <View className="mt-3">
+                      <View className="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 mb-2">
+                        <Text className="text-xs text-red-600 dark:text-red-400 font-medium">
+                          ⚠️ {totalDeg} dégradation{totalDeg > 1 ? 's' : ''} constatée{totalDeg > 1 ? 's' : ''}
+                        </Text>
+                      </View>
+
+                      {piecesAvecDeg.map(piece => (
+                        <View key={piece.nom} className="mt-2">
+                          <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            {piece.nom}
+                          </Text>
+                          {piece.elements.map(el => (
+                            <View key={el.id} className="flex-row items-start ml-2 mb-1">
+                              <Text className="text-xs text-gray-400 mr-1">•</Text>
+                              <View className="flex-1">
+                                <View className="flex-row items-center gap-2 flex-wrap">
+                                  <Text className="text-sm text-gray-600 dark:text-gray-300">{el.nom}</Text>
+                                  <Badge
+                                    label={ELEMENT_ETAT_LABELS[el.etat as ElementEtat] || el.etat}
+                                    variant={el.etat === 'hors_service' ? 'red' : el.etat === 'mauvais' ? 'red' : 'amber'}
+                                  />
+                                </View>
+                                <Text className="text-xs text-red-500 dark:text-red-400 mt-0.5">
+                                  {el.degradations!.join(', ')}
+                                </Text>
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
+          </Card>
+        )}
 
         {/* Bailleur Signature */}
         <SignatureBox
@@ -334,62 +533,21 @@ export default function SignatureEdlScreen() {
           onSave={handleSaveBailleur}
         />
 
-        {/* Send Link Button */}
-        {bailleurSaved && !locataireSaved && (
-          <Card className="mb-4">
-            <View className="flex-row items-center mb-3">
-              <Users size={20} color={COLORS.amber[600]} />
-              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">
-                Signature du locataire
-              </Text>
-            </View>
-
-            {edl?.locataireEmail ? (
-              <>
-                <Text className="text-gray-600 dark:text-gray-300 text-sm mb-3">
-                  Un lien de signature sera envoyé à :{'\n'}
-                  <Text className="font-medium">{edl.locataireEmail}</Text>
-                </Text>
-                <Button
-                  label="Envoyer le lien au locataire"
-                  onPress={handleSendLink}
-                  loading={loading}
-                  fullWidth
-                  variant="primary"
-                />
-              </>
-            ) : (
-              <View className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                <Text className="text-amber-800 dark:text-amber-300 text-sm">
-                  Ajoutez l'email du locataire dans les informations de l'EDL pour pouvoir lui envoyer le lien de signature.
-                </Text>
-              </View>
-            )}
-          </Card>
-        )}
-
-        {/* Locataire Status */}
-        {locataireSaved && (
-          <Card className="mb-4">
-            <View className="flex-row items-center mb-3">
-              <Users size={20} color={COLORS.green[600]} />
-              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">
-                Signature du locataire
-              </Text>
-              <View className="ml-auto bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
-                <Text className="text-green-700 dark:text-green-300 text-xs font-medium">Enregistrée</Text>
-              </View>
-            </View>
-            {signatureLocataire && (
-              <View className="h-32 bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
-                <Image
-                  source={{ uri: signatureLocataire }}
-                  style={{ flex: 1 }}
-                  resizeMode="contain"
-                />
-              </View>
-            )}
-          </Card>
+        {/* Signature locataire en face à face */}
+        {bailleurSaved && (
+          <SignatureBox
+            title="Signature du locataire"
+            icon={<Users size={20} color={COLORS.amber[600]} />}
+            signatureRef={locataireRef}
+            signature={signatureLocataire}
+            isSaved={locataireSaved}
+            onOK={handleLocataireOK}
+            onClear={() => {
+              setSignatureLocataire(null);
+              setLocataireSaved(false);
+            }}
+            onSave={handleSaveLocataire}
+          />
         )}
 
         {/* Recap */}
@@ -409,30 +567,11 @@ export default function SignatureEdlScreen() {
             </View>
             <View className="flex-row items-center justify-between mt-2">
               <Text className="text-gray-600 dark:text-gray-300">Locataire</Text>
-              {locataireSaved ? (
-                <View className="flex-row items-center">
-                  <Check size={16} color={COLORS.green[600]} />
-                  <Text className="text-green-600 ml-1 text-sm">Signé</Text>
-                </View>
-              ) : (
-                <Text className="text-gray-400 text-sm">En attente</Text>
-              )}
+              <Text className="text-gray-400 text-sm">En attente</Text>
             </View>
           </View>
         </Card>
       </ScrollView>
-
-      {bailleurSaved && locataireSaved && (
-        <View className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
-          <View className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl p-4 flex-row items-center">
-            <Check size={24} color={COLORS.green[600]} />
-            <View className="ml-3">
-              <Text className="text-green-800 dark:text-green-300 font-semibold">État des lieux signé</Text>
-              <Text className="text-green-600 text-sm">Les deux parties ont signé</Text>
-            </View>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
   );
 }

@@ -67,6 +67,7 @@ export function useEdlAutoSave({
               locataireNom: formData.locataireNom,
               locataireEmail: formData.locataireEmail || null,
               locataireTelephone: formData.locataireTelephone || null,
+              autresLocataires: formData.autresLocataires.length > 0 ? formData.autresLocataires : null,
               dateRealisation: displayDateToApi(formData.dateRealisation),
               observationsGenerales: formData.observationsGenerales || null,
             },
@@ -147,6 +148,7 @@ export function useEdlAutoSave({
               locataireNom: formData.locataireNom,
               locataireEmail: formData.locataireEmail || null,
               locataireTelephone: formData.locataireTelephone || null,
+              autresLocataires: formData.autresLocataires.length > 0 ? formData.autresLocataires : null,
               dateRealisation: displayDateToApi(formData.dateRealisation),
               observationsGenerales: formData.observationsGenerales || null,
             },
@@ -247,5 +249,5 @@ export function useEdlAutoSave({
     triggerAutoSave();
   }, [formData, compteurValues, compteurNumeros, compteurComments, cleValues, elementStates, elementObservations, elementDegradations]);
 
-  return { autoSaveStatus, setAutoSaveStatus };
+  return { autoSaveStatus, setAutoSaveStatus, performAutoSave };
 }

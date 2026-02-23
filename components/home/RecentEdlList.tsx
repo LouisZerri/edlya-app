@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, Clock } from 'lucide-react-native';
 import { Card, Badge } from '../ui';
 import { STATUT_BADGE, TYPE_CONFIG, EdlType, EdlStatut } from '../../types';
 import { formatDate } from '../../utils/format';
@@ -12,6 +12,7 @@ interface RecentEdlItem {
   dateRealisation: string;
   locataireNom: string;
   statut: string;
+  createdAt: string;
   logement: { nom: string };
 }
 
@@ -25,7 +26,10 @@ export function RecentEdlList({ edls }: RecentEdlListProps) {
   return (
     <View className="px-4 mt-6">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-lg font-semibold text-gray-800 dark:text-gray-200">États des lieux récents</Text>
+        <View className="flex-row items-center gap-2">
+          <Clock size={18} color={COLORS.primary[600]} />
+          <Text className="text-lg font-semibold text-gray-800 dark:text-gray-200">EDL récents</Text>
+        </View>
         <TouchableOpacity
           onPress={() => router.push('/(tabs)/edl')}
           className="py-2 px-3 -mr-3"
@@ -46,13 +50,15 @@ export function RecentEdlList({ edls }: RecentEdlListProps) {
             const typeConfig = TYPE_CONFIG[item.type as EdlType] || TYPE_CONFIG.entree;
             const statutBadge = STATUT_BADGE[item.statut as EdlStatut] || STATUT_BADGE.brouillon;
             const edlId = item.id.split('/').pop();
-
             return (
               <Card
                 key={item.id}
                 onPress={() => router.push(`/edl/${edlId}`)}
                 className="mb-3"
               >
+                {Date.now() - new Date(item.createdAt).getTime() < 24 * 60 * 60 * 1000 && (
+                  <View className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-gray-900 z-10" />
+                )}
                 <View className="flex-row items-center">
                   <View className={`w-12 h-12 rounded-xl items-center justify-center ${typeConfig.bg}`}>
                     <Text className="text-2xl">{typeConfig.icon}</Text>

@@ -1,11 +1,13 @@
-import { View, Text, FlatList, RefreshControl, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, SectionList, RefreshControl, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useState, useCallback, useMemo } from 'react';
-import { Plus, ChevronRight, Calendar, DoorOpen, FileText, Search, ArrowUpDown, Filter } from 'lucide-react-native';
-import { Header, Card, Badge, SearchBar, EmptyState, SkeletonList, AnimatedListItem, Fab, SwipeableRow, ConfirmSheet } from '../../components/ui';
+import { Plus, ChevronRight, Calendar, DoorOpen, FileText, Search, ArrowUpDown, Filter, Layers, Building2, Edit3, Eye, FileDown, Trash2, PenTool } from 'lucide-react-native';
+import { Header, Card, Badge, SearchBar, EmptyState, SkeletonList, AnimatedListItem, Fab, SwipeableRow, ConfirmSheet, ActionSheet } from '../../components/ui';
+import type { ActionSheetItem } from '../../components/ui';
+import { hapticMedium } from '../../utils/haptics';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
 import { DELETE_ETAT_DES_LIEUX } from '../../graphql/mutations/edl';
 import { EtatDesLieux, EdlStatut, STATUT_BADGE, TYPE_CONFIG } from '../../types';
@@ -44,9 +46,11 @@ export default function EdlScreen() {
   const [showStatut, setShowStatut] = useState(false);
   const [search, setSearch] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grouped'>('list');
 
   const { success: showSuccess, error: showError } = useToastStore();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; nom: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<EtatDesLieux | null>(null);
 
   const { data, refetch, loading, fetchMore } = useQuery<EdlData>(GET_ETATS_DES_LIEUX, {
     variables: { first: PAGE_SIZE },
@@ -140,6 +144,18 @@ export default function EdlScreen() {
     return result;
   }, [allEdls, filter, filterStatut, sort, search]);
 
+  const groupedEdls = useMemo(() => {
+    const groups: Record<string, EtatDesLieux[]> = {};
+    for (const edl of filteredEdls) {
+      const key = edl.logement?.nom || 'Sans logement';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(edl);
+    }
+    return Object.keys(groups)
+      .sort((a, b) => a.localeCompare(b))
+      .map((title) => ({ title, data: groups[title] }));
+  }, [filteredEdls]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refetch({ first: PAGE_SIZE });
@@ -159,6 +175,63 @@ export default function EdlScreen() {
     </TouchableOpacity>
   );
 
+  const handleLongPressEdl = (item: EtatDesLieux) => {
+    hapticMedium();
+    setContextMenu(item);
+  };
+
+  const getEdlActions = (item: EtatDesLieux): ActionSheetItem[] => {
+    const edlId = item.id.split('/').pop();
+    const actions: ActionSheetItem[] = [
+      {
+        label: 'Voir le détail',
+        icon: Eye,
+        onPress: () => router.push(`/edl/${edlId}`),
+      },
+    ];
+
+    // Modifier uniquement si brouillon ou en_cours
+    if (item.statut === 'brouillon' || item.statut === 'en_cours') {
+      actions.push({
+        label: 'Modifier',
+        icon: Edit3,
+        color: '#4F46E5',
+        onPress: () => router.push(`/edl/${edlId}/edit`),
+      });
+    }
+
+    // Signer uniquement si terminé
+    if (item.statut === 'termine') {
+      actions.push({
+        label: 'Signer',
+        icon: PenTool,
+        color: '#059669',
+        onPress: () => router.push(`/edl/${edlId}/signature`),
+      });
+    }
+
+    // PDF dispo si terminé ou signé
+    if (item.statut === 'termine' || item.statut === 'signe') {
+      actions.push({
+        label: 'Exporter PDF',
+        icon: FileDown,
+        onPress: () => router.push(`/edl/${edlId}`),
+      });
+    }
+
+    // Supprimer uniquement si pas signé
+    if (item.statut !== 'signe') {
+      actions.push({
+        label: 'Supprimer',
+        icon: Trash2,
+        variant: 'danger',
+        onPress: () => setDeleteTarget({ id: item.id, nom: item.logement?.nom || 'EDL' }),
+      });
+    }
+
+    return actions;
+  };
+
   const renderItem = ({ item, index }: { item: EtatDesLieux; index: number }) => {
     const typeConfig = TYPE_CONFIG[item.type];
     const statutBadge = STATUT_BADGE[item.statut];
@@ -172,20 +245,21 @@ export default function EdlScreen() {
         <AnimatedListItem index={index}>
           <Card
             onPress={() => router.push(`/edl/${edlId}`)}
+            onLongPress={() => handleLongPressEdl(item)}
             className="rounded-none border-0"
           >
-            <View className="flex-row">
+            {Date.now() - new Date(item.createdAt).getTime() < 24 * 60 * 60 * 1000 && (
+              <View className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-red-500 z-10" />
+            )}
+            <View className="flex-row items-center">
               <View className={`w-12 h-12 rounded-xl items-center justify-center ${typeConfig.bg}`}>
                 <Text className="text-2xl">{typeConfig.icon}</Text>
               </View>
 
-              <View className="flex-1 ml-3 mr-2">
-                <View className="flex-row items-center justify-between gap-2">
-                  <Text className="font-semibold text-gray-900 dark:text-gray-100 flex-1" numberOfLines={1}>
-                    {item.logement?.nom || 'Logement'}
-                  </Text>
-                  <Badge label={statutBadge.label} variant={statutBadge.variant} />
-                </View>
+              <View className="flex-1 ml-3">
+                <Text className="font-semibold text-gray-900 dark:text-gray-100" numberOfLines={1}>
+                  {item.logement?.nom || 'Logement'}
+                </Text>
                 <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{item.locataireNom}</Text>
 
                 <View className="flex-row items-center mt-2 gap-3">
@@ -204,7 +278,10 @@ export default function EdlScreen() {
                 </View>
               </View>
 
-              <ChevronRight size={20} color={COLORS.gray[400]} style={{ alignSelf: 'center' }} />
+              <View className="flex-row items-center ml-2 gap-2">
+                <Badge label={statutBadge.label} variant={statutBadge.variant} />
+                <ChevronRight size={18} color={COLORS.gray[400]} />
+              </View>
             </View>
           </Card>
         </AnimatedListItem>
@@ -234,6 +311,16 @@ export default function EdlScreen() {
               placeholder="Rechercher..."
             />
           </View>
+          <TouchableOpacity
+            onPress={() => setViewMode(viewMode === 'list' ? 'grouped' : 'list')}
+            className={`flex-row items-center px-3 py-2.5 rounded-xl border ${
+              viewMode === 'grouped'
+                ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/30'
+                : 'border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            <Layers size={16} color={viewMode === 'grouped' ? COLORS.primary[600] : COLORS.gray[500]} />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setShowStatut(!showStatut); setShowSort(false); }}
             className={`flex-row items-center px-3 py-2.5 rounded-xl border ${
@@ -298,6 +385,43 @@ export default function EdlScreen() {
       <GestureHandlerRootView style={{ flex: 1 }}>
       {loading && filteredEdls.length === 0 ? (
           <SkeletonList count={5} />
+        ) : viewMode === 'grouped' ? (
+        <SectionList
+          sections={groupedEdls}
+          renderItem={renderItem}
+          renderSectionHeader={({ section }) => (
+            <View className="flex-row items-center px-4 pt-4 pb-2 gap-2">
+              <Building2 size={16} color={COLORS.primary[600]} />
+              <Text className="text-sm font-semibold text-primary-600 dark:text-primary-400">{section.title}</Text>
+              <Text className="text-xs text-gray-400">({section.data.length})</Text>
+            </View>
+          )}
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ padding: 16 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
+          }
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={
+            !loading ? (
+              search.trim() ? (
+                <EmptyState
+                  icon={Search}
+                  title="Aucun résultat"
+                  subtitle={`Aucun EDL trouvé pour "${search}"`}
+                />
+              ) : (
+                <EmptyState
+                  icon={FileText}
+                  title="Pas encore d'état des lieux"
+                  subtitle="Créez votre premier EDL pour commencer à gérer vos biens"
+                  actionLabel="Créer un EDL"
+                  onAction={() => router.push('/edl/create')}
+                />
+              )
+            ) : null
+          }
+        />
         ) : (
         <FlatList
           data={filteredEdls}
@@ -341,6 +465,13 @@ export default function EdlScreen() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
         variant="danger"
+      />
+      <ActionSheet
+        visible={!!contextMenu}
+        title={contextMenu?.logement?.nom || 'État des lieux'}
+        subtitle={contextMenu ? `${TYPE_CONFIG[contextMenu.type].label} — ${contextMenu.locataireNom}` : undefined}
+        actions={contextMenu ? getEdlActions(contextMenu) : []}
+        onClose={() => setContextMenu(null)}
       />
     </SafeAreaView>
   );

@@ -5,9 +5,10 @@ import { useQuery, useLazyQuery, useMutation } from '@apollo/client/react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect } from 'react';
-import { Home } from 'lucide-react-native';
+import { useState, useEffect, useRef } from 'react';
+import { Home, Info, X, UserPlus } from 'lucide-react-native';
 import { Header, Input, Select, Button, EmptyState, DatePicker } from '../../components/ui';
+import { COLORS } from '../../utils/constants';
 import { GET_LOGEMENTS, GET_LOGEMENT } from '../../graphql/queries/logements';
 import { CREATE_ETAT_DES_LIEUX } from '../../graphql/mutations/edl';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
@@ -22,18 +23,19 @@ interface LogementsData {
   };
 }
 
+interface LogementEdlNode {
+  id: string;
+  type: string;
+  statut: string;
+  locataireNom: string;
+  locataireEmail?: string;
+  locataireTelephone?: string;
+}
+
 interface LogementDetailData {
   logement?: {
     etatDesLieux?: {
-      edges: Array<{
-        node: {
-          id: string;
-          type: string;
-          locataireNom: string;
-          locataireEmail?: string;
-          locataireTelephone?: string;
-        };
-      }>;
+      edges: Array<{ node: LogementEdlNode }>;
     };
   };
 }
@@ -53,6 +55,7 @@ const edlSchema = z.object({
   locataireNom: z.string().min(1, 'Nom du locataire requis'),
   locataireEmail: z.email({ message: 'Email invalide' }).optional(),
   locataireTelephone: z.string().optional(),
+  autresLocataires: z.array(z.string()).optional(),
   typologie: z.string().optional(),
 });
 
@@ -82,6 +85,11 @@ export default function CreateEdlScreen() {
   const { success, error: showError } = useToastStore();
   const { token } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [typeHint, setTypeHint] = useState<string | null>(null);
+  const [entreeActiveId, setEntreeActiveId] = useState<string | null>(null);
+  const [newLocataire, setNewLocataire] = useState('');
+  const [showColocInput, setShowColocInput] = useState(false);
+  const hasAutoSwitched = useRef(false);
 
   const { data: logementsData } = useQuery<LogementsData>(GET_LOGEMENTS);
   const logements = logementsData?.logements?.edges?.map((e) => ({
@@ -104,6 +112,7 @@ export default function CreateEdlScreen() {
       locataireNom: '',
       locataireEmail: '',
       locataireTelephone: '',
+      autresLocataires: [],
       typologie: '',
     },
   });
@@ -111,19 +120,52 @@ export default function CreateEdlScreen() {
   const selectedType = watch('type');
   const selectedLogement = watch('logement');
 
-  // Pré-remplir les infos locataire depuis le dernier EDL d'entrée quand type = sortie
+  // Pré-remplir les infos locataire + auto-sélection du type
   useEffect(() => {
-    if (selectedType !== 'sortie' || !selectedLogement) return;
+    if (!selectedLogement) {
+      setTypeHint(null);
+      setEntreeActiveId(null);
+      hasAutoSwitched.current = false;
+      return;
+    }
 
     fetchLogement({ variables: { id: selectedLogement } }).then(({ data }) => {
-      const edlEntree = data?.logement?.etatDesLieux?.edges
-        ?.map(e => e.node)
-        .find(edl => edl.type === 'entree');
+      const edls = data?.logement?.etatDesLieux?.edges?.map(e => e.node) || [];
 
-      if (edlEntree) {
-        setValue('locataireNom', edlEntree.locataireNom || '');
-        if (edlEntree.locataireEmail) setValue('locataireEmail', edlEntree.locataireEmail);
-        if (edlEntree.locataireTelephone) setValue('locataireTelephone', edlEntree.locataireTelephone);
+      if (edls.length === 0) {
+        setTypeHint(null);
+        setEntreeActiveId(null);
+        return;
+      }
+
+      // Vérifier s'il y a une entrée active (sans sortie correspondante)
+      const entrees = edls.filter(e => e.type === 'entree');
+      const sorties = edls.filter(e => e.type === 'sortie');
+      const entreeActive = entrees.find(entree =>
+        !sorties.some(s => s.locataireNom === entree.locataireNom)
+      );
+
+      // Stocker l'ID de l'entrée active pour la copie
+      setEntreeActiveId(entreeActive?.id ?? null);
+
+      // Auto-switch vers sortie si entrée active détectée (une seule fois par logement)
+      if (entreeActive && !hasAutoSwitched.current) {
+        hasAutoSwitched.current = true;
+        setValue('type', 'sortie');
+        setTypeHint(`EDL d'entrée existant pour ${entreeActive.locataireNom}`);
+      } else if (!entreeActive) {
+        setTypeHint(null);
+      }
+
+      // Pré-remplir locataire
+      const source = selectedType === 'sortie'
+        ? (entreeActive || entrees[0] || edls[0])
+        : edls[0];
+
+      if (source) {
+        setValue('locataireNom', source.locataireNom || '');
+        if (source.locataireEmail) setValue('locataireEmail', source.locataireEmail);
+        if (source.locataireTelephone) setValue('locataireTelephone', source.locataireTelephone);
       }
     });
   }, [selectedType, selectedLogement]);
@@ -140,6 +182,7 @@ export default function CreateEdlScreen() {
             locataireNom: data.locataireNom,
             locataireEmail: data.locataireEmail || null,
             locataireTelephone: data.locataireTelephone || null,
+            autresLocataires: data.autresLocataires && data.autresLocataires.length > 0 ? data.autresLocataires : null,
             statut: 'brouillon',
           },
         },
@@ -148,16 +191,31 @@ export default function CreateEdlScreen() {
       const newEdlId = result.data?.createEtatDesLieux?.etatDesLieux?.id;
       if (newEdlId) {
         const id = newEdlId.split('/').pop();
+        const sourceId = entreeActiveId?.split('/').pop();
 
-        // Générer les pièces si une typologie est sélectionnée
-        if (data.typologie) {
+        // Copier depuis l'entrée active si sortie + entrée détectée
+        if (data.type === 'sortie' && sourceId) {
+          try {
+            await fetch(`${API_URL}/edl/${id}/copier-depuis/${sourceId}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+          } catch {
+            // silently fail - copy is optional
+          }
+        } else if (data.typologie) {
+          // Générer les pièces si une typologie est sélectionnée (entrée ou sortie sans entrée)
           try {
             await fetch(`${API_URL}/edl/${id}/generer-pieces`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
+                'Authorization': `Bearer ${token}`,
               },
               body: JSON.stringify({ typologie: data.typologie }),
             });
@@ -247,6 +305,15 @@ export default function CreateEdlScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {typeHint && (
+              <View className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2.5 mt-2">
+                <Info size={16} color="#3B82F6" />
+                <Text className="text-sm text-blue-700 dark:text-blue-300 ml-2 flex-1">
+                  {typeHint} — type pré-sélectionné sur Sortie
+                </Text>
+              </View>
+            )}
           </View>
 
           <Controller
@@ -308,23 +375,118 @@ export default function CreateEdlScreen() {
             )}
           />
 
+          {/* Autres locataires (colocation) */}
           <Controller
             control={control}
-            name="typologie"
-            render={({ field: { onChange, value } }) => (
-              <Select
-                label="Pré-remplissage par typologie"
-                value={value || ''}
-                options={typologieOptions}
-                onChange={onChange}
-                placeholder="Sélectionner une typologie"
-              />
-            )}
+            name="autresLocataires"
+            render={({ field: { onChange, value } }) => {
+              const locataires = value || [];
+              const hasLocataires = locataires.length > 0;
+
+              return (
+                <View className="mb-4">
+                  {/* Chips des colocataires ajoutés */}
+                  {hasLocataires && (
+                    <View className="flex-row flex-wrap gap-2 mb-3">
+                      {locataires.map((nom: string, index: number) => (
+                        <View
+                          key={index}
+                          className="flex-row items-center bg-primary-50 dark:bg-primary-900/30 rounded-full pl-3 pr-1.5 py-1.5"
+                        >
+                          <Text className="text-sm text-primary-700 dark:text-primary-300">{nom}</Text>
+                          <TouchableOpacity
+                            onPress={() => {
+                              const updated = locataires.filter((_: string, i: number) => i !== index);
+                              onChange(updated);
+                              if (updated.length === 0) setShowColocInput(false);
+                            }}
+                            className="ml-1.5 w-5 h-5 rounded-full bg-primary-200 dark:bg-primary-800 items-center justify-center"
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          >
+                            <X size={12} color={COLORS.primary[600]} />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Input d'ajout */}
+                  {(showColocInput || hasLocataires) ? (
+                    <View>
+                      <Input
+                        label="Ajouter un colocataire"
+                        value={newLocataire}
+                        onChangeText={setNewLocataire}
+                        placeholder="Nom du colocataire"
+                        onSubmitEditing={() => {
+                          const nom = newLocataire.trim();
+                          if (nom) {
+                            onChange([...locataires, nom]);
+                            setNewLocataire('');
+                          }
+                        }}
+                        returnKeyType="done"
+                      />
+                      <TouchableOpacity
+                        onPress={() => {
+                          const nom = newLocataire.trim();
+                          if (nom) {
+                            onChange([...locataires, nom]);
+                            setNewLocataire('');
+                          }
+                        }}
+                        className="flex-row items-center justify-center bg-primary-600 rounded-xl py-2.5 -mt-2 mb-2"
+                      >
+                        <UserPlus size={16} color="white" />
+                        <Text className="text-white font-medium text-sm ml-1.5">Ajouter</Text>
+                      </TouchableOpacity>
+                      <Text className="text-xs text-gray-400 dark:text-gray-500">
+                        Le locataire principal signera pour tous
+                      </Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => setShowColocInput(true)}
+                      className="flex-row items-center py-2"
+                    >
+                      <UserPlus size={16} color={COLORS.primary[600]} />
+                      <Text className="text-sm text-primary-600 dark:text-primary-400 font-medium ml-2">
+                        Ajouter un colocataire
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            }}
           />
 
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-            Génère automatiquement les pièces standard pour ce type de logement
-          </Text>
+          {entreeActiveId && selectedType === 'sortie' ? (
+            <View className="bg-green-50 dark:bg-green-900/20 rounded-xl px-4 py-3 mb-4">
+              <Text className="text-sm text-green-700 dark:text-green-300">
+                Les pièces, éléments, compteurs et clés seront copiés depuis l'EDL d'entrée.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Controller
+                control={control}
+                name="typologie"
+                render={({ field: { onChange, value } }) => (
+                  <Select
+                    label="Pré-remplissage par typologie"
+                    value={value || ''}
+                    options={typologieOptions}
+                    onChange={onChange}
+                    placeholder="Sélectionner une typologie"
+                  />
+                )}
+              />
+
+              <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
+                Génère automatiquement les pièces standard pour ce type de logement
+              </Text>
+            </>
+          )}
         </ScrollView>
 
         <View className="p-4 border-t border-gray-100 dark:border-gray-700">

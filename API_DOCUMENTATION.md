@@ -519,18 +519,15 @@ Content-Type: application/json
 
 ---
 
-## Signature Électronique
+## Signature Électronique (en face à face)
 
 ### Workflow
 ```
-1. Bailleur signe → statut = "termine"
-2. Bailleur envoie lien au locataire → email avec token
-3. Locataire demande code OTP → email avec code 6 chiffres (15 min)
-4. Locataire vérifie code
-5. Locataire signe → statut = "signe"
+1. Bailleur signe sur le téléphone → statut = "termine"
+2. Locataire signe sur le même téléphone → statut = "signe", email de confirmation envoyé
 ```
 
-### Endpoints Bailleur (authentifié)
+### Endpoints (authentifiés)
 
 **Statut signature**
 ```http
@@ -546,12 +543,10 @@ Authorization: Bearer <token>
   "dateSignatureBailleur": "2024-01-15 14:30:00",
   "signatureLocataire": false,
   "dateSignatureLocataire": null,
-  "signatureTokenActive": true,
-  "signatureTokenExpireAt": "2024-01-17 14:30:00",
-  "etape": 3
+  "etape": 2
 }
 ```
-**Étapes:** 1=pas signé, 2=bailleur signé, 3=lien envoyé, 4=tout signé
+**Étapes:** 1=pas signé, 2=bailleur signé, 3=tout signé
 
 **Signer (bailleur)**
 ```http
@@ -562,57 +557,15 @@ Content-Type: application/json
 { "signature": "data:image/svg+xml;base64,PHN2Zy..." }
 ```
 
-**Envoyer lien au locataire**
-```http
-POST /api/edl/{id}/signature/envoyer-lien
-Authorization: Bearer <token>
-```
-→ Envoie un email au locataire avec le lien de signature (valide 48h)
-
-### Endpoints Locataire (publics - sans auth)
-
-**Infos signature**
-```http
-GET /api/signature/{token}
-```
-**Réponse:**
-```json
-{
-  "edl": {
-    "id": 1,
-    "type": "entree",
-    "dateRealisation": "2024-01-15",
-    "locataireNom": "Jean Dupont",
-    "locataireEmail": "j***n@email.com"
-  },
-  "logement": { "nom": "Appartement Centre", "adresse": "10 rue de Paris", "ville": "Lyon" },
-  "bailleur": { "nom": "Marie Martin" },
-  "etape": 1,
-  "codeVerifie": false
-}
-```
-**Étapes locataire:** 1=demander code, 2=code envoyé, 3=code vérifié (prêt à signer)
-
-**Demander code OTP**
-```http
-POST /api/signature/{token}/envoyer-code
-```
-
-**Vérifier code**
-```http
-POST /api/signature/{token}/verifier-code
-Content-Type: application/json
-
-{ "code": "123456" }
-```
-
 **Signer (locataire)**
 ```http
-POST /api/signature/{token}/signer
+POST /api/edl/{id}/signature/locataire
+Authorization: Bearer <token>
 Content-Type: application/json
 
 { "signature": "data:image/svg+xml;base64,PHN2Zy..." }
 ```
+→ Requiert que le bailleur ait déjà signé. Envoie l'email de confirmation aux deux parties.
 
 ---
 

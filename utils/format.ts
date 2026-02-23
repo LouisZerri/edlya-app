@@ -49,3 +49,16 @@ export function formatCurrency(amount: number): string {
 export function formatSurface(surface: number): string {
   return `${surface} m²`;
 }
+
+const LOGEMENT_TYPE_LABELS: Record<string, string> = {
+  studio: 'Studio',
+  appartement: 'Appart.',
+  maison: 'Maison',
+  loft: 'Loft',
+  autre: 'Autre',
+};
+
+export function formatLogementType(type?: string): string {
+  if (!type) return '';
+  return LOGEMENT_TYPE_LABELS[type] || type;
+}

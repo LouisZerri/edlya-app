@@ -3,15 +3,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState, useCallback, useMemo } from 'react';
-import { Plus, ChevronRight, MapPin, Home, Search, ArrowUpDown } from 'lucide-react-native';
-import { Header, Card, SearchBar, EmptyState, SkeletonList, AnimatedListItem, Fab, SwipeableRow, ConfirmSheet } from '../../components/ui';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { Plus, ChevronRight, MapPin, Home, Search, ArrowUpDown, Eye, Edit3, FilePlus, Trash2, Pin, PinOff } from 'lucide-react-native';
+import { Header, Card, SearchBar, EmptyState, SkeletonList, AnimatedListItem, Fab, SwipeableRow, ConfirmSheet, ActionSheet } from '../../components/ui';
+import type { ActionSheetItem } from '../../components/ui';
+import { hapticMedium, hapticLight } from '../../utils/haptics';
 import { GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { DELETE_LOGEMENT } from '../../graphql/mutations/logements';
 import { Logement } from '../../types';
 import { COLORS } from '../../utils/constants';
-import { formatSurface } from '../../utils/format';
+import { formatSurface, formatLogementType } from '../../utils/format';
 import { useToastStore } from '../../stores/toastStore';
+import { useFavoritesStore } from '../../stores/favoritesStore';
 
 const PAGE_SIZE = 20;
 
@@ -42,6 +45,13 @@ export default function LogementsScreen() {
 
   const { success: showSuccess, error: showError } = useToastStore();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; nom: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<Logement | null>(null);
+
+  const { pinnedIds, initialize: initFavorites, toggle: togglePin, isPinned } = useFavoritesStore();
+
+  useEffect(() => {
+    initFavorites();
+  }, []);
 
   const { data, refetch, loading, fetchMore } = useQuery<LogementsData>(GET_LOGEMENTS, {
     variables: { first: PAGE_SIZE },
@@ -92,7 +102,7 @@ export default function LogementsScreen() {
     }
   }, [hasNextPage, loadingMore, loading, endCursor, fetchMore]);
 
-  // Filtrer par recherche + tri
+  // Filtrer par recherche + tri + épinglés en haut
   const filteredLogements = useMemo(() => {
     let result = logements;
 
@@ -106,6 +116,11 @@ export default function LogementsScreen() {
     }
 
     result = [...result].sort((a, b) => {
+      // Épinglés toujours en premier
+      const aPinned = pinnedIds.has(a.id) ? 0 : 1;
+      const bPinned = pinnedIds.has(b.id) ? 0 : 1;
+      if (aPinned !== bPinned) return aPinned - bPinned;
+
       switch (sort) {
         case 'nom_asc':
           return (a.nom || '').localeCompare(b.nom || '');
@@ -121,7 +136,7 @@ export default function LogementsScreen() {
     });
 
     return result;
-  }, [logements, search, sort]);
+  }, [logements, search, sort, pinnedIds]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -129,8 +144,55 @@ export default function LogementsScreen() {
     setRefreshing(false);
   }, []);
 
+  const handleLongPressLogement = (item: Logement) => {
+    hapticMedium();
+    setContextMenu(item);
+  };
+
+  const handleTogglePin = (item: Logement) => {
+    hapticLight();
+    togglePin(item.id);
+  };
+
+  const getLogementActions = (item: Logement): ActionSheetItem[] => {
+    const logementId = item.id.split('/').pop();
+    const pinned = isPinned(item.id);
+    return [
+      {
+        label: pinned ? 'Désépingler' : 'Épingler',
+        icon: pinned ? PinOff : Pin,
+        color: '#F59E0B',
+        onPress: () => handleTogglePin(item),
+      },
+      {
+        label: 'Voir le détail',
+        icon: Eye,
+        onPress: () => router.push(`/logement/${logementId}`),
+      },
+      {
+        label: 'Modifier',
+        icon: Edit3,
+        color: '#4F46E5',
+        onPress: () => router.push(`/logement/${logementId}/edit`),
+      },
+      {
+        label: 'Créer un EDL',
+        icon: FilePlus,
+        color: '#059669',
+        onPress: () => router.push({ pathname: '/edl/create', params: { logementId: logementId } }),
+      },
+      {
+        label: 'Supprimer',
+        icon: Trash2,
+        variant: 'danger',
+        onPress: () => setDeleteTarget({ id: item.id, nom: item.nom }),
+      },
+    ];
+  };
+
   const renderItem = ({ item, index }: { item: Logement; index: number }) => {
     const logementId = item.id.split('/').pop();
+    const pinned = pinnedIds.has(item.id);
     return (
     <SwipeableRow
       onDelete={() => setDeleteTarget({ id: item.id, nom: item.nom })}
@@ -139,6 +201,7 @@ export default function LogementsScreen() {
       <AnimatedListItem index={index}>
         <Card
           onPress={() => router.push(`/logement/${logementId}`)}
+          onLongPress={() => handleLongPressLogement(item)}
           className="rounded-none border-0"
         >
           <View className="flex-row items-center">
@@ -147,7 +210,12 @@ export default function LogementsScreen() {
             </View>
 
             <View className="flex-1 ml-3">
-              <Text className="font-semibold text-gray-900 dark:text-gray-100">{item.nom}</Text>
+              <View className="flex-row items-center gap-1.5">
+                <Text className="font-semibold text-gray-900 dark:text-gray-100 flex-shrink" numberOfLines={1}>{item.nom}</Text>
+                {pinned && (
+                  <Pin size={13} color="#F59E0B" fill="#F59E0B" />
+                )}
+              </View>
               <View className="flex-row items-center mt-1">
                 <MapPin size={12} color={COLORS.gray[400]} />
                 <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1 flex-1" numberOfLines={1}>{item.adresse}</Text>
@@ -156,12 +224,18 @@ export default function LogementsScreen() {
             </View>
 
             <View className="items-end mr-2">
-              {item.surface && (
-                <Text className="text-xs text-gray-500 dark:text-gray-400">📐 {formatSurface(item.surface)}</Text>
+              {item.type && (
+                <View className="bg-primary-50 dark:bg-primary-500/20 px-2 py-0.5 rounded-md">
+                  <Text className="text-xs font-medium text-primary-600 dark:text-primary-300">
+                    {formatLogementType(item.type)}
+                  </Text>
+                </View>
               )}
-              <Text className="text-xs text-gray-400 mt-0.5">
-                📋 EDL
-              </Text>
+              {item.surface && (
+                <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  {formatSurface(item.surface)}
+                </Text>
+              )}
             </View>
 
             <ChevronRight size={20} color={COLORS.gray[400]} />
@@ -235,6 +309,7 @@ export default function LogementsScreen() {
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
+          extraData={pinnedIds}
           ListEmptyComponent={
             !loading ? (
               search.trim() ? (
@@ -266,6 +341,13 @@ export default function LogementsScreen() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
         variant="danger"
+      />
+      <ActionSheet
+        visible={!!contextMenu}
+        title={contextMenu?.nom || 'Logement'}
+        subtitle={contextMenu ? `${contextMenu.adresse}, ${contextMenu.ville}` : undefined}
+        actions={contextMenu ? getLogementActions(contextMenu) : []}
+        onClose={() => setContextMenu(null)}
       />
     </SafeAreaView>
   );

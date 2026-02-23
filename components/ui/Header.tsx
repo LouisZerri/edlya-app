@@ -7,17 +7,18 @@ import { COLORS } from '../../utils/constants';
 interface HeaderProps {
   title: string;
   showBack?: boolean;
+  onBack?: () => void;
   rightAction?: ReactNode;
 }
 
-export function Header({ title, showBack = false, rightAction }: HeaderProps) {
+export function Header({ title, showBack = false, onBack, rightAction }: HeaderProps) {
   const router = useRouter();
 
   return (
     <View className="h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 flex-row items-center px-4">
       {showBack ? (
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={onBack || (() => router.back())}
           className="w-10 h-10 items-center justify-center -ml-2"
         >
           <ChevronLeft size={24} color={COLORS.primary[600]} />

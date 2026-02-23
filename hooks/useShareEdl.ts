@@ -14,7 +14,6 @@ interface ShareResult {
 interface UseShareEdlReturn {
   isSharing: boolean;
   shareByEmail: (edlId: string, email: string, expireDays?: number) => Promise<ShareResult | null>;
-  sendSignatureLink: (edlId: string) => Promise<boolean>;
   promptShareEmail: (edlId: string, defaultEmail?: string) => void;
 }
 
@@ -74,47 +73,6 @@ export function useShareEdl(): UseShareEdlReturn {
     }
   }, [token, showError, showSuccess]);
 
-  // Envoyer le lien de signature au locataire
-  const sendSignatureLink = useCallback(async (edlId: string): Promise<boolean> => {
-    if (!token) {
-      showError('Non authentifié');
-      return false;
-    }
-
-    setIsSharing(true);
-
-    try {
-      const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
-
-      const response = await fetch(`${API_URL}/edl/${numericId}/signature/envoyer-lien`, {
-        method: 'POST',
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = `Erreur ${response.status}`;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (e) {}
-        throw new Error(errorMessage);
-      }
-
-      showSuccess('Lien de signature envoyé au locataire');
-      return true;
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi du lien');
-      return false;
-    } finally {
-      setIsSharing(false);
-    }
-  }, [token, showError, showSuccess]);
-
   // Afficher une boîte de dialogue pour demander l'email
   const promptShareEmail = useCallback((edlId: string, defaultEmail?: string) => {
     Alert.prompt(
@@ -141,7 +99,6 @@ export function useShareEdl(): UseShareEdlReturn {
   return {
     isSharing,
     shareByEmail,
-    sendSignatureLink,
     promptShareEmail,
   };
 }

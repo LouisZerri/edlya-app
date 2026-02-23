@@ -8,6 +8,7 @@ export interface EdlFormData {
   locataireNom: string;
   locataireEmail: string;
   locataireTelephone: string;
+  autresLocataires: string[];
   dateRealisation: string;
   observationsGenerales: string;
 }
@@ -52,6 +53,7 @@ export function useEdlInitializer(edl: EdlNode | undefined): EdlInitializerState
     locataireNom: '',
     locataireEmail: '',
     locataireTelephone: '',
+    autresLocataires: [],
     dateRealisation: '',
     observationsGenerales: '',
   });
@@ -90,6 +92,7 @@ export function useEdlInitializer(edl: EdlNode | undefined): EdlInitializerState
       locataireNom: edl.locataireNom || '',
       locataireEmail: edl.locataireEmail || '',
       locataireTelephone: edl.locataireTelephone || '',
+      autresLocataires: edl.autresLocataires || [],
       dateRealisation: apiDateToDisplay(edl.dateRealisation),
       observationsGenerales: edl.observationsGenerales || '',
     });

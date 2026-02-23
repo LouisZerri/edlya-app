@@ -8,6 +8,7 @@ export const CREATE_ETAT_DES_LIEUX = gql`
         type
         dateRealisation
         locataireNom
+        autresLocataires
         statut
       }
     }
@@ -24,6 +25,7 @@ export const UPDATE_ETAT_DES_LIEUX = gql`
         locataireNom
         locataireEmail
         locataireTelephone
+        autresLocataires
         observationsGenerales
         statut
         signatureBailleur

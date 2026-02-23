@@ -2,7 +2,8 @@ import { View, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@apollo/client/react';
 import { useState, useCallback, useEffect } from 'react';
-import { WelcomeCard, QuickActions, RecentEdlList, LogementsSansEdl } from '../../components/home';
+import { useFocusEffect } from 'expo-router';
+import { WelcomeCard, QuickActions, RecentEdlList, LogementsSansEdl, ActivityChart } from '../../components/home';
 import type { LogementSansEdl } from '../../components/home';
 import { useAuthStore } from '../../stores/authStore';
 import { GET_USER_STATS } from '../../graphql/queries/stats';
@@ -24,6 +25,8 @@ interface EdlNode {
   dateRealisation: string;
   locataireNom: string;
   statut: string;
+  createdAt: string;
+  updatedAt: string;
   logement: { nom: string };
 }
 
@@ -38,6 +41,7 @@ export default function HomeScreen() {
   const token = useAuthStore(state => state.token);
   const [refreshing, setRefreshing] = useState(false);
   const [logementsSansEdl, setLogementsSansEdl] = useState<LogementSansEdl[]>([]);
+  const [activity, setActivity] = useState<Array<{ date: string; count: number }>>([]);
 
   const { data: statsData, refetch: refetchStats } = useQuery<StatsData>(GET_USER_STATS);
   const { data: edlData, refetch: refetchEdl } = useQuery<RecentEdlData>(GET_RECENT_EDL);
@@ -51,9 +55,12 @@ export default function HomeScreen() {
     edlSortie: statsData?.sorties?.totalCount || 0,
   };
 
-  const recentEdls = edlData?.etatDesLieuxes?.edges?.map((edge) => edge.node) || [];
+  const allEdls = edlData?.etatDesLieuxes?.edges?.map((edge) => edge.node) || [];
+  const recentEdls = [...allEdls]
+    .sort((a, b) => new Date(b.updatedAt || b.dateRealisation).getTime() - new Date(a.updatedAt || a.dateRealisation).getTime())
+    .slice(0, 5);
 
-  const fetchLogementsSansEdl = useCallback(async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!token) return;
     try {
       const response = await fetch(`${API_URL}/stats/dashboard`, {
@@ -64,21 +71,26 @@ export default function HomeScreen() {
       if (response.ok) {
         const data = await response.json();
         setLogementsSansEdl(data.logements_sans_edl || []);
+        setActivity(data.activity || []);
       }
     } catch {
       // Silently fail - non-critical feature
     }
   }, [token]);
 
-  useEffect(() => {
-    fetchLogementsSansEdl();
-  }, [fetchLogementsSansEdl]);
+  useFocusEffect(
+    useCallback(() => {
+      refetchStats();
+      refetchEdl();
+      fetchDashboardData();
+    }, [refetchStats, refetchEdl, fetchDashboardData])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchStats(), refetchEdl(), fetchLogementsSansEdl()]);
+    await Promise.all([refetchStats(), refetchEdl(), fetchDashboardData()]);
     setRefreshing(false);
-  }, [refetchStats, refetchEdl, fetchLogementsSansEdl]);
+  }, [refetchStats, refetchEdl, fetchDashboardData]);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
@@ -91,6 +103,7 @@ export default function HomeScreen() {
         <View className="pb-8">
           <WelcomeCard user={user} stats={stats} />
           <QuickActions />
+          <ActivityChart data={activity} />
           <LogementsSansEdl logements={logementsSansEdl} />
           <RecentEdlList edls={recentEdls} />
         </View>

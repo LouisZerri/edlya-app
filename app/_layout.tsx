@@ -17,7 +17,7 @@ import { processPhotoQueue } from '../utils/photoSyncManager';
 import { getQueueLength } from '../utils/offlineMutationQueue';
 import { usePhotoQueueStore } from '../stores/photoQueueStore';
 import { COLORS, API_URL } from '../utils/constants';
-import { hasSeenOnboarding, OnboardingScreen } from './onboarding';
+import OnboardingScreen, { hasSeenOnboarding } from './onboarding';
 import '../global.css';
 
 function useProtectedRoute() {

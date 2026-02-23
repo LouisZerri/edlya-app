@@ -41,6 +41,7 @@ export const GET_ETAT_DES_LIEUX = gql`
       locataireNom
       locataireEmail
       locataireTelephone
+      autresLocataires
       observationsGenerales
       statut
       signatureBailleur
@@ -114,7 +115,7 @@ export const GET_ETAT_DES_LIEUX = gql`
 
 export const GET_RECENT_EDL = gql`
   query GetRecentEdl {
-    etatDesLieuxes(first: 5) {
+    etatDesLieuxes(first: 20) {
       edges {
         node {
           id
@@ -122,6 +123,8 @@ export const GET_RECENT_EDL = gql`
           dateRealisation
           locataireNom
           statut
+          createdAt
+          updatedAt
           logement {
             nom
           }

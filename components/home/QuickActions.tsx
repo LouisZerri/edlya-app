@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { Plus, Upload } from 'lucide-react-native';
+import { Plus, Upload, Zap } from 'lucide-react-native';
 import { COLORS } from '../../utils/constants';
 
 export function QuickActions() {
@@ -11,7 +11,10 @@ export function QuickActions() {
 
   return (
     <View className="px-4 mt-6">
-      <Text className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Actions rapides</Text>
+      <View className="flex-row items-center gap-2 mb-3">
+        <Zap size={18} color={COLORS.amber[500]} />
+        <Text className="text-lg font-semibold text-gray-800 dark:text-gray-200">Actions rapides</Text>
+      </View>
 
       <View className="flex-row gap-3">
         <TouchableOpacity

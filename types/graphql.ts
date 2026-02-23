@@ -83,6 +83,7 @@ export interface EdlNode {
   locataireNom: string;
   locataireEmail?: string;
   locataireTelephone?: string;
+  autresLocataires?: string[];
   observationsGenerales?: string;
   signatureBailleur?: string;
   signatureLocataire?: string;
