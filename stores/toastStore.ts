@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { generateId } from '../utils/id';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -23,7 +24,7 @@ export const useToastStore = create<ToastStore>((set, get) => ({
   toasts: [],
 
   showToast: (message, type = 'info', duration = 3000) => {
-    const id = Date.now().toString();
+    const id = generateId('toast');
     const toast: Toast = { id, message, type, duration };
 
     set(state => ({ toasts: [...state.toasts, toast] }));

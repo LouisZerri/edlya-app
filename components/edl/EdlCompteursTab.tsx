@@ -3,37 +3,25 @@ import { Trash2 } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { Card } from '../ui';
 import { PhotoGallery } from '../photo';
-import { COMPTEUR_CONFIG, CompteurType, LocalPhoto } from '../../types';
-import { CompteurNode } from '../../types/graphql';
+import { COMPTEUR_CONFIG, CompteurType } from '../../types';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
+import { useEdlEditContext } from '../../contexts/EdlEditContext';
 
-interface EdlCompteursTabProps {
-  localCompteurs: CompteurNode[];
-  compteurValues: Record<string, string>;
-  setCompteurValues: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  compteurNumeros: Record<string, string>;
-  setCompteurNumeros: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  compteurComments: Record<string, string>;
-  setCompteurComments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  compteurPhotos: Record<string, LocalPhoto[]>;
-  setCompteurPhotos: React.Dispatch<React.SetStateAction<Record<string, LocalPhoto[]>>>;
-  onDeleteCompteur: (compteurId: string, label: string) => void;
-  onAddCompteur: (type: CompteurType) => void;
-}
+export function EdlCompteursTab() {
+  const {
+    localCompteurs,
+    compteurValues,
+    setCompteurValues,
+    compteurNumeros,
+    setCompteurNumeros,
+    compteurComments,
+    setCompteurComments,
+    compteurPhotos,
+    setCompteurPhotos,
+    handleDeleteCompteur,
+    handleAddCompteur,
+  } = useEdlEditContext();
 
-export function EdlCompteursTab({
-  localCompteurs,
-  compteurValues,
-  setCompteurValues,
-  compteurNumeros,
-  setCompteurNumeros,
-  compteurComments,
-  setCompteurComments,
-  compteurPhotos,
-  setCompteurPhotos,
-  onDeleteCompteur,
-  onAddCompteur,
-}: EdlCompteursTabProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const darkInput = isDark ? { backgroundColor: DARK_COLORS.inputBg, borderColor: DARK_COLORS.inputBorder, color: DARK_COLORS.text } : {};
@@ -55,7 +43,7 @@ export function EdlCompteursTab({
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={() => onDeleteCompteur(compteur.id, config?.label || compteur.type)}
+                onPress={() => handleDeleteCompteur(compteur.id, config?.label || compteur.type)}
                 className="p-1.5"
               >
                 <Trash2 size={16} color={COLORS.red[500]} />
@@ -134,7 +122,7 @@ export function EdlCompteursTab({
         {(Object.keys(COMPTEUR_CONFIG) as CompteurType[]).map((type) => (
           <TouchableOpacity
             key={type}
-            onPress={() => onAddCompteur(type)}
+            onPress={() => handleAddCompteur(type)}
             className="bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2 flex-row items-center"
           >
             <Text className="mr-1">{COMPTEUR_CONFIG[type].icon}</Text>

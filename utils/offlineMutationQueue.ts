@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateId } from './id';
 
 const QUEUE_KEY = 'offline_mutation_queue';
 
 export interface QueuedMutation {
   id: string;
-  mutationName: string;
-  variables: Record<string, any>;
+  mutationName: 'UPDATE_ETAT_DES_LIEUX' | 'UPDATE_ELEMENT' | 'UPDATE_COMPTEUR' | 'UPDATE_CLE';
+  variables: { input: Record<string, unknown> };
   createdAt: number;
   retryCount: number;
 }
@@ -23,7 +24,7 @@ export async function addToQueue(mutation: Omit<QueuedMutation, 'id' | 'createdA
   const queue = await getQueue();
   const entry: QueuedMutation = {
     ...mutation,
-    id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    id: generateId('queue'),
     createdAt: Date.now(),
     retryCount: 0,
   };

@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { generateId } from '../utils/id';
 
 export interface LigneDevis {
   id: string;
@@ -32,10 +33,6 @@ export interface DegradationInitiale {
   observations?: string;
 }
 
-let nextId = 1;
-function generateId(): string {
-  return `devis_${Date.now()}_${nextId++}`;
-}
 
 export interface UseDevisReturn {
   lignes: LigneDevis[];
@@ -71,7 +68,7 @@ export function useDevis(): UseDevisReturn {
 
   const addLigne = useCallback((partialLigne?: Partial<LigneDevis>) => {
     const newLigne: LigneDevis = {
-      id: generateId(),
+      id: generateId('devis'),
       piece: partialLigne?.piece || '',
       element: partialLigne?.element || '',
       description: partialLigne?.description || '',
@@ -98,7 +95,7 @@ export function useDevis(): UseDevisReturn {
 
   const setLignesFromDegradations = useCallback((degradations: DegradationInitiale[]) => {
     const newLignes: LigneDevis[] = degradations.map(d => ({
-      id: generateId(),
+      id: generateId('devis'),
       piece: d.piece,
       element: d.element,
       description: d.intervention
@@ -115,7 +112,7 @@ export function useDevis(): UseDevisReturn {
   const setLignesFromIA = useCallback((iaLignes: LigneDevis[]) => {
     setLignes(iaLignes.map(l => ({
       ...l,
-      id: l.id || generateId(),
+      id: l.id || generateId('devis'),
     })));
   }, []);
 
@@ -157,7 +154,7 @@ export function useDevis(): UseDevisReturn {
 
       if (data.lignes && data.lignes.length > 0) {
         const iaLignes: LigneDevis[] = data.lignes.map((l: { piece?: string; element?: string; description?: string; quantite?: number; unite?: string; prix_unitaire?: number; total?: number }) => ({
-          id: generateId(),
+          id: generateId('devis'),
           piece: l.piece || '',
           element: l.element || '',
           description: l.description || '',

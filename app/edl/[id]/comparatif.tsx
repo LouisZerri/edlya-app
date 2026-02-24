@@ -1,9 +1,8 @@
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Download, AlertTriangle, ArrowRight, AlertCircle, CheckCircle, Info } from 'lucide-react-native';
-import { TouchableOpacity } from 'react-native';
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, ActivityIndicator, RefreshControl, Animated , TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Download, AlertTriangle, ArrowRight, AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 import { Header, Card, Badge, Button } from '../../../components/ui';
 import { COLORS } from '../../../utils/constants';
 import { COMPTEUR_CONFIG, ELEMENT_ETAT_LABELS, CLE_LABELS, ElementEtat, CleType } from '../../../types';

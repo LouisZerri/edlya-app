@@ -1,6 +1,6 @@
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, FlatList, Animated, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRef, useState, useCallback, useEffect } from 'react';
 import { Home, FileText, Upload, Shield } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../utils/constants';
@@ -168,7 +168,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     }
   }, [activeIndex, handleComplete]);
 
-  const renderSlide = ({ item }: { item: Slide }) => (
+  const renderSlide = useCallback(({ item }: { item: Slide }) => (
     <View style={{ width: SCREEN_WIDTH }} className="flex-1 items-center justify-center px-10">
       {item.emoji ? (
         <Text style={{ fontSize: 72 }} className="mb-10">{item.emoji}</Text>
@@ -187,7 +187,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         {item.subtitle}
       </Text>
     </View>
-  );
+  ), []);
 
   const isLast = activeIndex === slides.length - 1;
 

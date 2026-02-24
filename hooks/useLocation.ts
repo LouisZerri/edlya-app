@@ -25,7 +25,7 @@ export function useLocation(): UseLocationReturn {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setPermission(status);
       return status === 'granted';
-    } catch (err) {
+    } catch {
       setError('Impossible de demander la permission de localisation');
       return false;
     }
@@ -65,7 +65,7 @@ export function useLocation(): UseLocationReturn {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       };
-    } catch (err) {
+    } catch {
       setError('Impossible de récupérer la position');
       return null;
     } finally {

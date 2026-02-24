@@ -1,9 +1,9 @@
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Upload, FileText, Lightbulb, Check, Edit3 } from 'lucide-react-native';
-import * as DocumentPicker from 'expo-document-picker';
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Header, Button } from '../components/ui';
 import { COLORS } from '../utils/constants';

@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { appendFile } from '../utils/formData';
 import { ElementType, ElementEtat } from '../types';
 
 interface DegradationDetectee {
@@ -81,18 +82,18 @@ export function usePhotoAnalysis(): UsePhotoAnalysisReturn {
         });
         const base64Data = await base64Promise;
 
-        formData.append('photo', {
+        appendFile(formData, 'photo', {
           uri: base64Data,
           name: fileName,
           type: mimeType,
-        } as any);
+        });
       } else {
         // Local file: pass compressed URI directly
-        formData.append('photo', {
+        appendFile(formData, 'photo', {
           uri: compressedUri,
           name: fileName,
           type: mimeType,
-        } as any);
+        });
       }
 
       formData.append('type_element', typeElement);

@@ -1,10 +1,10 @@
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, FlatList, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Plus, ChevronRight, MapPin, Home, Search, ArrowUpDown, Eye, Edit3, FilePlus, Trash2, Pin, PinOff } from 'lucide-react-native';
+import { ChevronRight, MapPin, Home, Search, ArrowUpDown, Eye, Edit3, FilePlus, Trash2, Pin, PinOff } from 'lucide-react-native';
 import { Header, Card, SearchBar, EmptyState, SkeletonList, AnimatedListItem, Fab, SwipeableRow, ConfirmSheet, ActionSheet } from '../../components/ui';
 import type { ActionSheetItem } from '../../components/ui';
 import { hapticMedium, hapticLight } from '../../utils/haptics';
@@ -61,7 +61,7 @@ export default function LogementsScreen() {
     refetchQueries: [{ query: GET_LOGEMENTS, variables: { first: PAGE_SIZE } }],
   });
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
       await deleteLogement({ variables: { input: { id: deleteTarget.id } } });
@@ -70,7 +70,7 @@ export default function LogementsScreen() {
       showError('Erreur lors de la suppression');
     }
     setDeleteTarget(null);
-  };
+  }, [deleteTarget, deleteLogement, showSuccess, showError]);
 
   const logements: Logement[] = data?.logements?.edges?.map((edge) => edge.node) || [];
   const hasNextPage = data?.logements?.pageInfo?.hasNextPage ?? false;
@@ -144,17 +144,17 @@ export default function LogementsScreen() {
     setRefreshing(false);
   }, []);
 
-  const handleLongPressLogement = (item: Logement) => {
+  const handleLongPressLogement = useCallback((item: Logement) => {
     hapticMedium();
     setContextMenu(item);
-  };
+  }, []);
 
-  const handleTogglePin = (item: Logement) => {
+  const handleTogglePin = useCallback((item: Logement) => {
     hapticLight();
     togglePin(item.id);
-  };
+  }, [togglePin]);
 
-  const getLogementActions = (item: Logement): ActionSheetItem[] => {
+  const getLogementActions = useCallback((item: Logement): ActionSheetItem[] => {
     const logementId = item.id.split('/').pop();
     const pinned = isPinned(item.id);
     return [
@@ -188,9 +188,9 @@ export default function LogementsScreen() {
         onPress: () => setDeleteTarget({ id: item.id, nom: item.nom }),
       },
     ];
-  };
+  }, [isPinned, handleTogglePin, router]);
 
-  const renderItem = ({ item, index }: { item: Logement; index: number }) => {
+  const renderItem = useCallback(({ item, index }: { item: Logement; index: number }) => {
     const logementId = item.id.split('/').pop();
     const pinned = pinnedIds.has(item.id);
     return (
@@ -244,16 +244,38 @@ export default function LogementsScreen() {
       </AnimatedListItem>
     </SwipeableRow>
     );
-  };
+  }, [pinnedIds, router, handleLongPressLogement]);
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
     return (
       <View className="py-4 items-center">
         <ActivityIndicator size="small" color={COLORS.primary[600]} />
       </View>
     );
-  };
+  }, [loadingMore]);
+
+  const listEmptyComponent = useMemo(() => {
+    if (loading) return null;
+    if (search.trim()) {
+      return (
+        <EmptyState
+          icon={Search}
+          title="Aucun résultat"
+          subtitle={`Aucun logement trouvé pour "${search}"`}
+        />
+      );
+    }
+    return (
+      <EmptyState
+        icon={Home}
+        title="Pas encore de logement"
+        subtitle="Ajoutez votre premier logement pour commencer"
+        actionLabel="Ajouter un logement"
+        onAction={() => router.push('/logement/create')}
+      />
+    );
+  }, [loading, search, router]);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
@@ -310,25 +332,7 @@ export default function LogementsScreen() {
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
           extraData={pinnedIds}
-          ListEmptyComponent={
-            !loading ? (
-              search.trim() ? (
-                <EmptyState
-                  icon={Search}
-                  title="Aucun résultat"
-                  subtitle={`Aucun logement trouvé pour "${search}"`}
-                />
-              ) : (
-                <EmptyState
-                  icon={Home}
-                  title="Pas encore de logement"
-                  subtitle="Ajoutez votre premier logement pour commencer"
-                  actionLabel="Ajouter un logement"
-                  onAction={() => router.push('/logement/create')}
-                />
-              )
-            ) : null
-          }
+          ListEmptyComponent={listEmptyComponent}
         />
         )}
       </GestureHandlerRootView>

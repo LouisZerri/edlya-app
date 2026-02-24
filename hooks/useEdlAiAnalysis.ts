@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ElementType, ElementEtat, LocalPhoto } from '../types';
@@ -42,8 +42,54 @@ export function useEdlAiAnalysis({
   const [analysisElementId, setAnalysisElementId] = useState<string | null>(null);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
-  const handleAnalyzeElement = async (element: AnalyzableElement) => {
-    const photos = elementPhotos[element.id] || [];
+  // Ref pour que les callbacks stables accèdent aux valeurs fraîches
+  const dataRef = useRef({ elementPhotos, expandedPieces });
+  dataRef.current = { elementPhotos, expandedPieces };
+
+  const processRoomScan = useCallback(async (piece: PieceNode, photoUri: string) => {
+    const result = await autoFillRoom(edlId, piece.id, photoUri);
+
+    if (result && result.elements_crees) {
+      setLocalPieces(prev =>
+        prev.map(p => {
+          if (p.id === piece.id) {
+            const existingElements = p.elements?.edges || [];
+            const newElementEdges = result.elements_crees.map(el => {
+              const elementIri = `/api/elements/${el.id}`;
+              return {
+                node: {
+                  ...el,
+                  id: elementIri,
+                  photos: { edges: [] },
+                },
+              };
+            });
+            return {
+              ...p,
+              elements: {
+                edges: [...existingElements, ...newElementEdges],
+              },
+            };
+          }
+          return p;
+        })
+      );
+
+      result.elements_crees.forEach(el => {
+        const elId = `/api/elements/${el.id}`;
+        setElementStates(prev => ({ ...prev, [elId]: el.etat }));
+        setElementObservations(prev => ({ ...prev, [elId]: el.observations || '' }));
+        setElementDegradations(prev => ({ ...prev, [elId]: [] }));
+      });
+
+      if (!dataRef.current.expandedPieces.includes(piece.id)) {
+        setExpandedPieces(prev => [...prev, piece.id]);
+      }
+    }
+  }, [edlId, autoFillRoom, setLocalPieces, setElementStates, setElementObservations, setElementDegradations, setExpandedPieces]);
+
+  const handleAnalyzeElement = useCallback(async (element: AnalyzableElement) => {
+    const photos = dataRef.current.elementPhotos[element.id] || [];
     if (photos.length === 0) {
       showError('Ajoutez une photo pour analyser');
       return;
@@ -61,9 +107,9 @@ export function useEdlAiAnalysis({
       setAnalysisElementId(element.id);
       setShowAnalysisModal(true);
     }
-  };
+  }, [analyzePhoto, showError]);
 
-  const handleScanRoom = async (piece: PieceNode) => {
+  const handleScanRoom = useCallback(async (piece: PieceNode) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
@@ -105,51 +151,9 @@ export function useEdlAiAnalysis({
         },
       ]
     );
-  };
+  }, [processRoomScan]);
 
-  const processRoomScan = async (piece: PieceNode, photoUri: string) => {
-    const result = await autoFillRoom(edlId, piece.id, photoUri);
-
-    if (result && result.elements_crees) {
-      setLocalPieces(prev =>
-        prev.map(p => {
-          if (p.id === piece.id) {
-            const existingElements = p.elements?.edges || [];
-            const newElementEdges = result.elements_crees.map(el => {
-              const elementIri = `/api/elements/${el.id}`;
-              return {
-                node: {
-                  ...el,
-                  id: elementIri,
-                  photos: { edges: [] },
-                },
-              };
-            });
-            return {
-              ...p,
-              elements: {
-                edges: [...existingElements, ...newElementEdges],
-              },
-            };
-          }
-          return p;
-        })
-      );
-
-      result.elements_crees.forEach(el => {
-        const elId = `/api/elements/${el.id}`;
-        setElementStates(prev => ({ ...prev, [elId]: el.etat }));
-        setElementObservations(prev => ({ ...prev, [elId]: el.observations || '' }));
-        setElementDegradations(prev => ({ ...prev, [elId]: [] }));
-      });
-
-      if (!expandedPieces.includes(piece.id)) {
-        setExpandedPieces(prev => [...prev, piece.id]);
-      }
-    }
-  };
-
-  const applyAnalysisResults = () => {
+  const applyAnalysisResults = useCallback(() => {
     if (!analysisResult || !analysisElementId) return;
 
     setElementStates(prev => ({
@@ -177,9 +181,9 @@ export function useEdlAiAnalysis({
     setShowAnalysisModal(false);
     setAnalysisResult(null);
     setAnalysisElementId(null);
-  };
+  }, [analysisResult, analysisElementId, setElementStates, setElementDegradations, setElementObservations, success]);
 
-  return {
+  return useMemo(() => ({
     isAnalyzing,
     isRoomAnalyzing,
     analysisResult,
@@ -189,5 +193,8 @@ export function useEdlAiAnalysis({
     handleAnalyzeElement,
     handleScanRoom,
     applyAnalysisResults,
-  };
+  }), [
+    isAnalyzing, isRoomAnalyzing, analysisResult, analysisElementId, showAnalysisModal,
+    handleAnalyzeElement, handleScanRoom, applyAnalysisResults,
+  ]);
 }

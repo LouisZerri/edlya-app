@@ -1,10 +1,10 @@
+import { useState } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
 import { Lock, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react-native';
 import { Input, Button } from '../../components/ui';
 import { useToastStore } from '../../stores/toastStore';
@@ -64,7 +64,7 @@ export default function ResetPasswordScreen() {
         setErrorMessage(result.error || 'Une erreur est survenue');
         showError(result.error || 'Une erreur est survenue');
       }
-    } catch (err: unknown) {
+    } catch {
       setErrorMessage('Erreur de connexion au serveur');
       showError('Erreur de connexion au serveur');
     } finally {

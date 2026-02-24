@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, Animated, useWindowDimensions } from 'react-native';
 import { useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Animated, useWindowDimensions } from 'react-native';
 
 export type TabType = 'infos' | 'compteurs' | 'cles' | 'pieces';
 

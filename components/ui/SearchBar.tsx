@@ -17,8 +17,8 @@ export function SearchBar({ value, onChangeText, placeholder = 'Rechercher...' }
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={COLORS.gray[400]}
-        className="flex-1 ml-2.5 text-base text-gray-900 dark:text-gray-100"
-        style={{ includeFontPadding: false }}
+        className="flex-1 ml-2.5 text-gray-900 dark:text-gray-100"
+        style={{ fontSize: 16, includeFontPadding: false, textAlignVertical: 'center', paddingVertical: 0 }}
         autoCapitalize="none"
         autoCorrect={false}
       />

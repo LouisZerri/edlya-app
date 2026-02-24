@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { Trash2, Sparkles, Zap, X } from 'lucide-react-native';
 import { Select, InputWithVoice, AideTooltip } from '../ui';
 import { PhotoGallery } from '../photo';
-import { ElementType, ElementEtat, LocalPhoto, ELEMENT_TYPE_LABELS, ELEMENT_ETAT_LABELS } from '../../types';
+import { ElementType, ElementEtat, ELEMENT_TYPE_LABELS, ELEMENT_ETAT_LABELS, LocalPhoto } from '../../types';
 import { ElementNode } from '../../types/graphql';
 import { COLORS } from '../../utils/constants';
 import { DEGRADATIONS_SUGGESTIONS } from '../../utils/degradations';
 import { OBSERVATION_SUGGESTIONS } from '../../utils/observationSuggestions';
+import { useEdlEditContext } from '../../contexts/EdlEditContext';
 
 const etatOptions = Object.entries(ELEMENT_ETAT_LABELS).map(([value, label]) => ({
   value,
@@ -17,42 +18,36 @@ const etatOptions = Object.entries(ELEMENT_ETAT_LABELS).map(([value, label]) => 
 interface ElementCardProps {
   element: ElementNode;
   pieceId: string;
-  elementStates: Record<string, ElementEtat>;
-  setElementStates: React.Dispatch<React.SetStateAction<Record<string, ElementEtat>>>;
-  elementObservations: Record<string, string>;
-  setElementObservations: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  elementDegradations: Record<string, string[]>;
-  toggleDegradation: (elementId: string, degradation: string) => void;
-  addCustomDegradation: (elementId: string) => void;
-  elementPhotos: Record<string, LocalPhoto[]>;
-  setElementPhotos: React.Dispatch<React.SetStateAction<Record<string, LocalPhoto[]>>>;
-  isAnalyzing: boolean;
-  onAnalyze: (element: ElementNode) => void;
-  onDelete: (elementId: string, elementName: string, pieceId: string) => void;
 }
 
-export const ElementCard = React.memo(function ElementCard({
-  element,
-  pieceId,
-  elementStates,
-  setElementStates,
-  elementObservations,
-  setElementObservations,
-  elementDegradations,
-  toggleDegradation,
-  addCustomDegradation,
-  elementPhotos,
-  setElementPhotos,
-  isAnalyzing,
-  onAnalyze,
-  onDelete,
-}: ElementCardProps) {
+export function ElementCard({ element, pieceId }: ElementCardProps) {
+  const {
+    elementStates,
+    setElementStates,
+    elementObservations,
+    setElementObservations,
+    elementDegradations,
+    toggleDegradation,
+    addCustomDegradation,
+    elementPhotos,
+    setElementPhotos,
+    isAnalyzing,
+    handleAnalyzeElement,
+    handleDeleteElement,
+  } = useEdlEditContext();
+
   const suggestions = DEGRADATIONS_SUGGESTIONS[element.type] || DEGRADATIONS_SUGGESTIONS.autre;
   const observationSuggestions = OBSERVATION_SUGGESTIONS[element.type] || OBSERVATION_SUGGESTIONS.autre;
   const currentDegradations = Array.isArray(elementDegradations[element.id])
     ? elementDegradations[element.id]
     : [];
   const [showObsSuggestions, setShowObsSuggestions] = useState(false);
+
+  const handlePhotosChange = useCallback(
+    (photos: LocalPhoto[]) =>
+      setElementPhotos(prev => ({ ...prev, [element.id]: photos })),
+    [element.id, setElementPhotos]
+  );
 
   return (
     <View className="py-3 border-t border-gray-100 dark:border-gray-700">
@@ -64,7 +59,7 @@ export const ElementCard = React.memo(function ElementCard({
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => onDelete(element.id, element.nom, pieceId)}
+          onPress={() => handleDeleteElement(element.id, element.nom, pieceId)}
           className="p-2"
         >
           <Trash2 size={16} color={COLORS.red[500]} />
@@ -216,9 +211,7 @@ export const ElementCard = React.memo(function ElementCard({
       <View className="mt-2">
         <PhotoGallery
           photos={elementPhotos[element.id] || []}
-          onPhotosChange={(photos) =>
-            setElementPhotos(prev => ({ ...prev, [element.id]: photos }))
-          }
+          onPhotosChange={handlePhotosChange}
           elementId={element.id}
           maxPhotos={5}
           thumbnailSize="medium"
@@ -228,7 +221,7 @@ export const ElementCard = React.memo(function ElementCard({
       {/* Bouton Analyse IA */}
       {(elementPhotos[element.id]?.length || 0) > 0 && (
         <TouchableOpacity
-          onPress={() => onAnalyze(element)}
+          onPress={() => handleAnalyzeElement(element)}
           disabled={isAnalyzing}
           className={`mt-3 flex-row items-center justify-center py-2.5 rounded-lg ${
             isAnalyzing ? 'bg-gray-100 dark:bg-gray-800' : 'bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700'
@@ -244,4 +237,4 @@ export const ElementCard = React.memo(function ElementCard({
       )}
     </View>
   );
-});
+}

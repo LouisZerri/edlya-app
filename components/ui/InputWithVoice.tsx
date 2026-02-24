@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps, TouchableOpacity, Animated } from 'react-native';
+import Constants from 'expo-constants';
 import { Mic, MicOff } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import Constants from 'expo-constants';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
 
 interface InputWithVoiceProps extends Omit<TextInputProps, 'onChangeText'> {
@@ -57,7 +57,7 @@ export function InputWithVoice({
           setSpeechModule(mod);
           setVoiceAvailable(true);
         }
-      } catch (e) {
+      } catch {
         setVoiceAvailable(false);
       }
     }, 100);

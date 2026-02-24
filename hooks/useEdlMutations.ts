@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { Alert } from 'react-native';
-import { useMutation } from '@apollo/client/react';
 import { useRouter } from 'expo-router';
+import { useMutation } from '@apollo/client/react';
 import {
   UPDATE_ETAT_DES_LIEUX,
   CREATE_PIECE,
@@ -37,11 +37,11 @@ import {
   GraphQLEdge,
   ElementNode,
 } from '../types/graphql';
-import { displayDateToApi } from '../utils/format';
 import { getErrorMessage } from '../utils/error';
 import { useToastStore } from '../stores/toastStore';
 import { useNetworkStore } from '../stores/networkStore';
 import { addToQueue } from '../utils/offlineMutationQueue';
+import { buildChangedMutations } from '../utils/buildChangedMutations';
 import { usePhotoUpload } from './usePhotoUpload';
 import { EdlFormData } from './useEdlInitializer';
 
@@ -74,7 +74,7 @@ interface UseEdlMutationsParams {
 
 export function useEdlMutations({
   edlId,
-  edl,
+  edl: _edl,
   formData,
   localPieces,
   setLocalPieces,
@@ -102,14 +102,6 @@ export function useEdlMutations({
   const { success, error: showError } = useToastStore();
   const { uploadPhoto } = usePhotoUpload();
 
-  const requireOnline = (): boolean => {
-    if (!useNetworkStore.getState().isConnected) {
-      showError('Connexion requise pour ajouter/supprimer');
-      return false;
-    }
-    return true;
-  };
-
   const [saving, setSaving] = useState(false);
   const [showAddPiece, setShowAddPiece] = useState(false);
   const [newPieceName, setNewPieceName] = useState('');
@@ -130,91 +122,56 @@ export function useEdlMutations({
   const [createElement] = useMutation(CREATE_ELEMENT);
   const [deleteElementMutation] = useMutation(DELETE_ELEMENT);
 
-  const queueAllMutations = async () => {
-    await addToQueue({
-      mutationName: 'UPDATE_ETAT_DES_LIEUX',
-      variables: {
-        input: {
-          id: `/api/etat_des_lieuxes/${edlId}`,
-          locataireNom: formData.locataireNom,
-          locataireEmail: formData.locataireEmail || null,
-          locataireTelephone: formData.locataireTelephone || null,
-          dateRealisation: displayDateToApi(formData.dateRealisation),
-          observationsGenerales: formData.observationsGenerales || null,
-        },
-      },
-    });
-
-    for (const piece of localPieces) {
-      const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
-      for (const element of elements) {
-        const hasStateChange = elementStates[element.id] !== element.etat;
-        const hasObsChange = elementObservations[element.id] !== (element.observations || '');
-        const currentDegs = Array.isArray(elementDegradations[element.id]) ? elementDegradations[element.id] : [];
-        const originalDegs = Array.isArray(element.degradations) ? element.degradations : [];
-        const hasDegChange = JSON.stringify(currentDegs) !== JSON.stringify(originalDegs);
-
-        if (hasStateChange || hasObsChange || hasDegChange) {
-          await addToQueue({
-            mutationName: 'UPDATE_ELEMENT',
-            variables: {
-              input: {
-                id: element.id,
-                etat: elementStates[element.id],
-                observations: elementObservations[element.id] || null,
-                degradations: currentDegs,
-              },
-            },
-          });
-        }
-      }
-    }
-
-    for (const compteur of localCompteurs) {
-      const hasIndexChange = compteurValues[compteur.id] !== compteur.indexValue;
-      const hasNumeroChange = compteurNumeros[compteur.id] !== (compteur.numero || '');
-      const hasCommentChange = compteurComments[compteur.id] !== (compteur.commentaire || '');
-
-      if (hasIndexChange || hasNumeroChange || hasCommentChange) {
-        await addToQueue({
-          mutationName: 'UPDATE_COMPTEUR',
-          variables: {
-            input: {
-              id: compteur.id,
-              indexValue: compteurValues[compteur.id],
-              numero: compteurNumeros[compteur.id] || null,
-              commentaire: compteurComments[compteur.id] || null,
-            },
-          },
-        });
-      }
-    }
-
-    for (const cle of localCles) {
-      if (cleValues[cle.id] !== cle.nombre) {
-        await addToQueue({
-          mutationName: 'UPDATE_CLE',
-          variables: {
-            input: {
-              id: cle.id,
-              nombre: cleValues[cle.id],
-            },
-          },
-        });
-      }
-    }
+  // Ref pour que les callbacks stables accèdent aux valeurs fraîches
+  const dataRef = useRef({
+    formData, localPieces, localCompteurs, localCles,
+    compteurValues, compteurNumeros, compteurComments,
+    cleValues, elementStates, elementObservations, elementDegradations,
+    elementPhotos, compteurPhotos,
+    newPieceName, newElementName, newElementType,
+  });
+  dataRef.current = {
+    formData, localPieces, localCompteurs, localCles,
+    compteurValues, compteurNumeros, compteurComments,
+    cleValues, elementStates, elementObservations, elementDegradations,
+    elementPhotos, compteurPhotos,
+    newPieceName, newElementName, newElementType,
   };
 
-  const handleSave = async () => {
-    if (!useNetworkStore.getState().isConnected) {
-      await queueAllMutations();
+  const mutationExecutors = useMemo(() => ({
+    UPDATE_ETAT_DES_LIEUX: updateEdl,
+    UPDATE_ELEMENT: updateElement,
+    UPDATE_COMPTEUR: updateCompteur,
+    UPDATE_CLE: updateCle,
+  }), [updateEdl, updateElement, updateCompteur, updateCle]);
 
-      // Persist and queue pending photos
+  const handleSave = useCallback(async () => {
+    const d = dataRef.current;
+    const mutations = buildChangedMutations({
+      edlId,
+      formData: d.formData,
+      localPieces: d.localPieces,
+      localCompteurs: d.localCompteurs,
+      localCles: d.localCles,
+      compteurValues: d.compteurValues,
+      compteurNumeros: d.compteurNumeros,
+      compteurComments: d.compteurComments,
+      cleValues: d.cleValues,
+      elementStates: d.elementStates,
+      elementObservations: d.elementObservations,
+      elementDegradations: d.elementDegradations,
+    });
+
+    if (!useNetworkStore.getState().isConnected) {
+      for (const entry of mutations) {
+        await addToQueue({ mutationName: entry.mutationName, variables: entry.variables });
+      }
+
       let photoCount = 0;
-      for (const piece of localPieces) {
+      for (const piece of d.localPieces) {
         const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
         for (const element of elements) {
-          const photos = elementPhotos[element.id] || [];
+          const photos = d.elementPhotos[element.id] || [];
           for (const photo of photos) {
             if (photo.uploadStatus === 'pending' || photo.uploadStatus === 'error') {
               const result = await uploadPhoto(element.id, photo);
@@ -223,8 +180,8 @@ export function useEdlMutations({
           }
         }
       }
-      for (const compteur of localCompteurs) {
-        const photos = compteurPhotos[compteur.id] || [];
+      for (const compteur of d.localCompteurs) {
+        const photos = d.compteurPhotos[compteur.id] || [];
         for (const photo of photos) {
           if (photo.uploadStatus === 'pending' || photo.uploadStatus === 'error') {
             const result = await uploadPhoto(compteur.id, photo, 'compteur');
@@ -243,26 +200,12 @@ export function useEdlMutations({
 
     setSaving(true);
     try {
-      await updateEdl({
-        variables: {
-          input: {
-            id: `/api/etat_des_lieuxes/${edlId}`,
-            locataireNom: formData.locataireNom,
-            locataireEmail: formData.locataireEmail || null,
-            locataireTelephone: formData.locataireTelephone || null,
-            dateRealisation: displayDateToApi(formData.dateRealisation),
-            observationsGenerales: formData.observationsGenerales || null,
-          },
-        },
-      });
+      for (const entry of mutations) {
+        await mutationExecutors[entry.mutationName]({ variables: entry.variables });
+      }
 
-      for (const compteur of localCompteurs) {
-        if (compteurValues[compteur.id] !== compteur.indexValue) {
-          await updateCompteur({
-            variables: { input: { id: compteur.id, indexValue: compteurValues[compteur.id] } },
-          });
-        }
-        const photos = compteurPhotos[compteur.id] || [];
+      for (const compteur of d.localCompteurs) {
+        const photos = d.compteurPhotos[compteur.id] || [];
         for (const photo of photos) {
           if (photo.uploadStatus === 'pending' || photo.uploadStatus === 'error') {
             await uploadPhoto(compteur.id, photo, 'compteur');
@@ -270,37 +213,10 @@ export function useEdlMutations({
         }
       }
 
-      for (const cle of localCles) {
-        if (cleValues[cle.id] !== cle.nombre) {
-          await updateCle({
-            variables: { input: { id: cle.id, nombre: cleValues[cle.id] } },
-          });
-        }
-      }
-
-      for (const piece of localPieces) {
+      for (const piece of d.localPieces) {
         const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
         for (const element of elements) {
-          const hasStateChange = elementStates[element.id] !== element.etat;
-          const hasObsChange = elementObservations[element.id] !== (element.observations || '');
-          const currentDegs = Array.isArray(elementDegradations[element.id]) ? elementDegradations[element.id] : [];
-          const originalDegs = Array.isArray(element.degradations) ? element.degradations : [];
-          const hasDegChange = JSON.stringify(currentDegs) !== JSON.stringify(originalDegs);
-
-          if (hasStateChange || hasObsChange || hasDegChange) {
-            await updateElement({
-              variables: {
-                input: {
-                  id: element.id,
-                  etat: elementStates[element.id],
-                  observations: elementObservations[element.id] || null,
-                  degradations: currentDegs,
-                },
-              },
-            });
-          }
-
-          const photos = elementPhotos[element.id] || [];
+          const photos = d.elementPhotos[element.id] || [];
           for (const photo of photos) {
             if (photo.uploadStatus === 'pending' || photo.uploadStatus === 'error') {
               await uploadPhoto(element.id, photo);
@@ -316,16 +232,20 @@ export function useEdlMutations({
     } finally {
       setSaving(false);
     }
-  };
+  }, [edlId, mutationExecutors, uploadPhoto, success, showError, router]);
 
-  const handleAddPiece = () => {
+  const handleAddPiece = useCallback(() => {
     setShowAddPiece(true);
     setNewPieceName('');
-  };
+  }, []);
 
-  const confirmAddPiece = async () => {
-    if (!requireOnline()) return;
-    if (!newPieceName.trim()) {
+  const confirmAddPiece = useCallback(async () => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
+    const { newPieceName: name, localPieces: pieces } = dataRef.current;
+    if (!name.trim()) {
       showError('Veuillez entrer un nom');
       return;
     }
@@ -334,8 +254,8 @@ export function useEdlMutations({
         variables: {
           input: {
             etatDesLieux: `/api/etat_des_lieuxes/${edlId}`,
-            nom: newPieceName.trim(),
-            ordre: localPieces.length + 1,
+            nom: name.trim(),
+            ordre: pieces.length + 1,
           },
         },
       });
@@ -350,10 +270,13 @@ export function useEdlMutations({
     } catch (err: unknown) {
       showError(getErrorMessage(err) || 'Erreur');
     }
-  };
+  }, [edlId, createPiece, setLocalPieces, setExpandedPieces, success, showError]);
 
-  const handleAddCompteur = (type: CompteurType) => {
-    if (!requireOnline()) return;
+  const handleAddCompteur = useCallback((type: CompteurType) => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
     Alert.alert('Ajouter compteur', `Ajouter un compteur ${COMPTEUR_CONFIG[type].label} ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -377,10 +300,13 @@ export function useEdlMutations({
         },
       },
     ]);
-  };
+  }, [edlId, createCompteur, setLocalCompteurs, setCompteurValues, success, showError]);
 
-  const handleAddCle = (type: CleType) => {
-    if (!requireOnline()) return;
+  const handleAddCle = useCallback((type: CleType) => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
     Alert.alert('Ajouter clé', `Ajouter une clé ${CLE_LABELS[type]} ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -404,10 +330,13 @@ export function useEdlMutations({
         },
       },
     ]);
-  };
+  }, [edlId, createCle, setLocalCles, setCleValues, success, showError]);
 
-  const handleDeletePiece = (pieceId: string, nom: string) => {
-    if (!requireOnline()) return;
+  const handleDeletePiece = useCallback((pieceId: string, nom: string) => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
     Alert.alert('Supprimer', `Supprimer la pièce "${nom}" ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -424,10 +353,13 @@ export function useEdlMutations({
         },
       },
     ]);
-  };
+  }, [deletePieceMutation, setLocalPieces, success, showError]);
 
-  const handleDeleteCompteur = (compteurId: string, label: string) => {
-    if (!requireOnline()) return;
+  const handleDeleteCompteur = useCallback((compteurId: string, label: string) => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
     Alert.alert('Supprimer', `Supprimer le compteur "${label}" ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -444,10 +376,13 @@ export function useEdlMutations({
         },
       },
     ]);
-  };
+  }, [deleteCompteurMutation, setLocalCompteurs, success, showError]);
 
-  const handleDeleteCle = (cleId: string, label: string) => {
-    if (!requireOnline()) return;
+  const handleDeleteCle = useCallback((cleId: string, label: string) => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
     Alert.alert('Supprimer', `Supprimer la clé "${label}" ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -464,18 +399,47 @@ export function useEdlMutations({
         },
       },
     ]);
-  };
+  }, [deleteCleMutation, setLocalCles, success, showError]);
 
-  const handleAddElement = async (pieceId: string) => {
-    if (!requireOnline()) return;
-    if (!newElementName.trim()) {
+  const handleDeleteClePhoto = useCallback((cleId: string) => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
+    Alert.alert('Supprimer', 'Supprimer la photo de cette clé ?', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Supprimer',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await updateCle({ variables: { input: { id: cleId, photo: null } } });
+            setLocalCles(prev =>
+              prev.map(c => c.id === cleId ? { ...c, photo: undefined } : c)
+            );
+            success('Photo supprimée !');
+          } catch (err: unknown) {
+            showError(getErrorMessage(err) || 'Erreur');
+          }
+        },
+      },
+    ]);
+  }, [updateCle, setLocalCles, success, showError]);
+
+  const handleAddElement = useCallback(async (pieceId: string) => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
+    const { newElementName: name, newElementType: type } = dataRef.current;
+    if (!name.trim()) {
       showError('Veuillez entrer un nom');
       return;
     }
     try {
       const result = await createElement({
         variables: {
-          input: { piece: pieceId, nom: newElementName.trim(), type: newElementType, etat: 'bon' },
+          input: { piece: pieceId, nom: name.trim(), type, etat: 'bon' },
         },
       });
       const newElement = (result.data as CreateElementData)?.createElement?.element;
@@ -500,10 +464,13 @@ export function useEdlMutations({
     } catch (err: unknown) {
       showError(getErrorMessage(err) || 'Erreur');
     }
-  };
+  }, [createElement, setLocalPieces, setElementStates, setElementObservations, setElementDegradations, success, showError]);
 
-  const handleDeleteElement = (elementId: string, elementName: string, pieceId: string) => {
-    if (!requireOnline()) return;
+  const handleDeleteElement = useCallback((elementId: string, elementName: string, pieceId: string) => {
+    if (!useNetworkStore.getState().isConnected) {
+      showError('Connexion requise pour ajouter/supprimer');
+      return;
+    }
     Alert.alert('Supprimer', `Supprimer l'élément "${elementName}" ?`, [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -532,9 +499,9 @@ export function useEdlMutations({
         },
       },
     ]);
-  };
+  }, [deleteElementMutation, setLocalPieces, success, showError]);
 
-  return {
+  return useMemo(() => ({
     saving,
     showAddPiece, setShowAddPiece,
     newPieceName, setNewPieceName,
@@ -549,7 +516,13 @@ export function useEdlMutations({
     handleDeletePiece,
     handleDeleteCompteur,
     handleDeleteCle,
+    handleDeleteClePhoto,
     handleAddElement,
     handleDeleteElement,
-  };
+  }), [
+    saving, showAddPiece, newPieceName, showAddElement, newElementName, newElementType,
+    handleSave, handleAddPiece, confirmAddPiece, handleAddCompteur, handleAddCle,
+    handleDeletePiece, handleDeleteCompteur, handleDeleteCle, handleDeleteClePhoto,
+    handleAddElement, handleDeleteElement,
+  ]);
 }

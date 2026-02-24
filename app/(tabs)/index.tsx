@@ -1,8 +1,8 @@
+import { useState, useCallback, useMemo } from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@apollo/client/react';
-import { useState, useCallback, useEffect } from 'react';
-import { useFocusEffect } from 'expo-router';
 import { WelcomeCard, QuickActions, RecentEdlList, LogementsSansEdl, ActivityChart } from '../../components/home';
 import type { LogementSansEdl } from '../../components/home';
 import { useAuthStore } from '../../stores/authStore';
@@ -46,19 +46,22 @@ export default function HomeScreen() {
   const { data: statsData, refetch: refetchStats } = useQuery<StatsData>(GET_USER_STATS);
   const { data: edlData, refetch: refetchEdl } = useQuery<RecentEdlData>(GET_RECENT_EDL);
 
-  const stats = {
+  const stats = useMemo(() => ({
     totalLogements: statsData?.logements?.totalCount || 0,
     edlCeMois: statsData?.etatDesLieuxes?.totalCount || 0,
     enAttente: statsData?.enAttente?.totalCount || 0,
     signes: statsData?.signes?.totalCount || 0,
     edlEntree: statsData?.entrees?.totalCount || 0,
     edlSortie: statsData?.sorties?.totalCount || 0,
-  };
+  }), [statsData]);
 
   const allEdls = edlData?.etatDesLieuxes?.edges?.map((edge) => edge.node) || [];
-  const recentEdls = [...allEdls]
-    .sort((a, b) => new Date(b.updatedAt || b.dateRealisation).getTime() - new Date(a.updatedAt || a.dateRealisation).getTime())
-    .slice(0, 5);
+  const recentEdls = useMemo(() =>
+    [...allEdls]
+      .sort((a, b) => new Date(b.updatedAt || b.dateRealisation).getTime() - new Date(a.updatedAt || a.dateRealisation).getTime())
+      .slice(0, 5),
+    [allEdls]
+  );
 
   const fetchDashboardData = useCallback(async () => {
     if (!token) return;

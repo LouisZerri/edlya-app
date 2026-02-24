@@ -1,8 +1,8 @@
-import { View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { View, Text, RefreshControl, Alert, TouchableOpacity, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState, useCallback, useRef, useEffect } from 'react';
 import { Edit, Pen, BarChart3, Download, User, Zap, Key, DoorOpen, Trash2, Camera, CheckCircle, ChevronDown, ChevronUp, MessageSquare, ChevronRight } from 'lucide-react-native';
 import { Header, Card, Badge, RemoteThumbnail, ConfirmSheet } from '../../../components/ui';
 import { GET_ETAT_DES_LIEUX, GET_ETATS_DES_LIEUX } from '../../../graphql/queries/edl';
@@ -159,14 +159,17 @@ export default function EdlDetailScreen() {
   const compteurs = edl?.compteurs?.edges?.map((e: GraphQLEdge<CompteurNode>) => e.node) || [];
   const cles = edl?.cles?.edges?.map((e: GraphQLEdge<CleNode>) => e.node) || [];
 
-  const totalPhotos = pieces.reduce((acc: number, piece: PieceNode) => {
-    const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
-    return acc + elements.reduce((elAcc: number, el: ElementNode) => {
-      return elAcc + (el.photos?.edges?.length || 0);
-    }, 0);
-  }, 0) + compteurs.reduce((acc: number, c: CompteurNode) => {
-    return acc + (Array.isArray(c.photos) ? c.photos.length : 0);
-  }, 0);
+  const totalPhotos = useMemo(() =>
+    pieces.reduce((acc: number, piece: PieceNode) => {
+      const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
+      return acc + elements.reduce((elAcc: number, el: ElementNode) => {
+        return elAcc + (el.photos?.edges?.length || 0);
+      }, 0);
+    }, 0) + compteurs.reduce((acc: number, c: CompteurNode) => {
+      return acc + (Array.isArray(c.photos) ? c.photos.length : 0);
+    }, 0),
+    [pieces, compteurs]
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -275,7 +278,7 @@ export default function EdlDetailScreen() {
             },
           ]
             .filter(Boolean)
-            .map((action, index, arr) => {
+            .map((action, index, _arr) => {
               if (!action || typeof action === 'boolean') return null;
               return (
                 <TouchableOpacity

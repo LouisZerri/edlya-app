@@ -58,7 +58,7 @@ export function useShareEdl(): UseShareEdlReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (e) {}
+        } catch {}
         throw new Error(errorMessage);
       }
 

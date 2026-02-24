@@ -1,5 +1,5 @@
-import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 import { ReactNode } from 'react';
+import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 import { hapticLight, hapticError } from '../../utils/haptics';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success';

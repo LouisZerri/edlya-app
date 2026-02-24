@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, Animated, useColorScheme } from 'react-native';
+import { View, Text, useColorScheme } from 'react-native';
 import { ElementEtat } from '../../types';
 import { PieceNode, CompteurNode, CleNode, GraphQLEdge, ElementNode } from '../../types/graphql';
 import { EdlFormData } from '../../hooks/useEdlInitializer';

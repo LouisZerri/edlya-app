@@ -2,12 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { UPDATE_ETAT_DES_LIEUX, UPDATE_ELEMENT, UPDATE_COMPTEUR, UPDATE_CLE } from '../graphql/mutations/edl';
 import { ElementEtat } from '../types';
-import { EdlNode, PieceNode, CompteurNode, CleNode, GraphQLEdge, ElementNode } from '../types/graphql';
-import { displayDateToApi } from '../utils/format';
+import { EdlNode, PieceNode, CompteurNode, CleNode } from '../types/graphql';
 import { EdlFormData } from './useEdlInitializer';
 import { useNetworkStore } from '../stores/networkStore';
 import { addToQueue } from '../utils/offlineMutationQueue';
-import { getQueueLength } from '../utils/offlineMutationQueue';
+import { buildChangedMutations } from '../utils/buildChangedMutations';
 
 export type AutoSaveStatus = 'idle' | 'modified' | 'saving' | 'saved' | 'queued' | 'syncing' | 'error';
 
@@ -51,174 +50,56 @@ export function useEdlAutoSave({
   const [updateCompteur] = useMutation(UPDATE_COMPTEUR);
   const [updateCle] = useMutation(UPDATE_CLE);
 
+  const mutationExecutors = {
+    UPDATE_ETAT_DES_LIEUX: updateEdl,
+    UPDATE_ELEMENT: updateElement,
+    UPDATE_COMPTEUR: updateCompteur,
+    UPDATE_CLE: updateCle,
+  };
+
   const performAutoSave = useCallback(async () => {
     if (!edl || !isInitialized.current) return;
+
+    const mutations = buildChangedMutations({
+      edlId,
+      formData,
+      localPieces,
+      localCompteurs,
+      localCles,
+      compteurValues,
+      compteurNumeros,
+      compteurComments,
+      cleValues,
+      elementStates,
+      elementObservations,
+      elementDegradations,
+    });
 
     const { isConnected } = useNetworkStore.getState();
 
     if (isConnected) {
-      // Online: save directly
       setAutoSaveStatus('saving');
       try {
-        await updateEdl({
-          variables: {
-            input: {
-              id: `/api/etat_des_lieuxes/${edlId}`,
-              locataireNom: formData.locataireNom,
-              locataireEmail: formData.locataireEmail || null,
-              locataireTelephone: formData.locataireTelephone || null,
-              autresLocataires: formData.autresLocataires.length > 0 ? formData.autresLocataires : null,
-              dateRealisation: displayDateToApi(formData.dateRealisation),
-              observationsGenerales: formData.observationsGenerales || null,
-            },
-          },
-        });
-
-        for (const piece of localPieces) {
-          const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
-          for (const element of elements) {
-            const hasStateChange = elementStates[element.id] !== element.etat;
-            const hasObsChange = elementObservations[element.id] !== (element.observations || '');
-            const currentDegs = Array.isArray(elementDegradations[element.id]) ? elementDegradations[element.id] : [];
-            const originalDegs = Array.isArray(element.degradations) ? element.degradations : [];
-            const hasDegChange = JSON.stringify(currentDegs) !== JSON.stringify(originalDegs);
-
-            if (hasStateChange || hasObsChange || hasDegChange) {
-              await updateElement({
-                variables: {
-                  input: {
-                    id: element.id,
-                    etat: elementStates[element.id],
-                    observations: elementObservations[element.id] || null,
-                    degradations: currentDegs,
-                  },
-                },
-              });
-            }
-          }
+        for (const entry of mutations) {
+          await mutationExecutors[entry.mutationName]({ variables: entry.variables });
         }
-
-        for (const compteur of localCompteurs) {
-          const hasIndexChange = compteurValues[compteur.id] !== compteur.indexValue;
-          const hasNumeroChange = compteurNumeros[compteur.id] !== (compteur.numero || '');
-          const hasCommentChange = compteurComments[compteur.id] !== (compteur.commentaire || '');
-
-          if (hasIndexChange || hasNumeroChange || hasCommentChange) {
-            await updateCompteur({
-              variables: {
-                input: {
-                  id: compteur.id,
-                  indexValue: compteurValues[compteur.id],
-                  numero: compteurNumeros[compteur.id] || null,
-                  commentaire: compteurComments[compteur.id] || null,
-                },
-              },
-            });
-          }
-        }
-
-        for (const cle of localCles) {
-          if (cleValues[cle.id] !== cle.nombre) {
-            await updateCle({
-              variables: {
-                input: {
-                  id: cle.id,
-                  nombre: cleValues[cle.id],
-                },
-              },
-            });
-          }
-        }
-
         setAutoSaveStatus('saved');
         setTimeout(() => setAutoSaveStatus('idle'), 2000);
         return;
       } catch {
-        // Network failed while we thought we were online — fall through to offline queue
+        // Network failed — fall through to offline queue
       }
     }
 
     // Offline or network error fallback: queue mutations
     try {
-        await addToQueue({
-          mutationName: 'UPDATE_ETAT_DES_LIEUX',
-          variables: {
-            input: {
-              id: `/api/etat_des_lieuxes/${edlId}`,
-              locataireNom: formData.locataireNom,
-              locataireEmail: formData.locataireEmail || null,
-              locataireTelephone: formData.locataireTelephone || null,
-              autresLocataires: formData.autresLocataires.length > 0 ? formData.autresLocataires : null,
-              dateRealisation: displayDateToApi(formData.dateRealisation),
-              observationsGenerales: formData.observationsGenerales || null,
-            },
-          },
-        });
-
-        for (const piece of localPieces) {
-          const elements = piece.elements?.edges?.map((e: GraphQLEdge<ElementNode>) => e.node) || [];
-          for (const element of elements) {
-            const hasStateChange = elementStates[element.id] !== element.etat;
-            const hasObsChange = elementObservations[element.id] !== (element.observations || '');
-            const currentDegs = Array.isArray(elementDegradations[element.id]) ? elementDegradations[element.id] : [];
-            const originalDegs = Array.isArray(element.degradations) ? element.degradations : [];
-            const hasDegChange = JSON.stringify(currentDegs) !== JSON.stringify(originalDegs);
-
-            if (hasStateChange || hasObsChange || hasDegChange) {
-              await addToQueue({
-                mutationName: 'UPDATE_ELEMENT',
-                variables: {
-                  input: {
-                    id: element.id,
-                    etat: elementStates[element.id],
-                    observations: elementObservations[element.id] || null,
-                    degradations: currentDegs,
-                  },
-                },
-              });
-            }
-          }
-        }
-
-        for (const compteur of localCompteurs) {
-          const hasIndexChange = compteurValues[compteur.id] !== compteur.indexValue;
-          const hasNumeroChange = compteurNumeros[compteur.id] !== (compteur.numero || '');
-          const hasCommentChange = compteurComments[compteur.id] !== (compteur.commentaire || '');
-
-          if (hasIndexChange || hasNumeroChange || hasCommentChange) {
-            await addToQueue({
-              mutationName: 'UPDATE_COMPTEUR',
-              variables: {
-                input: {
-                  id: compteur.id,
-                  indexValue: compteurValues[compteur.id],
-                  numero: compteurNumeros[compteur.id] || null,
-                  commentaire: compteurComments[compteur.id] || null,
-                },
-              },
-            });
-          }
-        }
-
-        for (const cle of localCles) {
-          if (cleValues[cle.id] !== cle.nombre) {
-            await addToQueue({
-              mutationName: 'UPDATE_CLE',
-              variables: {
-                input: {
-                  id: cle.id,
-                  nombre: cleValues[cle.id],
-                },
-              },
-            });
-          }
-        }
-
-        const count = await getQueueLength();
-        setAutoSaveStatus('queued');
-      } catch {
-        setAutoSaveStatus('error');
+      for (const entry of mutations) {
+        await addToQueue({ mutationName: entry.mutationName, variables: entry.variables });
       }
+      setAutoSaveStatus('queued');
+    } catch {
+      setAutoSaveStatus('error');
+    }
   }, [edl, edlId, formData, localPieces, localCompteurs, localCles, compteurValues, compteurNumeros, compteurComments, cleValues, elementStates, elementObservations, elementDegradations, updateEdl, updateElement, updateCompteur, updateCle]);
 
   const triggerAutoSave = useCallback(() => {

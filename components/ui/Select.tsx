@@ -1,7 +1,6 @@
-import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, Dimensions } from 'react-native';
 import { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, Dimensions } from 'react-native';
 import { ChevronDown, Check, Search, X } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../utils/constants';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -32,7 +31,6 @@ export function Select({
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const insets = useSafeAreaInsets();
   const selectedOption = options.find(opt => opt.value === value);
 
   const showSearch = searchable ?? options.length > 6;

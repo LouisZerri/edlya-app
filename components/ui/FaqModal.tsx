@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { X, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react-native';
-import { useState } from 'react';
 import { COLORS } from '../../utils/constants';
 
 interface FaqItem {

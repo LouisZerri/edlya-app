@@ -169,7 +169,7 @@ export function useComparatif(): UseComparatifReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
-        } catch (e) {}
+        } catch {}
         throw new Error(errorMessage);
       }
 

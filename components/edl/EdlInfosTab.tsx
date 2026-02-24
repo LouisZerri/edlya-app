@@ -1,16 +1,12 @@
-import { View, Text, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { X, UserPlus } from 'lucide-react-native';
 import { Input, InputWithVoice, DatePicker } from '../ui';
-import { EdlFormData } from '../../hooks/useEdlInitializer';
 import { COLORS } from '../../utils/constants';
+import { useEdlEditContext } from '../../contexts/EdlEditContext';
 
-interface EdlInfosTabProps {
-  formData: EdlFormData;
-  setFormData: React.Dispatch<React.SetStateAction<EdlFormData>>;
-}
-
-export function EdlInfosTab({ formData, setFormData }: EdlInfosTabProps) {
+export function EdlInfosTab() {
+  const { formData, setFormData } = useEdlEditContext();
   const [newLocataire, setNewLocataire] = useState('');
   const [showColocInput, setShowColocInput] = useState(false);
   const hasLocataires = formData.autresLocataires.length > 0;

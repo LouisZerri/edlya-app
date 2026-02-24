@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LogOut, Save, HelpCircle, Sun, Moon, Smartphone, ChevronRight, Mail, Phone, Shield } from 'lucide-react-native';
 import { Header, Card, Input, Button, FaqModal } from '../../components/ui';
 import { useAuthStore } from '../../stores/authStore';
 import { useThemeStore, ThemePreference } from '../../stores/themeStore';
 import { useToastStore } from '../../stores/toastStore';
 import { COLORS } from '../../utils/constants';
-import Constants from 'expo-constants';
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Clair', icon: Sun },

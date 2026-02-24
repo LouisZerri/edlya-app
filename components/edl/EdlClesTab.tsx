@@ -1,25 +1,20 @@
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Trash2 } from 'lucide-react-native';
+import { Trash2, X } from 'lucide-react-native';
 import { Card, RemoteThumbnail } from '../ui';
 import { CLE_LABELS, CleType } from '../../types';
-import { CleNode } from '../../types/graphql';
 import { COLORS, BASE_URL, UPLOADS_URL } from '../../utils/constants';
+import { useEdlEditContext } from '../../contexts/EdlEditContext';
 
-interface EdlClesTabProps {
-  localCles: CleNode[];
-  cleValues: Record<string, number>;
-  setCleValues: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  onDeleteCle: (cleId: string, label: string) => void;
-  onAddCle: (type: CleType) => void;
-}
+export function EdlClesTab() {
+  const {
+    localCles,
+    cleValues,
+    setCleValues,
+    handleDeleteCle,
+    handleDeleteClePhoto,
+    handleAddCle,
+  } = useEdlEditContext();
 
-export function EdlClesTab({
-  localCles,
-  cleValues,
-  setCleValues,
-  onDeleteCle,
-  onAddCle,
-}: EdlClesTabProps) {
   return (
     <View className="p-4">
       {localCles.map((cle) => {
@@ -58,7 +53,7 @@ export function EdlClesTab({
                   <Text className="text-lg font-bold text-primary-600">+</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => onDeleteCle(cle.id, cleLabel)}
+                  onPress={() => handleDeleteCle(cle.id, cleLabel)}
                   className="ml-3 p-2"
                 >
                   <Trash2 size={18} color={COLORS.red[500]} />
@@ -66,7 +61,7 @@ export function EdlClesTab({
               </View>
             </View>
             {cle.photo && (
-              <View className="mt-2">
+              <View className="mt-2" style={{ alignSelf: 'flex-start' }}>
                 <RemoteThumbnail
                   source={{
                     uri: cle.photo.startsWith('http')
@@ -78,6 +73,13 @@ export function EdlClesTab({
                   size={80}
                   borderRadius={8}
                 />
+                <TouchableOpacity
+                  onPress={() => handleDeleteClePhoto(cle.id)}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 items-center justify-center"
+                  style={{ elevation: 2 }}
+                >
+                  <X size={12} color="white" />
+                </TouchableOpacity>
               </View>
             )}
           </Card>
@@ -97,7 +99,7 @@ export function EdlClesTab({
         {(Object.keys(CLE_LABELS) as CleType[]).map((type) => (
           <TouchableOpacity
             key={type}
-            onPress={() => onAddCle(type)}
+            onPress={() => handleAddCle(type)}
             className="bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2 flex-row items-center"
           >
             <Text className="mr-1">🔑</Text>

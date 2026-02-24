@@ -1,16 +1,14 @@
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, KeyboardAvoidingView, Platform, ScrollView , TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react-native';
 import { Input, Button } from '../../components/ui';
 import { useToastStore } from '../../stores/toastStore';
-import { API_URL } from '../../utils/constants';
-import { COLORS } from '../../utils/constants';
-import { TouchableOpacity } from 'react-native';
+import { API_URL , COLORS } from '../../utils/constants';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: 'Email invalide' }),
@@ -49,7 +47,7 @@ export default function ForgotPasswordScreen() {
       } else {
         showError(result.error || 'Une erreur est survenue');
       }
-    } catch (err: unknown) {
+    } catch {
       showError('Erreur de connexion au serveur');
     } finally {
       setLoading(false);

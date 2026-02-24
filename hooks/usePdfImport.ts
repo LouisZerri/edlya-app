@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { appendFile } from '../utils/formData';
 
 interface LogementExtrait {
   adresse?: string;
@@ -115,11 +116,11 @@ export function usePdfImport(): UsePdfImportReturn {
 
     try {
       const formData = new FormData();
-      formData.append('pdf', {
+      appendFile(formData, 'pdf', {
         uri: fileUri,
         name: fileName,
         type: 'application/pdf',
-      } as any);
+      });
 
       const response = await fetch(`${API_URL}/ai/import-pdf`, {
         method: 'POST',

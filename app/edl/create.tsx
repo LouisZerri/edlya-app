@@ -1,20 +1,19 @@
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useLazyQuery, useMutation } from '@apollo/client/react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect, useRef } from 'react';
 import { Home, Info, X, UserPlus } from 'lucide-react-native';
 import { Header, Input, Select, Button, EmptyState, DatePicker } from '../../components/ui';
-import { COLORS } from '../../utils/constants';
+import { COLORS , API_URL } from '../../utils/constants';
 import { GET_LOGEMENTS, GET_LOGEMENT } from '../../graphql/queries/logements';
 import { CREATE_ETAT_DES_LIEUX } from '../../graphql/mutations/edl';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
 import { useToastStore } from '../../stores/toastStore';
 import { apiDateToDisplay, displayDateToApi } from '../../utils/format';
-import { API_URL } from '../../utils/constants';
 import { useAuthStore } from '../../stores/authStore';
 import { scheduleBrouillonReminder } from '../../hooks/useNotifications';
 

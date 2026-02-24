@@ -12,6 +12,7 @@ import { Camera } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { LocalPhoto } from '../../types';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
+import { generateId } from '../../utils/id';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { PhotoViewer } from './PhotoViewer';
 import { useLocation } from '../../hooks/useLocation';
@@ -60,7 +61,6 @@ export function PhotoGallery({
 
   const dimension = SIZES[thumbnailSize];
 
-  const generateId = () => `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   const requestPermissions = async () => {
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
@@ -76,7 +76,7 @@ export function PhotoGallery({
     return true;
   };
 
-  const pickImage = async (useCamera: boolean) => {
+  const pickImage = useCallback(async (useCamera: boolean) => {
     const hasPermissions = await requestPermissions();
     if (!hasPermissions) return;
 
@@ -109,7 +109,7 @@ export function PhotoGallery({
 
         // Add photo IMMEDIATELY (before any async location call)
         const newPhoto: LocalPhoto = {
-          id: generateId(),
+          id: generateId('local'),
           localUri: asset.uri,
           ordre: photos.length + 1,
           uploadStatus: 'pending',
@@ -142,12 +142,12 @@ export function PhotoGallery({
             .catch(() => {});
         }
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Erreur', "Impossible de sélectionner l'image");
     }
-  };
+  }, [photos, onPhotosChange, autoUpload, uploadPhoto, elementId, uploadType, getCurrentLocation]);
 
-  const showOptions = () => {
+  const showOptions = useCallback(() => {
     if (photos.length >= maxPhotos) {
       Alert.alert('Limite atteinte', `Maximum ${maxPhotos} photos autorisées`);
       return;
@@ -164,78 +164,62 @@ export function PhotoGallery({
       },
       { text: 'Annuler', style: 'cancel' },
     ]);
-  };
+  }, [photos.length, maxPhotos, pickImage]);
 
-  const handleDelete = (photoId: string) => {
+  const deletePhoto = useCallback(async (photoId: string): Promise<boolean> => {
     const photo = photos.find(p => p.id === photoId);
+    if (photo?.remoteId) {
+      const deleted = await deletePhotoFromServer(photo);
+      if (!deleted) {
+        Alert.alert('Erreur', 'Impossible de supprimer la photo du serveur');
+        return false;
+      }
+    }
+    const reorderedPhotos = photos
+      .filter(p => p.id !== photoId)
+      .map((p, index) => ({ ...p, ordre: index + 1 }));
+    onPhotosChange(reorderedPhotos);
+    return true;
+  }, [photos, deletePhotoFromServer, onPhotosChange]);
+
+  const handleDelete = useCallback((photoId: string) => {
     Alert.alert('Supprimer', 'Supprimer cette photo ?', [
       { text: 'Annuler', style: 'cancel' },
       {
         text: 'Supprimer',
         style: 'destructive',
-        onPress: async () => {
-          // Delete from server if it was uploaded
-          if (photo?.remoteId) {
-            const deleted = await deletePhotoFromServer(photo);
-            if (!deleted) {
-              Alert.alert('Erreur', 'Impossible de supprimer la photo du serveur');
-              return;
-            }
-          }
-          const filteredPhotos = photos.filter(p => p.id !== photoId);
-          const reorderedPhotos = filteredPhotos.map((p, index) => ({
-            ...p,
-            ordre: index + 1,
-          }));
-          onPhotosChange(reorderedPhotos);
-        },
+        onPress: () => deletePhoto(photoId),
       },
     ]);
-  };
+  }, [deletePhoto]);
 
-  const handleRetry = async (photo: LocalPhoto) => {
+  const handleRetry = useCallback(async (photo: LocalPhoto) => {
     // Update status to pending and retry
     const updatedPhotos = photos.map(p =>
       p.id === photo.id ? { ...p, uploadStatus: 'pending' as const } : p
     );
     onPhotosChange(updatedPhotos);
     uploadPhoto(elementId, { ...photo, uploadStatus: 'pending' }, uploadType);
-  };
+  }, [photos, onPhotosChange, uploadPhoto, elementId, uploadType]);
 
-  const handlePhotoPress = (index: number) => {
+  const handlePhotoPress = useCallback((index: number) => {
     setViewerInitialIndex(index);
     setViewerVisible(true);
-  };
+  }, []);
 
-  const handleUpdateCaption = (photoId: string, legende: string) => {
+  const handleUpdateCaption = useCallback((photoId: string, legende: string) => {
     const updatedPhotos = photos.map(p =>
       p.id === photoId ? { ...p, legende } : p
     );
     onPhotosChange(updatedPhotos);
-  };
+  }, [photos, onPhotosChange]);
 
-  const handleDeleteFromViewer = async (photoId: string) => {
-    const photo = photos.find(p => p.id === photoId);
-    // Delete from server if it was uploaded
-    if (photo?.remoteId) {
-      const deleted = await deletePhotoFromServer(photo);
-      if (!deleted) {
-        Alert.alert('Erreur', 'Impossible de supprimer la photo du serveur');
-        return;
-      }
-    }
-    const filteredPhotos = photos.filter(p => p.id !== photoId);
-    const reorderedPhotos = filteredPhotos.map((p, index) => ({
-      ...p,
-      ordre: index + 1,
-    }));
-    onPhotosChange(reorderedPhotos);
-
-    // Close viewer if no photos left
-    if (reorderedPhotos.length === 0) {
+  const handleDeleteFromViewer = useCallback(async (photoId: string) => {
+    const deleted = await deletePhoto(photoId);
+    if (deleted && photos.length <= 1) {
       setViewerVisible(false);
     }
-  };
+  }, [deletePhoto, photos.length]);
 
   const renderAddButton = () => (
     <TouchableOpacity

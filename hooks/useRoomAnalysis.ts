@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { appendFile } from '../utils/formData';
 import { ElementType, ElementEtat } from '../types';
 
 interface DetectedElement {
@@ -66,11 +67,11 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
       const fileType = uriParts[uriParts.length - 1]?.toLowerCase() || 'jpg';
       const mimeType = fileType === 'png' ? 'image/png' : 'image/jpeg';
 
-      formData.append('photo', {
+      appendFile(formData, 'photo', {
         uri: photoUri,
         name: `photo_piece.${fileType}`,
         type: mimeType,
-      } as any);
+      });
 
       if (nomPiece) {
         formData.append('nom_piece', nomPiece);
@@ -130,11 +131,11 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
       const fileType = uriParts[uriParts.length - 1]?.toLowerCase() || 'jpg';
       const mimeType = fileType === 'png' ? 'image/png' : 'image/jpeg';
 
-      formData.append('photo', {
+      appendFile(formData, 'photo', {
         uri: photoUri,
         name: `photo_piece.${fileType}`,
         type: mimeType,
-      } as any);
+      });
 
       const response = await fetch(
         `${API_URL}/ai/edl/${numericEdlId}/piece/${numericPieceId}/auto-remplir`,

@@ -1,15 +1,14 @@
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, Modal, TextInput, KeyboardAvoidingView, Platform, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
-import { Download, Info, Sparkles, AlertCircle, Send, X, Plus, Trash2, List, ChevronRight } from 'lucide-react-native';
-import { TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useColorScheme } from 'nativewind';
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, Modal, TextInput, KeyboardAvoidingView, Platform, Animated , TouchableOpacity } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Download, Info, Sparkles, AlertCircle, Send, X, Plus, Trash2, List, ChevronRight } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
+import { useQuery } from '@apollo/client/react';
 import { Header, Card, Button } from '../../../components/ui';
 import { COLORS } from '../../../utils/constants';
 import { formatCurrency } from '../../../utils/format';
-import { useQuery } from '@apollo/client/react';
 import { useEstimations } from '../../../hooks/useEstimations';
 import { useDevis, LigneDevis, CoutSuggestion } from '../../../hooks/useDevis';
 import { usePdfExport } from '../../../hooks/usePdfExport';
@@ -116,12 +115,12 @@ export default function EstimationsScreen() {
     await devis.analyserAvecIA(id);
   };
 
-  const handleEditLigne = (ligne: LigneDevis) => {
+  const handleEditLigne = useCallback((ligne: LigneDevis) => {
     setEditingLigne({ ...ligne });
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = useCallback(() => {
     if (!editingLigne) return;
     devis.updateLigne(editingLigne.id, {
       piece: editingLigne.piece,
@@ -132,9 +131,9 @@ export default function EstimationsScreen() {
     });
     setShowEditModal(false);
     setEditingLigne(null);
-  };
+  }, [editingLigne, devis]);
 
-  const handleAddFromSuggestion = (suggestion: CoutSuggestion) => {
+  const handleAddFromSuggestion = useCallback((suggestion: CoutSuggestion) => {
     devis.addLigne({
       piece: '',
       description: suggestion.nom,
@@ -143,13 +142,11 @@ export default function EstimationsScreen() {
       prix_unitaire: suggestion.prix_unitaire,
     });
     setShowSuggestions(false);
-  };
+  }, [devis]);
 
   // Calculs
   const totalCles = estimations?.cles_manquantes?.reduce((sum, c) => sum + c.total, 0) || 0;
-  const totalRetenues = devis.totalHT + totalCles;
   const depotGarantie = estimations?.depot_garantie || 0;
-  const aRestituer = Math.max(0, depotGarantie - totalRetenues);
 
   // Loading state
   if (isLoading && !estimations) {

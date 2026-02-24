@@ -1,85 +1,40 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Plus, ChevronDown, ChevronUp, Trash2, Scan } from 'lucide-react-native';
 import { Card, Badge, Input, Select } from '../ui';
-import { ElementType, ElementEtat, LocalPhoto, ELEMENT_TYPE_LABELS } from '../../types';
-import { PieceNode, ElementNode, GraphQLEdge } from '../../types/graphql';
+import { ElementType, ELEMENT_TYPE_LABELS } from '../../types';
+import { ElementNode, GraphQLEdge } from '../../types/graphql';
 import { COLORS } from '../../utils/constants';
 import { ElementCard } from './ElementCard';
+import { useEdlEditContext } from '../../contexts/EdlEditContext';
 
 const typeOptions = Object.entries(ELEMENT_TYPE_LABELS).map(([value, label]) => ({
   value,
   label,
 }));
 
-interface EdlPiecesTabProps {
-  localPieces: PieceNode[];
-  expandedPieces: string[];
-  togglePiece: (pieceId: string) => void;
-  elementStates: Record<string, ElementEtat>;
-  setElementStates: React.Dispatch<React.SetStateAction<Record<string, ElementEtat>>>;
-  elementObservations: Record<string, string>;
-  setElementObservations: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  elementDegradations: Record<string, string[]>;
-  toggleDegradation: (elementId: string, degradation: string) => void;
-  addCustomDegradation: (elementId: string) => void;
-  elementPhotos: Record<string, LocalPhoto[]>;
-  setElementPhotos: React.Dispatch<React.SetStateAction<Record<string, LocalPhoto[]>>>;
-  isAnalyzing: boolean;
-  isRoomAnalyzing: boolean;
-  onAnalyzeElement: (element: ElementNode) => void;
-  onScanRoom: (piece: PieceNode) => void;
-  onDeletePiece: (pieceId: string, nom: string) => void;
-  onDeleteElement: (elementId: string, elementName: string, pieceId: string) => void;
-  // Add element
-  showAddElement: string | null;
-  setShowAddElement: React.Dispatch<React.SetStateAction<string | null>>;
-  newElementName: string;
-  setNewElementName: React.Dispatch<React.SetStateAction<string>>;
-  newElementType: ElementType;
-  setNewElementType: React.Dispatch<React.SetStateAction<ElementType>>;
-  onAddElement: (pieceId: string) => void;
-  // Add piece
-  showAddPiece: boolean;
-  setShowAddPiece: React.Dispatch<React.SetStateAction<boolean>>;
-  newPieceName: string;
-  setNewPieceName: React.Dispatch<React.SetStateAction<string>>;
-  onAddPiece: () => void;
-  onConfirmAddPiece: () => void;
-}
+export function EdlPiecesTab() {
+  const {
+    localPieces,
+    expandedPieces,
+    togglePiece,
+    isRoomAnalyzing,
+    handleScanRoom,
+    handleDeletePiece,
+    handleAddElement,
+    showAddElement,
+    setShowAddElement,
+    newElementName,
+    setNewElementName,
+    newElementType,
+    setNewElementType,
+    showAddPiece,
+    setShowAddPiece,
+    newPieceName,
+    setNewPieceName,
+    handleAddPiece,
+    confirmAddPiece,
+  } = useEdlEditContext();
 
-export function EdlPiecesTab({
-  localPieces,
-  expandedPieces,
-  togglePiece,
-  elementStates,
-  setElementStates,
-  elementObservations,
-  setElementObservations,
-  elementDegradations,
-  toggleDegradation,
-  addCustomDegradation,
-  elementPhotos,
-  setElementPhotos,
-  isAnalyzing,
-  isRoomAnalyzing,
-  onAnalyzeElement,
-  onScanRoom,
-  onDeletePiece,
-  onDeleteElement,
-  showAddElement,
-  setShowAddElement,
-  newElementName,
-  setNewElementName,
-  newElementType,
-  setNewElementType,
-  onAddElement,
-  showAddPiece,
-  setShowAddPiece,
-  newPieceName,
-  setNewPieceName,
-  onAddPiece,
-  onConfirmAddPiece,
-}: EdlPiecesTabProps) {
   return (
     <View className="p-4">
       {/* Indicateur scan en cours */}
@@ -109,14 +64,14 @@ export function EdlPiecesTab({
               </TouchableOpacity>
               <View className="flex-row items-center">
                 <TouchableOpacity
-                  onPress={() => onScanRoom(piece)}
+                  onPress={() => handleScanRoom(piece)}
                   disabled={isRoomAnalyzing}
                   className={`p-2 mr-1 rounded-lg ${isRoomAnalyzing ? 'bg-gray-100 dark:bg-gray-800' : 'bg-purple-50 dark:bg-purple-900/30'}`}
                 >
                   <Scan size={18} color={isRoomAnalyzing ? COLORS.gray[400] : '#9333EA'} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => onDeletePiece(piece.id, piece.nom)}
+                  onPress={() => handleDeletePiece(piece.id, piece.nom)}
                   className="p-2 mr-1"
                 >
                   <Trash2 size={18} color={COLORS.red[500]} />
@@ -138,18 +93,6 @@ export function EdlPiecesTab({
                     key={element.id}
                     element={element}
                     pieceId={piece.id}
-                    elementStates={elementStates}
-                    setElementStates={setElementStates}
-                    elementObservations={elementObservations}
-                    setElementObservations={setElementObservations}
-                    elementDegradations={elementDegradations}
-                    toggleDegradation={toggleDegradation}
-                    addCustomDegradation={addCustomDegradation}
-                    elementPhotos={elementPhotos}
-                    setElementPhotos={setElementPhotos}
-                    isAnalyzing={isAnalyzing}
-                    onAnalyze={onAnalyzeElement}
-                    onDelete={onDeleteElement}
                   />
                 ))}
 
@@ -181,7 +124,7 @@ export function EdlPiecesTab({
                         <Text className="text-gray-600 dark:text-gray-300 font-medium">Annuler</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => onAddElement(piece.id)}
+                        onPress={() => handleAddElement(piece.id)}
                         className="flex-1 py-2.5 rounded-lg bg-primary-600 items-center"
                       >
                         <Text className="text-white font-medium">Ajouter</Text>
@@ -224,7 +167,7 @@ export function EdlPiecesTab({
               <Text className="text-gray-600 dark:text-gray-300 font-medium">Annuler</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={onConfirmAddPiece}
+              onPress={confirmAddPiece}
               className="flex-1 py-2.5 rounded-lg bg-primary-600 items-center"
             >
               <Text className="text-white font-medium">Ajouter</Text>
@@ -233,7 +176,7 @@ export function EdlPiecesTab({
         </View>
       ) : (
         <TouchableOpacity
-          onPress={onAddPiece}
+          onPress={handleAddPiece}
           className="border border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 items-center flex-row justify-center"
         >
           <Plus size={20} color={COLORS.gray[400]} />

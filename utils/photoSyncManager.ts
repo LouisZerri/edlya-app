@@ -3,8 +3,8 @@ import { deletePersistedPhoto, getPersistedPhotoPath } from './photoFileManager'
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { appendFile } from './formData';
 
-const MAX_RETRIES = 3;
 
 interface UploadResult {
   success: boolean;
@@ -29,11 +29,11 @@ async function uploadQueuedPhoto(photo: QueuedPhoto, token: string): Promise<Upl
 
   const formData = new FormData();
   formData.append(idField, numericId || photo.elementId);
-  formData.append('photo', {
+  appendFile(formData, 'photo', {
     uri: filePath,
     name: `photo_${photo.id}.jpg`,
     type: 'image/jpeg',
-  } as any);
+  });
 
   if (photo.legende) formData.append('legende', photo.legende);
   if (photo.latitude !== undefined) formData.append('latitude', photo.latitude.toString());

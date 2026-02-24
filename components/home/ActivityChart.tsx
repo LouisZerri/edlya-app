@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native';
-import { Card } from '../ui';
 import { BarChart3 } from 'lucide-react-native';
+import { Card } from '../ui';
 import { COLORS } from '../../utils/constants';
 
 interface DayActivity {

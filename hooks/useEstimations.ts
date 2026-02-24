@@ -243,7 +243,7 @@ export function useEstimations(): UseEstimationsReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
-        } catch (e) {
+        } catch {
           // Response wasn't JSON
         }
         throw new Error(errorMessage);
@@ -297,7 +297,7 @@ export function useEstimations(): UseEstimationsReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
-        } catch (e) {
+        } catch {
           // Response wasn't JSON
         }
         throw new Error(errorMessage);

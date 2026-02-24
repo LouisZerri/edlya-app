@@ -1,7 +1,7 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState, useEffect, useCallback, memo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@apollo/client/react';
 import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
 import { Check, Trash2, User, Users, Download, ChevronDown } from 'lucide-react-native';
@@ -90,6 +90,125 @@ const SignatureCanvas = memo(({
   />
 ));
 
+// Composant SignatureBox extrait au niveau module pour éviter unmount/remount à chaque render
+const SignatureBox = memo(({
+  title,
+  icon,
+  signatureRef,
+  signature,
+  isSaved,
+  onOK,
+  onClear,
+  onSave,
+  onBeginSign,
+  onEndSign,
+  loading,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  signatureRef: React.RefObject<SignatureViewRef | null>;
+  signature: string | null;
+  isSaved: boolean;
+  onOK: (sig: string) => void;
+  onClear: () => void;
+  onSave: () => void;
+  onBeginSign: () => void;
+  onEndSign: () => void;
+  loading: boolean;
+}): React.ReactElement => (
+  <Card className="mb-4">
+    <View className="flex-row items-center mb-3">
+      {icon}
+      <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">{title}</Text>
+      {isSaved && (
+        <View className="ml-auto bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+          <Text className="text-green-700 dark:text-green-300 text-xs font-medium">Enregistrée</Text>
+        </View>
+      )}
+    </View>
+
+    <View className="h-48 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden bg-white dark:bg-gray-900">
+      {isSaved && signature ? (
+        <View className="flex-1 bg-gray-50 dark:bg-gray-900 p-2">
+          <Image
+            source={{ uri: signature }}
+            style={{ flex: 1 }}
+            resizeMode="contain"
+          />
+        </View>
+      ) : signature ? (
+        <View className="flex-1 items-center justify-center bg-primary-50">
+          <Check size={32} color={COLORS.primary[600]} />
+          <Text className="text-primary-600 font-medium mt-2">Signature prête</Text>
+          <Text className="text-primary-400 text-xs mt-1">Cliquez sur Enregistrer</Text>
+        </View>
+      ) : (
+        <SignatureCanvas
+          signatureRef={signatureRef}
+          onOK={onOK}
+          onBegin={onBeginSign}
+          onEnd={onEndSign}
+        />
+      )}
+    </View>
+
+    <View className="flex-row gap-3 mt-3">
+      {!isSaved && (
+        <TouchableOpacity
+          onPress={() => {
+            signatureRef.current?.clearSignature();
+            onClear();
+          }}
+          className="flex-1 flex-row items-center justify-center py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg"
+        >
+          <Trash2 size={18} color={COLORS.gray[600]} />
+          <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Effacer</Text>
+        </TouchableOpacity>
+      )}
+
+      {!signature && !isSaved && (
+        <TouchableOpacity
+          onPress={() => signatureRef.current?.readSignature()}
+          className="flex-1 flex-row items-center justify-center py-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg"
+        >
+          <Check size={18} color={COLORS.gray[700]} />
+          <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Valider</Text>
+        </TouchableOpacity>
+      )}
+
+      {signature && !isSaved && (
+        <TouchableOpacity
+          onPress={onSave}
+          disabled={loading}
+          className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${loading ? 'bg-green-400' : 'bg-green-600'}`}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Check size={18} color="white" />
+          )}
+          <Text className="text-white font-medium ml-2">
+            {loading ? 'Enregistrement...' : 'Enregistrer'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {isSaved && (
+        <TouchableOpacity
+          onPress={() => {
+            signatureRef.current?.clearSignature();
+            onClear();
+          }}
+          className="flex-1 flex-row items-center justify-center py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg"
+        >
+          <Trash2 size={18} color={COLORS.gray[600]} />
+          <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Modifier</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  </Card>
+));
+
 export default function SignatureEdlScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -148,6 +267,16 @@ export default function SignatureEdlScreen() {
 
   const handleLocataireOK = useCallback((signature: string) => {
     setSignatureLocataire(signature);
+  }, []);
+
+  const handleClearBailleur = useCallback(() => {
+    setSignatureBailleur(null);
+    setBailleurSaved(false);
+  }, []);
+
+  const handleClearLocataire = useCallback(() => {
+    setSignatureLocataire(null);
+    setLocataireSaved(false);
   }, []);
 
   const handleSaveBailleur = async () => {
@@ -211,118 +340,6 @@ export default function SignatureEdlScreen() {
       setLoading(false);
     }
   };
-
-  const SignatureBox = ({
-    title,
-    icon,
-    signatureRef,
-    signature,
-    isSaved,
-    onOK,
-    onClear,
-    onSave,
-  }: {
-    title: string;
-    icon: React.ReactNode;
-    signatureRef: React.RefObject<SignatureViewRef | null>;
-    signature: string | null;
-    isSaved: boolean;
-    onOK: (sig: string) => void;
-    onClear: () => void;
-    onSave: () => void;
-  }): React.ReactElement => (
-    <Card className="mb-4">
-      <View className="flex-row items-center mb-3">
-        {icon}
-        <Text className="text-base font-semibold text-gray-800 dark:text-gray-200 ml-2">{title}</Text>
-        {isSaved && (
-          <View className="ml-auto bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
-            <Text className="text-green-700 dark:text-green-300 text-xs font-medium">Enregistrée</Text>
-          </View>
-        )}
-      </View>
-
-      <View className="h-48 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden bg-white dark:bg-gray-900">
-        {isSaved && signature ? (
-          <View className="flex-1 bg-gray-50 dark:bg-gray-900 p-2">
-            <Image
-              source={{ uri: signature }}
-              style={{ flex: 1 }}
-              resizeMode="contain"
-            />
-          </View>
-        ) : signature ? (
-          <View className="flex-1 items-center justify-center bg-primary-50">
-            <Check size={32} color={COLORS.primary[600]} />
-            <Text className="text-primary-600 font-medium mt-2">Signature prête</Text>
-            <Text className="text-primary-400 text-xs mt-1">Cliquez sur Enregistrer</Text>
-          </View>
-        ) : (
-          <SignatureCanvas
-            signatureRef={signatureRef}
-            onOK={onOK}
-            onBegin={disableScroll}
-            onEnd={enableScroll}
-          />
-        )}
-      </View>
-
-      <View className="flex-row gap-3 mt-3">
-        {!isSaved && (
-          <TouchableOpacity
-            onPress={() => {
-              signatureRef.current?.clearSignature();
-              onClear();
-            }}
-            className="flex-1 flex-row items-center justify-center py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg"
-          >
-            <Trash2 size={18} color={COLORS.gray[600]} />
-            <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Effacer</Text>
-          </TouchableOpacity>
-        )}
-
-        {!signature && !isSaved && (
-          <TouchableOpacity
-            onPress={() => signatureRef.current?.readSignature()}
-            className="flex-1 flex-row items-center justify-center py-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg"
-          >
-            <Check size={18} color={COLORS.gray[700]} />
-            <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Valider</Text>
-          </TouchableOpacity>
-        )}
-
-        {signature && !isSaved && (
-          <TouchableOpacity
-            onPress={onSave}
-            disabled={loading}
-            className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${loading ? 'bg-green-400' : 'bg-green-600'}`}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Check size={18} color="white" />
-            )}
-            <Text className="text-white font-medium ml-2">
-              {loading ? 'Enregistrement...' : 'Enregistrer'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {isSaved && (
-          <TouchableOpacity
-            onPress={() => {
-              signatureRef.current?.clearSignature();
-              onClear();
-            }}
-            className="flex-1 flex-row items-center justify-center py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg"
-          >
-            <Trash2 size={18} color={COLORS.gray[600]} />
-            <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">Modifier</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </Card>
-  );
 
   if (bailleurSaved && locataireSaved) {
     return (
@@ -526,11 +543,11 @@ export default function SignatureEdlScreen() {
           signature={signatureBailleur}
           isSaved={bailleurSaved}
           onOK={handleBailleurOK}
-          onClear={() => {
-            setSignatureBailleur(null);
-            setBailleurSaved(false);
-          }}
+          onClear={handleClearBailleur}
           onSave={handleSaveBailleur}
+          onBeginSign={disableScroll}
+          onEndSign={enableScroll}
+          loading={loading}
         />
 
         {/* Signature locataire en face à face */}
@@ -542,11 +559,11 @@ export default function SignatureEdlScreen() {
             signature={signatureLocataire}
             isSaved={locataireSaved}
             onOK={handleLocataireOK}
-            onClear={() => {
-              setSignatureLocataire(null);
-              setLocataireSaved(false);
-            }}
+            onClear={handleClearLocataire}
             onSave={handleSaveLocataire}
+            onBeginSign={disableScroll}
+            onEndSign={enableScroll}
+            loading={loading}
           />
         )}
 

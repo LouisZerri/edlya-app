@@ -8,6 +8,7 @@ import { persistPhoto } from '../utils/photoFileManager';
 import { compressPhoto } from '../utils/imageCompressor';
 import { LocalPhoto } from '../types';
 import { API_URL } from '../utils/constants';
+import { appendFile } from '../utils/formData';
 
 type UploadType = 'element' | 'compteur';
 
@@ -31,7 +32,7 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
   const [isUploading, setIsUploading] = useState(false);
   const token = useAuthStore(state => state.token);
   const { updateUploadProgress, setUploadStatus, getPhotosForElement } = usePhotoStore();
-  const { success, error: showError } = useToastStore();
+  const { success } = useToastStore();
 
   const uploadPhoto = useCallback(async (
     entityId: string,
@@ -84,11 +85,11 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
       const formData = new FormData();
       formData.append(idField, numericId || entityId);
 
-      formData.append('photo', {
+      appendFile(formData, 'photo', {
         uri: permanentPath,
         name: `photo_${photo.id}.jpg`,
         type: 'image/jpeg',
-      } as any);
+      });
 
       if (photo.legende) {
         formData.append('legende', photo.legende);
@@ -198,12 +199,23 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
 
     if (!token) return false;
 
-    const numericId = photo.remoteId.includes('/')
-      ? photo.remoteId.split('/').pop()
-      : photo.remoteId;
-
     try {
-      const response = await fetch(`${API_URL}/upload/photo/${numericId}`, {
+      let url: string;
+
+      if (photo.remoteId.includes('_photo_')) {
+        // Compteur photo: remoteId = "/api/compteurs/222_photo_0"
+        const [compteurIri, photoIndex] = photo.remoteId.split('_photo_');
+        const compteurId = compteurIri.split('/').pop();
+        url = `${API_URL}/upload/compteur-photo/${compteurId}/${photoIndex}`;
+      } else {
+        // Element photo: remoteId = "/api/photos/42" or "42"
+        const numericId = photo.remoteId.includes('/')
+          ? photo.remoteId.split('/').pop()
+          : photo.remoteId;
+        url = `${API_URL}/upload/photo/${numericId}`;
+      }
+
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

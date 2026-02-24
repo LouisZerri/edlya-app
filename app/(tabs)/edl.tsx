@@ -1,10 +1,10 @@
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, SectionList, RefreshControl, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState, useCallback, useMemo } from 'react';
-import { Plus, ChevronRight, Calendar, DoorOpen, FileText, Search, ArrowUpDown, Filter, Layers, Building2, Edit3, Eye, FileDown, Trash2, PenTool } from 'lucide-react-native';
+import { ChevronRight, Calendar, DoorOpen, FileText, Search, ArrowUpDown, Filter, Layers, Building2, Edit3, Eye, FileDown, Trash2, PenTool } from 'lucide-react-native';
 import { Header, Card, Badge, SearchBar, EmptyState, SkeletonList, AnimatedListItem, Fab, SwipeableRow, ConfirmSheet, ActionSheet } from '../../components/ui';
 import type { ActionSheetItem } from '../../components/ui';
 import { hapticMedium } from '../../utils/haptics';
@@ -37,6 +37,21 @@ const SORT_LABELS: Record<SortOption, string> = {
   nom_desc: 'Z → A',
 };
 
+function FilterPill({ type, label, activeFilter, onPress }: { type: FilterType; label: string; activeFilter: FilterType; onPress: (type: FilterType) => void }) {
+  return (
+    <TouchableOpacity
+      onPress={() => onPress(type)}
+      className={`px-4 py-2 rounded-full mr-2 ${
+        activeFilter === type ? 'bg-primary-600' : 'bg-gray-100 dark:bg-gray-800'
+      }`}
+    >
+      <Text className={activeFilter === type ? 'text-white font-medium' : 'text-gray-600 dark:text-gray-300'}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function EdlScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -61,7 +76,7 @@ export default function EdlScreen() {
     refetchQueries: [{ query: GET_ETATS_DES_LIEUX, variables: { first: PAGE_SIZE } }],
   });
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
       await deleteEdl({ variables: { input: { id: deleteTarget.id } } });
@@ -72,7 +87,7 @@ export default function EdlScreen() {
       showError('Erreur lors de la suppression');
     }
     setDeleteTarget(null);
-  };
+  }, [deleteTarget, deleteEdl, showSuccess, showError]);
 
   const allEdls: EtatDesLieux[] = data?.etatDesLieuxes?.edges?.map((edge) => edge.node) || [];
   const hasNextPage = data?.etatDesLieuxes?.pageInfo?.hasNextPage ?? false;
@@ -163,27 +178,14 @@ export default function EdlScreen() {
     setRefreshing(true);
     await refetch({ first: PAGE_SIZE });
     setRefreshing(false);
-  }, []);
+  }, [refetch]);
 
-  const FilterPill = ({ type, label }: { type: FilterType; label: string }) => (
-    <TouchableOpacity
-      onPress={() => setFilter(type)}
-      className={`px-4 py-2 rounded-full mr-2 ${
-        filter === type ? 'bg-primary-600' : 'bg-gray-100 dark:bg-gray-800'
-      }`}
-    >
-      <Text className={filter === type ? 'text-white font-medium' : 'text-gray-600 dark:text-gray-300'}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  const handleLongPressEdl = (item: EtatDesLieux) => {
+  const handleLongPressEdl = useCallback((item: EtatDesLieux) => {
     hapticMedium();
     setContextMenu(item);
-  };
+  }, []);
 
-  const getEdlActions = (item: EtatDesLieux): ActionSheetItem[] => {
+  const getEdlActions = useCallback((item: EtatDesLieux): ActionSheetItem[] => {
     const edlId = item.id.split('/').pop();
     const actions: ActionSheetItem[] = [
       {
@@ -233,9 +235,9 @@ export default function EdlScreen() {
     }
 
     return actions;
-  };
+  }, [router]);
 
-  const renderItem = ({ item, index }: { item: EtatDesLieux; index: number }) => {
+  const renderItem = useCallback(({ item, index }: { item: EtatDesLieux; index: number }) => {
     const typeConfig = TYPE_CONFIG[item.type];
     const statutBadge = STATUT_BADGE[item.statut];
     const edlId = item.id.split('/').pop();
@@ -287,16 +289,38 @@ export default function EdlScreen() {
         </AnimatedListItem>
       </SwipeableRow>
     );
-  };
+  }, [router, handleLongPressEdl]);
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
     return (
       <View className="py-4 items-center">
         <ActivityIndicator size="small" color={COLORS.primary[600]} />
       </View>
     );
-  };
+  }, [loadingMore]);
+
+  const renderEmpty = useMemo(() => {
+    if (loading) return null;
+    if (search.trim()) {
+      return (
+        <EmptyState
+          icon={Search}
+          title="Aucun résultat"
+          subtitle={`Aucun EDL trouvé pour "${search}"`}
+        />
+      );
+    }
+    return (
+      <EmptyState
+        icon={FileText}
+        title="Pas encore d'état des lieux"
+        subtitle="Créez votre premier EDL pour commencer à gérer vos biens"
+        actionLabel="Créer un EDL"
+        onAction={() => router.push('/edl/create')}
+      />
+    );
+  }, [loading, search, router]);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
@@ -376,9 +400,9 @@ export default function EdlScreen() {
         )}
         {/* Type filters */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
-          <FilterPill type="tous" label="Tous" />
-          <FilterPill type="entree" label="Entrée" />
-          <FilterPill type="sortie" label="Sortie" />
+          <FilterPill type="tous" label="Tous" activeFilter={filter} onPress={setFilter} />
+          <FilterPill type="entree" label="Entrée" activeFilter={filter} onPress={setFilter} />
+          <FilterPill type="sortie" label="Sortie" activeFilter={filter} onPress={setFilter} />
         </ScrollView>
       </View>
 
@@ -397,30 +421,18 @@ export default function EdlScreen() {
             </View>
           )}
           keyExtractor={item => item.id}
+          stickySectionHeadersEnabled={false}
           contentContainerStyle={{ padding: 16 }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={5}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
           }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
-          ListEmptyComponent={
-            !loading ? (
-              search.trim() ? (
-                <EmptyState
-                  icon={Search}
-                  title="Aucun résultat"
-                  subtitle={`Aucun EDL trouvé pour "${search}"`}
-                />
-              ) : (
-                <EmptyState
-                  icon={FileText}
-                  title="Pas encore d'état des lieux"
-                  subtitle="Créez votre premier EDL pour commencer à gérer vos biens"
-                  actionLabel="Créer un EDL"
-                  onAction={() => router.push('/edl/create')}
-                />
-              )
-            ) : null
-          }
+          ListEmptyComponent={renderEmpty}
         />
         ) : (
         <FlatList
@@ -428,31 +440,17 @@ export default function EdlScreen() {
           renderItem={renderItem}
           keyExtractor={item => item.id}
           contentContainerStyle={{ padding: 16 }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
           }
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
-          ListEmptyComponent={
-            !loading ? (
-              search.trim() ? (
-                <EmptyState
-                  icon={Search}
-                  title="Aucun résultat"
-                  subtitle={`Aucun EDL trouvé pour "${search}"`}
-                />
-              ) : (
-                <EmptyState
-                  icon={FileText}
-                  title="Pas encore d'état des lieux"
-                  subtitle="Créez votre premier EDL pour commencer à gérer vos biens"
-                  actionLabel="Créer un EDL"
-                  onAction={() => router.push('/edl/create')}
-                />
-              )
-            ) : null
-          }
+          ListEmptyComponent={renderEmpty}
         />
         )}
       </GestureHandlerRootView>

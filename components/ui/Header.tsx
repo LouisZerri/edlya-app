@@ -1,7 +1,7 @@
+import { ReactNode } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { ReactNode } from 'react';
 import { COLORS } from '../../utils/constants';
 
 interface HeaderProps {

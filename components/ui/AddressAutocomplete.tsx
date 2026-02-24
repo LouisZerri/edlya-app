@@ -23,7 +23,7 @@ export function AddressAutocomplete({
 }: AddressAutocompleteProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { query, setQuery, suggestions, isSearching, clearSuggestions } = useAddressSearch();
+  const { setQuery, suggestions, isSearching, clearSuggestions } = useAddressSearch();
 
   const handleChangeText = (text: string) => {
     onChangeText(text);

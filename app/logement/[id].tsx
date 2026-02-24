@@ -1,10 +1,10 @@
-import { View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useQuery, useMutation } from '@apollo/client/react';
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, RefreshControl, Alert, TouchableOpacity, Animated } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { MapPin, Ruler, DoorOpen, Trash2, Edit3, Save, X, Home, Plus, FileText, ChevronRight, Calendar } from 'lucide-react-native';
-import { Header, Card, Badge, Input, Select, Button, AddressAutocomplete } from '../../components/ui';
+import { Header, Card, Badge, Input, Select, AddressAutocomplete } from '../../components/ui';
 import { GET_LOGEMENT, GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { UPDATE_LOGEMENT, DELETE_LOGEMENT } from '../../graphql/mutations/logements';
 import { COLORS } from '../../utils/constants';
