@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { View, Animated, DimensionValue } from 'react-native';
+import type { DimensionValue } from 'react-native';
+import { View, Animated } from 'react-native';
 import { useColorScheme } from 'nativewind';
 
 interface SkeletonProps {

@@ -3,11 +3,13 @@ import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } fr
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@apollo/client/react';
-import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
+import type { SignatureViewRef } from 'react-native-signature-canvas';
+import SignatureScreen from 'react-native-signature-canvas';
 import { Check, Trash2, User, Users, Download, ChevronDown } from 'lucide-react-native';
 import { Header, Card, Badge } from '../../../components/ui';
 import { COLORS, API_URL } from '../../../utils/constants';
-import { ELEMENT_ETAT_LABELS, ElementEtat, TYPE_CONFIG } from '../../../types';
+import type { ElementEtat} from '../../../types';
+import { ELEMENT_ETAT_LABELS, TYPE_CONFIG } from '../../../types';
 import { formatDate } from '../../../utils/format';
 import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
 import { useToastStore } from '../../../stores/toastStore';

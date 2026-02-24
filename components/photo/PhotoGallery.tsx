@@ -10,7 +10,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import { LocalPhoto } from '../../types';
+import type { LocalPhoto } from '../../types';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
 import { generateId } from '../../utils/id';
 import { PhotoThumbnail } from './PhotoThumbnail';
@@ -139,7 +139,9 @@ export function PhotoGallery({
                 );
               }
             })
-            .catch(() => {});
+            .catch((err: unknown) => {
+              if (__DEV__) console.warn('[PhotoGallery] Failed to get location for photo:', err);
+            });
         }
       }
     } catch {

@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, Pressable, Animated } from 'react-native';
-import { LucideIcon } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import { hapticMedium } from '../../utils/haptics';
 
 export interface ActionSheetItem {

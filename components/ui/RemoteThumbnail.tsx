@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { Image, ImageSource } from 'expo-image';
+import type { ImageSource } from 'expo-image';
+import { Image } from 'expo-image';
 import { ImageIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { COLORS, DARK_COLORS } from '../../utils/constants';

@@ -6,7 +6,7 @@ import { useNetworkStore } from '../stores/networkStore';
 import { usePhotoQueueStore } from '../stores/photoQueueStore';
 import { persistPhoto } from '../utils/photoFileManager';
 import { compressPhoto } from '../utils/imageCompressor';
-import { LocalPhoto } from '../types';
+import type { LocalPhoto } from '../types';
 import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
 
@@ -121,7 +121,8 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
                 remoteId: response.id,
                 remoteUrl: response.chemin || response.url,
               });
-            } catch {
+            } catch (err) {
+              if (__DEV__) console.warn('[UsePhotoUpload] Failed to parse upload response:', err);
               resolve({
                 success: true,
                 remoteId: undefined,
@@ -220,7 +221,8 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.ok;
-    } catch {
+    } catch (err) {
+      if (__DEV__) console.warn('[UsePhotoUpload] Failed to delete photo from server:', err);
       return false;
     }
   }, [token]);

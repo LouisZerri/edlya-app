@@ -2,7 +2,8 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Clock } from 'lucide-react-native';
 import { Card, Badge } from '../ui';
-import { STATUT_BADGE, TYPE_CONFIG, EdlType, EdlStatut } from '../../types';
+import type { EdlType, EdlStatut } from '../../types';
+import { STATUT_BADGE, TYPE_CONFIG } from '../../types';
 import { formatDate } from '../../utils/format';
 import { COLORS } from '../../utils/constants';
 

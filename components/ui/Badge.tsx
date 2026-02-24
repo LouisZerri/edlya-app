@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native';
-import { BadgeVariant } from '../../types';
+import type { BadgeVariant } from '../../types';
 
 interface BadgeProps {
   label: string;

@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Trash2, X } from 'lucide-react-native';
 import { Card, RemoteThumbnail } from '../ui';
-import { CLE_LABELS, CleType } from '../../types';
+import type { CleType } from '../../types';
+import { CLE_LABELS } from '../../types';
 import { COLORS, BASE_URL, UPLOADS_URL } from '../../utils/constants';
 import { useEdlEditContext } from '../../contexts/EdlEditContext';
 

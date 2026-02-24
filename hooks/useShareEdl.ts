@@ -58,7 +58,9 @@ export function useShareEdl(): UseShareEdlReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch {}
+        } catch (err) {
+          if (__DEV__) console.warn('[UseShareEdl] Failed to parse error response:', err);
+        }
         throw new Error(errorMessage);
       }
 

@@ -1,6 +1,7 @@
 import { apolloClient } from '../graphql/client';
 import { MUTATION_MAP } from '../graphql/mutations/mutationMap';
-import { getQueue, removeFromQueue, updateInQueue, QueuedMutation } from './offlineMutationQueue';
+import type { QueuedMutation } from './offlineMutationQueue';
+import { getQueue, removeFromQueue, updateInQueue } from './offlineMutationQueue';
 
 const BACKOFF_DELAYS = [1000, 2000, 5000, 15000, 30000];
 const MAX_RETRIES = 5;
@@ -31,7 +32,8 @@ async function executeMutation(entry: QueuedMutation): Promise<boolean> {
     await apolloClient.mutate({ mutation, variables: entry.variables });
     await removeFromQueue(entry.id);
     return true;
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[OfflineSyncManager] Mutation failed:', err);
     const newRetryCount = entry.retryCount + 1;
     if (newRetryCount >= MAX_RETRIES) {
       // Max retries reached — remove from queue

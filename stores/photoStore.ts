@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { LocalPhoto, PhotoUploadStatus } from '../types';
+import type { LocalPhoto, PhotoUploadStatus } from '../types';
 
 interface PhotoStore {
   // Photos par elementId

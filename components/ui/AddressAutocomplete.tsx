@@ -1,7 +1,8 @@
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { MapPin } from 'lucide-react-native';
-import { useAddressSearch, AddressSuggestion } from '../../hooks/useAddressSearch';
+import type { AddressSuggestion } from '../../hooks/useAddressSearch';
+import { useAddressSearch } from '../../hooks/useAddressSearch';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
 
 interface AddressAutocompleteProps {

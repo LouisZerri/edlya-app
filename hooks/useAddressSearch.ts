@@ -57,7 +57,8 @@ export function useAddressSearch() {
         );
 
         setSuggestions(results);
-      } catch {
+      } catch (err) {
+        if (__DEV__) console.warn('[UseAddressSearch] Failed to fetch suggestions:', err);
         setSuggestions([]);
       } finally {
         setIsSearching(false);

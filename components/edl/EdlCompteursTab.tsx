@@ -3,7 +3,8 @@ import { Trash2 } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { Card } from '../ui';
 import { PhotoGallery } from '../photo';
-import { COMPTEUR_CONFIG, CompteurType } from '../../types';
+import type { CompteurType } from '../../types';
+import { COMPTEUR_CONFIG } from '../../types';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
 import { useEdlEditContext } from '../../contexts/EdlEditContext';
 

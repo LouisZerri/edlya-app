@@ -6,11 +6,12 @@ import PagerView from 'react-native-pager-view';
 import { useQuery } from '@apollo/client/react';
 import { Header, Button } from '../../../components/ui';
 import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
-import { GetEdlDetailData } from '../../../types/graphql';
+import type { GetEdlDetailData } from '../../../types/graphql';
+import type {
+  TabType} from '../../../components/edl';
 import {
   EdlProgressBar,
   EdlTabBar,
-  TabType,
   EdlInfosTab,
   EdlCompteursTab,
   EdlClesTab,
@@ -23,7 +24,8 @@ import { useEdlInitializer } from '../../../hooks/useEdlInitializer';
 import { useEdlAutoSave } from '../../../hooks/useEdlAutoSave';
 import { useEdlMutations } from '../../../hooks/useEdlMutations';
 import { useEdlAiAnalysis } from '../../../hooks/useEdlAiAnalysis';
-import { EdlEditProvider, EdlEditContextValue } from '../../../contexts/EdlEditContext';
+import type { EdlEditContextValue } from '../../../contexts/EdlEditContext';
+import { EdlEditProvider } from '../../../contexts/EdlEditContext';
 
 export default function EditEdlScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

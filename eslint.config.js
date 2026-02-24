@@ -56,6 +56,12 @@ module.exports = [
 
       // No duplicate imports
       'import/no-duplicates': 'warn',
+
+      // Consistent type imports (import type { X })
+      '@typescript-eslint/consistent-type-imports': ['warn', {
+        prefer: 'type-imports',
+        fixStyle: 'separate-type-imports',
+      }],
     },
   },
 ];

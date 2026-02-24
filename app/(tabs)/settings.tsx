@@ -6,7 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LogOut, Save, HelpCircle, Sun, Moon, Smartphone, ChevronRight, Mail, Phone, Shield } from 'lucide-react-native';
 import { Header, Card, Input, Button, FaqModal } from '../../components/ui';
 import { useAuthStore } from '../../stores/authStore';
-import { useThemeStore, ThemePreference } from '../../stores/themeStore';
+import type { ThemePreference } from '../../stores/themeStore';
+import { useThemeStore } from '../../stores/themeStore';
 import { useToastStore } from '../../stores/toastStore';
 import { COLORS } from '../../utils/constants';
 

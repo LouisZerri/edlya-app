@@ -76,8 +76,8 @@ export default function HomeScreen() {
         setLogementsSansEdl(data.logements_sans_edl || []);
         setActivity(data.activity || []);
       }
-    } catch {
-      // Silently fail - non-critical feature
+    } catch (err) {
+      if (__DEV__) console.warn('[Home] Failed to fetch dashboard data:', err);
     }
   }, [token]);
 

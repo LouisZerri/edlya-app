@@ -1,7 +1,7 @@
 import { View, Text, ActivityIndicator } from 'react-native';
 import { Cloud, CloudOff } from 'lucide-react-native';
 import { COLORS } from '../../utils/constants';
-import { AutoSaveStatus } from '../../hooks/useEdlAutoSave';
+import type { AutoSaveStatus } from '../../hooks/useEdlAutoSave';
 
 interface AutoSaveIndicatorProps {
   status: AutoSaveStatus;

@@ -10,7 +10,7 @@ import type { ActionSheetItem } from '../../components/ui';
 import { hapticMedium, hapticLight } from '../../utils/haptics';
 import { GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { DELETE_LOGEMENT } from '../../graphql/mutations/logements';
-import { Logement } from '../../types';
+import type { Logement } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { formatSurface, formatLogementType } from '../../utils/format';
 import { useToastStore } from '../../stores/toastStore';
@@ -95,8 +95,8 @@ export default function LogementsScreen() {
           };
         },
       });
-    } catch {
-      // ignore
+    } catch (err) {
+      if (__DEV__) console.warn('[Logements] Failed to load more logements:', err);
     } finally {
       setLoadingMore(false);
     }
@@ -325,6 +325,10 @@ export default function LogementsScreen() {
           renderItem={renderItem}
           keyExtractor={item => item.id}
           contentContainerStyle={{ padding: 16 }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
           }

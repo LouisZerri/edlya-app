@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Modal,
-  Image,
   TouchableOpacity,
   ScrollView,
   Dimensions,
@@ -14,9 +13,10 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Trash2, MapPin } from 'lucide-react-native';
-import { LocalPhoto } from '../../types';
+import type { LocalPhoto } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { PhotoCaptionEditor } from './PhotoCaptionEditor';
 
@@ -211,7 +211,9 @@ export function PhotoViewer({
                 <Image
                   source={{ uri: photo.localUri }}
                   style={styles.image}
-                  resizeMode="contain"
+                  contentFit="contain"
+                  cachePolicy="disk"
+                  transition={200}
                 />
               </ScrollView>
             </View>

@@ -1,4 +1,4 @@
-import { ElementType, ElementEtat, EdlType, EdlStatut, CompteurType, CleType } from './index';
+import type { ElementType, ElementEtat, EdlType, EdlStatut, CompteurType, CleType } from './index';
 
 // Generic GraphQL connection types
 export interface GraphQLEdge<T> {

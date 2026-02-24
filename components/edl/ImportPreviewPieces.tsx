@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { ChevronDown, ChevronUp, Trash2, DoorOpen } from 'lucide-react-native';
 import { Card, Badge } from '../ui';
-import { DonneesExtraites } from '../../hooks/usePdfImport';
+import type { DonneesExtraites } from '../../hooks/usePdfImport';
 import { COLORS } from '../../utils/constants';
 import { ImportPhotoThumbnails } from './ImportPhotoThumbnails';
 

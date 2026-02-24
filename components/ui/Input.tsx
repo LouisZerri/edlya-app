@@ -1,4 +1,5 @@
-import { View, Text, TextInput, TextInputProps, StyleSheet } from 'react-native';
+import type { TextInputProps} from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { DARK_COLORS } from '../../utils/constants';
 

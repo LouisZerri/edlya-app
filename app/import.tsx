@@ -7,12 +7,13 @@ import { Upload, FileText, Lightbulb, Check, Edit3 } from 'lucide-react-native';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Header, Button } from '../components/ui';
 import { COLORS } from '../utils/constants';
-import { usePdfImport, DonneesExtraites, ExtractedImage } from '../hooks/usePdfImport';
+import type { DonneesExtraites, ExtractedImage } from '../hooks/usePdfImport';
+import { usePdfImport } from '../hooks/usePdfImport';
 import { useAuthStore } from '../stores/authStore';
 import { GET_LOGEMENTS } from '../graphql/queries/logements';
 import { CREATE_LOGEMENT } from '../graphql/mutations/logements';
 import { useToastStore } from '../stores/toastStore';
-import { GetLogementsData, CreateLogementData, LogementNode } from '../types/graphql';
+import type { GetLogementsData, CreateLogementData, LogementNode } from '../types/graphql';
 import { findBestMatch } from '../utils/similarity';
 import { useImportPreviewEditor } from '../hooks/useImportPreviewEditor';
 import {
@@ -80,8 +81,8 @@ export default function ImportScreen() {
         hasMatchedRef.current = false;
         setStep('upload');
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      if (__DEV__) console.warn('[Import] Failed to pick document:', err);
     }
   };
 

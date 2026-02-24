@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { DonneesExtraites } from './usePdfImport';
+import type { DonneesExtraites } from './usePdfImport';
 
 export function useImportPreviewEditor(
   extractedData: DonneesExtraites | null,

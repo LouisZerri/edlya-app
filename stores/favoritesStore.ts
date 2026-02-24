@@ -37,7 +37,9 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
       next.add(id);
     }
     set({ pinnedIds: next });
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([...next])).catch(() => {});
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([...next])).catch((err) => {
+      if (__DEV__) console.warn('[FavoritesStore] Failed to persist pins:', err);
+    });
   },
 
   isPinned: (id: string) => {

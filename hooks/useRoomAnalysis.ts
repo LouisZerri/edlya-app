@@ -3,7 +3,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
-import { ElementType, ElementEtat } from '../types';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import type { ElementType, ElementEtat } from '../types';
 
 interface DetectedElement {
   nom: string;
@@ -77,14 +78,14 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
         formData.append('nom_piece', nomPiece);
       }
 
-      const response = await fetch(`${API_URL}/ai/analyser-piece`, {
+      const response = await fetchWithTimeout(`${API_URL}/ai/analyser-piece`, {
         method: 'POST',
         headers: {
           'ngrok-skip-browser-warning': 'true',
           'Authorization': `Bearer ${token}`,
         },
         body: formData,
-      });
+      }, 90_000);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -137,16 +138,17 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
         type: mimeType,
       });
 
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${API_URL}/ai/edl/${numericEdlId}/piece/${numericPieceId}/auto-remplir`,
         {
           method: 'POST',
           headers: {
             'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${token}`,
           },
           body: formData,
-        }
+        },
+        90_000,
       );
 
       if (!response.ok) {

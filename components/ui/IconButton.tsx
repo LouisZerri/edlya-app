@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { TouchableOpacity, Text, View } from 'react-native';
 
 type IconButtonVariant = 'primary' | 'success' | 'warning' | 'dark';

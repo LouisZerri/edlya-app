@@ -86,8 +86,8 @@ function useOfflineSync() {
         // Verify network is actually working before syncing
         try {
           await fetch(`${API_URL}/graphql`, { method: 'HEAD' });
-        } catch {
-          // Network not ready yet, wait longer
+        } catch (err) {
+          if (__DEV__) console.warn('[Layout] Network check failed, retrying:', err);
           await new Promise(r => setTimeout(r, 5000));
         }
 

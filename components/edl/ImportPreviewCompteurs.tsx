@@ -1,9 +1,10 @@
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { Trash2, Zap } from 'lucide-react-native';
 import { Card } from '../ui';
-import { DonneesExtraites } from '../../hooks/usePdfImport';
+import type { DonneesExtraites } from '../../hooks/usePdfImport';
 import { COLORS } from '../../utils/constants';
-import { COMPTEUR_CONFIG, CompteurType } from '../../types';
+import type { CompteurType } from '../../types';
+import { COMPTEUR_CONFIG } from '../../types';
 import { ImportPhotoThumbnails } from './ImportPhotoThumbnails';
 
 interface ImportPreviewCompteursProps {

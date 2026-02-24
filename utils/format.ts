@@ -6,7 +6,8 @@ export function formatDate(date: string | Date, pattern: string = 'dd/MM/yyyy'):
   try {
     const d = typeof date === 'string' ? parseISO(date) : date;
     return format(d, pattern, { locale: fr });
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[Format] Failed to format date:', err);
     return '';
   }
 }
@@ -19,7 +20,8 @@ export function apiDateToDisplay(apiDate: string): string {
     const dateOnly = apiDate.includes('T') ? apiDate.split('T')[0] : apiDate;
     const [year, month, day] = dateOnly.split('-');
     return `${day}/${month}/${year}`;
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[Format] Failed to convert API date:', err);
     return apiDate;
   }
 }
@@ -30,7 +32,8 @@ export function displayDateToApi(displayDate: string): string {
   try {
     const [day, month, year] = displayDate.split('/');
     return `${year}-${month}-${day}`;
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[Format] Failed to convert display date:', err);
     return displayDate;
   }
 }

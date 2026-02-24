@@ -142,7 +142,9 @@ export function useDevis(): UseDevisReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch {}
+        } catch (err) {
+          if (__DEV__) console.warn('[UseDevis] Failed to parse error response:', err);
+        }
         throw new Error(errorMessage);
       }
 
@@ -209,8 +211,8 @@ export function useDevis(): UseDevisReturn {
 
       setSuggestions(result);
       setIsSuggestionsLoaded(true);
-    } catch {
-      // Silently fail for suggestions loading
+    } catch (err) {
+      if (__DEV__) console.warn('[UseDevis] Failed to load suggestions:', err);
     }
   }, [token, isSuggestionsLoaded]);
 

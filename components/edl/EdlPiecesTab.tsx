@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Plus, ChevronDown, ChevronUp, Trash2, Scan } from 'lucide-react-native';
 import { Card, Badge, Input, Select } from '../ui';
-import { ElementType, ELEMENT_TYPE_LABELS } from '../../types';
-import { ElementNode, GraphQLEdge } from '../../types/graphql';
+import type { ElementType} from '../../types';
+import { ELEMENT_TYPE_LABELS } from '../../types';
+import type { ElementNode, GraphQLEdge } from '../../types/graphql';
 import { COLORS } from '../../utils/constants';
 import { ElementCard } from './ElementCard';
 import { useEdlEditContext } from '../../contexts/EdlEditContext';

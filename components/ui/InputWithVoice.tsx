@@ -1,9 +1,26 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, TextInputProps, TouchableOpacity, Animated } from 'react-native';
+import type { TextInputProps} from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import Constants from 'expo-constants';
 import { Mic, MicOff } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
+
+interface SpeechSubscription {
+  remove?: () => void;
+}
+
+interface SpeechRecognitionModule {
+  ExpoSpeechRecognitionModule: {
+    requestPermissionsAsync: () => Promise<{ granted: boolean }>;
+    start: (config: { lang: string; interimResults: boolean; continuous: boolean }) => void;
+    stop: () => void;
+  };
+  addSpeechRecognitionListener: (
+    event: string,
+    handler: (data: { results?: Array<{ transcript?: string }>; isFinal?: boolean }) => void,
+  ) => SpeechSubscription;
+}
 
 interface InputWithVoiceProps extends Omit<TextInputProps, 'onChangeText'> {
   label: string;
@@ -36,10 +53,10 @@ export function InputWithVoice({
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
-  const [speechModule, setSpeechModule] = useState<any>(null);
+  const [speechModule, setSpeechModule] = useState<SpeechRecognitionModule | null>(null);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const subscriptionsRef = useRef<any[]>([]);
+  const subscriptionsRef = useRef<SpeechSubscription[]>([]);
 
   // Charger le module uniquement si pas Expo Go
   useEffect(() => {
@@ -54,7 +71,7 @@ export function InputWithVoice({
         // Dynamic import pour éviter le bundling dans Expo Go
         const mod = await import('expo-speech-recognition');
         if (mod?.ExpoSpeechRecognitionModule) {
-          setSpeechModule(mod);
+          setSpeechModule(mod as unknown as SpeechRecognitionModule);
           setVoiceAvailable(true);
         }
       } catch {
@@ -97,7 +114,9 @@ export function InputWithVoice({
       try {
         speechModule.ExpoSpeechRecognitionModule.stop();
         setIsListening(false);
-      } catch {}
+      } catch (err) {
+        if (__DEV__) console.warn('[InputWithVoice] Failed to stop speech recognition:', err);
+      }
       return;
     }
 
@@ -116,7 +135,7 @@ export function InputWithVoice({
       subscriptionsRef.current.forEach(sub => sub?.remove?.());
       subscriptionsRef.current = [];
 
-      const resultSub = addSpeechRecognitionListener('result', (event: { results?: Array<{ transcript?: string }>; isFinal?: boolean }) => {
+      const resultSub = addSpeechRecognitionListener('result', (event) => {
         const text = event.results?.[0]?.transcript || '';
         if (event.isFinal && text) {
           if (appendMode && value) {

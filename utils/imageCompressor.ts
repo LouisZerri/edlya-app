@@ -38,7 +38,8 @@ export async function compressPhoto(uri: string, options?: CompressOptions): Pro
     context.release();
 
     return saved.uri;
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[ImageCompressor] Failed to compress photo:', err);
     return uri;
   }
 }

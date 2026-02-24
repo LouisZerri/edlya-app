@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, Dimensions } from 'react-native';
 import { ChevronDown, Check, Search, X } from 'lucide-react-native';
 import { COLORS } from '../../utils/constants';
@@ -50,6 +50,31 @@ export function Select({
     onChange(val);
     handleClose();
   };
+
+  const renderItem = useCallback(({ item }: { item: Option }) => {
+    const isSelected = item.value === value;
+    return (
+      <TouchableOpacity
+        onPress={() => handleSelect(item.value)}
+        className={`flex-row items-center justify-between px-4 py-3.5 border-b border-gray-50 dark:border-gray-800 ${
+          isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+        }`}
+      >
+        <Text className={`text-base ${
+          isSelected ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-900 dark:text-gray-100'
+        }`}>
+          {item.label}
+        </Text>
+        {isSelected && <Check size={20} color={COLORS.primary[600]} />}
+      </TouchableOpacity>
+    );
+  }, [value, handleSelect]);
+
+  const listEmptyComponent = useMemo(() => (
+    <View className="py-8 items-center">
+      <Text className="text-gray-400 dark:text-gray-500">Aucun résultat</Text>
+    </View>
+  ), []);
 
   return (
     <View className="mb-4">
@@ -126,29 +151,8 @@ export function Select({
               data={filteredOptions}
               keyExtractor={item => item.value}
               keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => {
-                const isSelected = item.value === value;
-                return (
-                  <TouchableOpacity
-                    onPress={() => handleSelect(item.value)}
-                    className={`flex-row items-center justify-between px-4 py-3.5 border-b border-gray-50 dark:border-gray-800 ${
-                      isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                    }`}
-                  >
-                    <Text className={`text-base ${
-                      isSelected ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-900 dark:text-gray-100'
-                    }`}>
-                      {item.label}
-                    </Text>
-                    {isSelected && <Check size={20} color={COLORS.primary[600]} />}
-                  </TouchableOpacity>
-                );
-              }}
-              ListEmptyComponent={
-                <View className="py-8 items-center">
-                  <Text className="text-gray-400 dark:text-gray-500">Aucun résultat</Text>
-                </View>
-              }
+              renderItem={renderItem}
+              ListEmptyComponent={listEmptyComponent}
             />
           </TouchableOpacity>
         </TouchableOpacity>

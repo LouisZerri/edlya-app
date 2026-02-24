@@ -1,9 +1,10 @@
 import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { Sparkles, Check, AlertTriangle } from 'lucide-react-native';
 import { Badge } from '../ui';
-import { ELEMENT_ETAT_LABELS, ElementEtat } from '../../types';
+import type { ElementEtat } from '../../types';
+import { ELEMENT_ETAT_LABELS } from '../../types';
 import { COLORS } from '../../utils/constants';
-import { AnalyseResult } from '../../hooks/usePhotoAnalysis';
+import type { AnalyseResult } from '../../hooks/usePhotoAnalysis';
 
 interface AnalysisResultModalProps {
   visible: boolean;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { ElementEtat, LocalPhoto } from '../types';
-import { PieceNode, CompteurNode, CleNode, EdlNode, GraphQLEdge, ElementNode, PhotoNode } from '../types/graphql';
+import type { ElementEtat, LocalPhoto } from '../types';
+import type { PieceNode, CompteurNode, CleNode, EdlNode, GraphQLEdge, ElementNode, PhotoNode } from '../types/graphql';
 import { BASE_URL, UPLOADS_URL } from '../utils/constants';
 import { apiDateToDisplay } from '../utils/format';
 

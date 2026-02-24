@@ -9,7 +9,8 @@ import { GET_LOGEMENT, GET_LOGEMENTS } from '../../graphql/queries/logements';
 import { UPDATE_LOGEMENT, DELETE_LOGEMENT } from '../../graphql/mutations/logements';
 import { COLORS } from '../../utils/constants';
 import { formatSurface, formatDate } from '../../utils/format';
-import { STATUT_BADGE, TYPE_CONFIG, EdlType, EdlStatut } from '../../types';
+import type { EdlType, EdlStatut } from '../../types';
+import { STATUT_BADGE, TYPE_CONFIG } from '../../types';
 import { useToastStore } from '../../stores/toastStore';
 
 const TYPE_OPTIONS = [

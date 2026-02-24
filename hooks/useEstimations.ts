@@ -243,8 +243,8 @@ export function useEstimations(): UseEstimationsReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
-        } catch {
-          // Response wasn't JSON
+        } catch (err) {
+          if (__DEV__) console.warn('[UseEstimations] Failed to parse error response:', err);
         }
         throw new Error(errorMessage);
       }
@@ -297,8 +297,8 @@ export function useEstimations(): UseEstimationsReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
-        } catch {
-          // Response wasn't JSON
+        } catch (err) {
+          if (__DEV__) console.warn('[UseEstimations] Failed to parse refresh error response:', err);
         }
         throw new Error(errorMessage);
       }

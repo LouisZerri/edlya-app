@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { UPDATE_ETAT_DES_LIEUX, UPDATE_ELEMENT, UPDATE_COMPTEUR, UPDATE_CLE } from '../graphql/mutations/edl';
-import { ElementEtat } from '../types';
-import { EdlNode, PieceNode, CompteurNode, CleNode } from '../types/graphql';
-import { EdlFormData } from './useEdlInitializer';
+import type { ElementEtat } from '../types';
+import type { EdlNode, PieceNode, CompteurNode, CleNode } from '../types/graphql';
+import type { EdlFormData } from './useEdlInitializer';
 import { useNetworkStore } from '../stores/networkStore';
 import { addToQueue } from '../utils/offlineMutationQueue';
 import { buildChangedMutations } from '../utils/buildChangedMutations';
@@ -86,8 +86,8 @@ export function useEdlAutoSave({
         setAutoSaveStatus('saved');
         setTimeout(() => setAutoSaveStatus('idle'), 2000);
         return;
-      } catch {
-        // Network failed — fall through to offline queue
+      } catch (err) {
+        if (__DEV__) console.warn('[UseEdlAutoSave] Network save failed, falling back to offline queue:', err);
       }
     }
 

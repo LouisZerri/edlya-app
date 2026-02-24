@@ -169,7 +169,9 @@ export function useComparatif(): UseComparatifReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
-        } catch {}
+        } catch (err) {
+          if (__DEV__) console.warn('[UseComparatif] Failed to parse error response:', err);
+        }
         throw new Error(errorMessage);
       }
 

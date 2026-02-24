@@ -1,8 +1,8 @@
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Check, AlertCircle, Plus, Home } from 'lucide-react-native';
 import { Card, Badge } from '../ui';
-import { DonneesExtraites } from '../../hooks/usePdfImport';
-import { LogementNode } from '../../types/graphql';
+import type { DonneesExtraites } from '../../hooks/usePdfImport';
+import type { LogementNode } from '../../types/graphql';
 import { COLORS } from '../../utils/constants';
 
 interface ImportPreviewLogementProps {

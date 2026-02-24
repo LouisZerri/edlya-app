@@ -1,9 +1,10 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Trash2, Key } from 'lucide-react-native';
 import { Card, Badge } from '../ui';
-import { DonneesExtraites } from '../../hooks/usePdfImport';
+import type { DonneesExtraites } from '../../hooks/usePdfImport';
 import { COLORS } from '../../utils/constants';
-import { CLE_LABELS, CleType } from '../../types';
+import type { CleType } from '../../types';
+import { CLE_LABELS } from '../../types';
 import { ImportPhotoThumbnails } from './ImportPhotoThumbnails';
 
 interface ImportPreviewClesProps {

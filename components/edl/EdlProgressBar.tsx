@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { View, Text, useColorScheme } from 'react-native';
-import { ElementEtat } from '../../types';
-import { PieceNode, CompteurNode, CleNode, GraphQLEdge, ElementNode } from '../../types/graphql';
-import { EdlFormData } from '../../hooks/useEdlInitializer';
+import type { ElementEtat } from '../../types';
+import type { PieceNode, CompteurNode, CleNode, GraphQLEdge, ElementNode } from '../../types/graphql';
+import type { EdlFormData } from '../../hooks/useEdlInitializer';
 
 interface EdlProgressBarProps {
   formData: EdlFormData;

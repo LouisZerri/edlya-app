@@ -204,8 +204,8 @@ export default function CreateEdlScreen() {
                 'Authorization': `Bearer ${token}`,
               },
             });
-          } catch {
-            // silently fail - copy is optional
+          } catch (err) {
+            if (__DEV__) console.warn('[CreateEdl] Failed to copy from entry EDL:', err);
           }
         } else if (data.typologie) {
           // Générer les pièces si une typologie est sélectionnée (entrée ou sortie sans entrée)
@@ -219,8 +219,8 @@ export default function CreateEdlScreen() {
               },
               body: JSON.stringify({ typologie: data.typologie }),
             });
-          } catch {
-            // silently fail - typologie pre-fill is optional
+          } catch (err) {
+            if (__DEV__) console.warn('[CreateEdl] Failed to generate rooms from typologie:', err);
           }
         }
 

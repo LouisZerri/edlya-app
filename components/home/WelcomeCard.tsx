@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from 'nativewind';
 import { Home, FileText, Clock, CheckCircle } from 'lucide-react-native';
-import { User, UserStats } from '../../types';
+import type { User, UserStats } from '../../types';
 
 interface WelcomeCardProps {
   user: User | null;

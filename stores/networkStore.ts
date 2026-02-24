@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import type { NetInfoState } from '@react-native-community/netinfo';
+import NetInfo from '@react-native-community/netinfo';
 
 interface NetworkStore {
   isConnected: boolean;

@@ -10,11 +10,12 @@ import { Header, Card, Button } from '../../../components/ui';
 import { COLORS } from '../../../utils/constants';
 import { formatCurrency } from '../../../utils/format';
 import { useEstimations } from '../../../hooks/useEstimations';
-import { useDevis, LigneDevis, CoutSuggestion } from '../../../hooks/useDevis';
+import type { LigneDevis, CoutSuggestion } from '../../../hooks/useDevis';
+import { useDevis } from '../../../hooks/useDevis';
 import { usePdfExport } from '../../../hooks/usePdfExport';
 import { useShareEdl } from '../../../hooks/useShareEdl';
 import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
-import { GetEdlDetailData } from '../../../types/graphql';
+import type { GetEdlDetailData } from '../../../types/graphql';
 
 const UNITE_LABELS: Record<string, string> = {
   m2: 'm\u00B2',

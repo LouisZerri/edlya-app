@@ -1,4 +1,5 @@
-import { usePhotoQueueStore, QueuedPhoto } from '../stores/photoQueueStore';
+import type { QueuedPhoto } from '../stores/photoQueueStore';
+import { usePhotoQueueStore } from '../stores/photoQueueStore';
 import { deletePersistedPhoto, getPersistedPhotoPath } from './photoFileManager';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';

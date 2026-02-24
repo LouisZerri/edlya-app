@@ -134,7 +134,8 @@ export async function hasSeenOnboarding(): Promise<boolean> {
   try {
     const value = await AsyncStorage.getItem(ONBOARDING_KEY);
     return value === 'true';
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[Onboarding] Failed to check onboarding status:', err);
     return false;
   }
 }
@@ -142,8 +143,8 @@ export async function hasSeenOnboarding(): Promise<boolean> {
 async function markOnboardingSeen(): Promise<void> {
   try {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-  } catch {
-    // silently fail
+  } catch (err) {
+    if (__DEV__) console.warn('[Onboarding] Failed to mark onboarding seen:', err);
   }
 }
 
@@ -210,6 +211,11 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         keyExtractor={(_, i) => i.toString()}
+        getItemLayout={(_, index) => ({
+          length: SCREEN_WIDTH,
+          offset: SCREEN_WIDTH * index,
+          index,
+        })}
         onMomentumScrollEnd={(e) => {
           const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
           setActiveIndex(index);

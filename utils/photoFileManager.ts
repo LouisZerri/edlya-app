@@ -33,8 +33,8 @@ export async function deletePersistedPhoto(photoId: string): Promise<void> {
         return;
       }
     }
-  } catch {
-    // silently fail
+  } catch (err) {
+    if (__DEV__) console.warn('[PhotoFileManager] Failed to delete photo:', err);
   }
 }
 

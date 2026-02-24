@@ -1,7 +1,7 @@
 import { View, Text, TextInput } from 'react-native';
 import { User } from 'lucide-react-native';
 import { Card } from '../ui';
-import { DonneesExtraites } from '../../hooks/usePdfImport';
+import type { DonneesExtraites } from '../../hooks/usePdfImport';
 import { COLORS } from '../../utils/constants';
 
 interface ImportPreviewLocataireProps {

@@ -10,7 +10,8 @@ import type { ActionSheetItem } from '../../components/ui';
 import { hapticMedium } from '../../utils/haptics';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
 import { DELETE_ETAT_DES_LIEUX } from '../../graphql/mutations/edl';
-import { EtatDesLieux, EdlStatut, STATUT_BADGE, TYPE_CONFIG } from '../../types';
+import type { EtatDesLieux, EdlStatut} from '../../types';
+import { STATUT_BADGE, TYPE_CONFIG } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { formatDate } from '../../utils/format';
 import { useToastStore } from '../../stores/toastStore';
@@ -112,8 +113,8 @@ export default function EdlScreen() {
           };
         },
       });
-    } catch {
-      // ignore
+    } catch (err) {
+      if (__DEV__) console.warn('[Edl] Failed to load more EDLs:', err);
     } finally {
       setLoadingMore(false);
     }
@@ -291,6 +292,14 @@ export default function EdlScreen() {
     );
   }, [router, handleLongPressEdl]);
 
+  const renderSectionHeader = useCallback(({ section }: { section: { title: string; data: EtatDesLieux[] } }) => (
+    <View className="flex-row items-center px-4 pt-4 pb-2 gap-2">
+      <Building2 size={16} color={COLORS.primary[600]} />
+      <Text className="text-sm font-semibold text-primary-600 dark:text-primary-400">{section.title}</Text>
+      <Text className="text-xs text-gray-400">({section.data.length})</Text>
+    </View>
+  ), []);
+
   const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
     return (
@@ -413,13 +422,7 @@ export default function EdlScreen() {
         <SectionList
           sections={groupedEdls}
           renderItem={renderItem}
-          renderSectionHeader={({ section }) => (
-            <View className="flex-row items-center px-4 pt-4 pb-2 gap-2">
-              <Building2 size={16} color={COLORS.primary[600]} />
-              <Text className="text-sm font-semibold text-primary-600 dark:text-primary-400">{section.title}</Text>
-              <Text className="text-xs text-gray-400">({section.data.length})</Text>
-            </View>
-          )}
+          renderSectionHeader={renderSectionHeader}
           keyExtractor={item => item.id}
           stickySectionHeadersEnabled={false}
           contentContainerStyle={{ padding: 16 }}

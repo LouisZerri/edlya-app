@@ -15,7 +15,8 @@ export async function getQueue(): Promise<QueuedMutation[]> {
   try {
     const data = await AsyncStorage.getItem(QUEUE_KEY);
     return data ? JSON.parse(data) : [];
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[OfflineMutationQueue] Failed to get queue:', err);
     return [];
   }
 }

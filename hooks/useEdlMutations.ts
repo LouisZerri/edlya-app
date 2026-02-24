@@ -16,16 +16,17 @@ import {
   DELETE_CLE,
   DELETE_ELEMENT,
 } from '../graphql/mutations/edl';
-import {
-  COMPTEUR_CONFIG,
-  CLE_LABELS,
+import type {
   ElementType,
   ElementEtat,
   CompteurType,
   CleType,
-  LocalPhoto,
-} from '../types';
+  LocalPhoto} from '../types';
 import {
+  COMPTEUR_CONFIG,
+  CLE_LABELS
+} from '../types';
+import type {
   EdlNode,
   PieceNode,
   CompteurNode,
@@ -43,7 +44,7 @@ import { useNetworkStore } from '../stores/networkStore';
 import { addToQueue } from '../utils/offlineMutationQueue';
 import { buildChangedMutations } from '../utils/buildChangedMutations';
 import { usePhotoUpload } from './usePhotoUpload';
-import { EdlFormData } from './useEdlInitializer';
+import type { EdlFormData } from './useEdlInitializer';
 
 interface UseEdlMutationsParams {
   edlId: string;

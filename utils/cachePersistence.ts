@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { InMemoryCache, NormalizedCacheObject } from '@apollo/client/core';
+import type { InMemoryCache, NormalizedCacheObject } from '@apollo/client/core';
 
 const CACHE_KEY = 'apollo_cache_persist';
 let persistTimer: NodeJS.Timeout | null = null;
@@ -11,8 +11,8 @@ export async function restoreCache(cache: InMemoryCache): Promise<void> {
       const parsed: NormalizedCacheObject = JSON.parse(data);
       cache.restore(parsed);
     }
-  } catch {
-    // Cache restoration failed silently — fresh start
+  } catch (err) {
+    if (__DEV__) console.warn('[CachePersistence] Failed to restore cache:', err);
   }
 }
 
@@ -22,8 +22,8 @@ export function persistCacheOnWrite(cache: InMemoryCache): void {
     try {
       const data = cache.extract();
       await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    } catch {
-      // Persistence failed silently
+    } catch (err) {
+      if (__DEV__) console.warn('[CachePersistence] Failed to persist cache:', err);
     }
   }, 1000);
 }
@@ -31,7 +31,7 @@ export function persistCacheOnWrite(cache: InMemoryCache): void {
 export async function clearPersistedCache(): Promise<void> {
   try {
     await AsyncStorage.removeItem(CACHE_KEY);
-  } catch {
-    // silently fail
+  } catch (err) {
+    if (__DEV__) console.warn('[CachePersistence] Failed to clear cache:', err);
   }
 }

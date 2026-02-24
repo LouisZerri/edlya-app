@@ -1,13 +1,13 @@
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { X, AlertCircle, RotateCcw } from 'lucide-react-native';
-import { LocalPhoto } from '../../types';
+import type { LocalPhoto } from '../../types';
 import { COLORS } from '../../utils/constants';
 
 type ThumbnailSize = 'small' | 'medium' | 'large';
@@ -51,7 +51,9 @@ export function PhotoThumbnail({
       <Image
         source={{ uri: photo.localUri }}
         style={[styles.image, { width: dimension, height: dimension }]}
-        resizeMode="cover"
+        contentFit="cover"
+        cachePolicy="disk"
+        transition={150}
       />
 
       {/* Badge numero */}

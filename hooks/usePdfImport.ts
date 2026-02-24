@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 interface LogementExtrait {
   adresse?: string;
@@ -122,14 +123,14 @@ export function usePdfImport(): UsePdfImportReturn {
         type: 'application/pdf',
       });
 
-      const response = await fetch(`${API_URL}/ai/import-pdf`, {
+      const response = await fetchWithTimeout(`${API_URL}/ai/import-pdf`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'ngrok-skip-browser-warning': 'true',
         },
         body: formData,
-      });
+      }, 120_000);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -177,7 +178,7 @@ export function usePdfImport(): UsePdfImportReturn {
         body.import_id = importId;
       }
 
-      const response = await fetch(`${API_URL}/ai/import-pdf/creer-edl`, {
+      const response = await fetchWithTimeout(`${API_URL}/ai/import-pdf/creer-edl`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +186,7 @@ export function usePdfImport(): UsePdfImportReturn {
           'ngrok-skip-browser-warning': 'true',
         },
         body: JSON.stringify(body),
-      });
+      }, 120_000);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -196,8 +197,8 @@ export function usePdfImport(): UsePdfImportReturn {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
-        } catch {
-          // Response wasn't JSON
+        } catch (err) {
+          if (__DEV__) console.warn('[UsePdfImport] Failed to parse error response:', err);
         }
         throw new Error(errorMessage);
       }

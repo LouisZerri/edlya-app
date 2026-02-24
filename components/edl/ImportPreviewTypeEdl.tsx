@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Card, Badge } from '../ui';
-import { DonneesExtraites } from '../../hooks/usePdfImport';
+import type { DonneesExtraites } from '../../hooks/usePdfImport';
 
 interface ImportPreviewTypeEdlProps {
   extractedData: DonneesExtraites;

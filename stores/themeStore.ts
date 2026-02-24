@@ -20,13 +20,17 @@ export const useThemeStore = create<ThemeState>((set) => ({
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
         set({ preference: stored });
       }
-    } catch {}
+    } catch (err) {
+      if (__DEV__) console.warn('[ThemeStore] Failed to load preference:', err);
+    }
   },
 
   setPreference: async (pref: ThemePreference) => {
     set({ preference: pref });
     try {
       await AsyncStorage.setItem(STORAGE_KEY, pref);
-    } catch {}
+    } catch (err) {
+      if (__DEV__) console.warn('[ThemeStore] Failed to save preference:', err);
+    }
   },
 }));

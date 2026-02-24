@@ -7,13 +7,14 @@ import { Edit, Pen, BarChart3, Download, User, Zap, Key, DoorOpen, Trash2, Camer
 import { Header, Card, Badge, RemoteThumbnail, ConfirmSheet } from '../../../components/ui';
 import { GET_ETAT_DES_LIEUX, GET_ETATS_DES_LIEUX } from '../../../graphql/queries/edl';
 import { DELETE_ETAT_DES_LIEUX, UPDATE_ETAT_DES_LIEUX } from '../../../graphql/mutations/edl';
-import { STATUT_BADGE, TYPE_CONFIG, COMPTEUR_CONFIG, CLE_LABELS, ELEMENT_ETAT_LABELS, EdlStatut } from '../../../types';
+import type { EdlStatut } from '../../../types';
+import { STATUT_BADGE, TYPE_CONFIG, COMPTEUR_CONFIG, CLE_LABELS, ELEMENT_ETAT_LABELS } from '../../../types';
 import { COLORS, BASE_URL, UPLOADS_URL } from '../../../utils/constants';
 import { formatDate } from '../../../utils/format';
 import { useToastStore } from '../../../stores/toastStore';
 import { usePdfExport } from '../../../hooks/usePdfExport';
 import { cancelEdlReminders, scheduleTermineReminder } from '../../../hooks/useNotifications';
-import { GetEdlDetailData, PieceNode, CompteurNode, CleNode, ElementNode, PhotoNode, GraphQLEdge } from '../../../types/graphql';
+import type { GetEdlDetailData, PieceNode, CompteurNode, CleNode, ElementNode, PhotoNode, GraphQLEdge } from '../../../types/graphql';
 
 const NEXT_STATUT: Partial<Record<EdlStatut, { statut: EdlStatut; label: string; message: string }>> = {
   brouillon: {

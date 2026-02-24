@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User } from '../types';
+import type { User } from '../types';
 import { getToken, setToken, getUser, setUser, clearAuth } from '../utils/storage';
 import { API_URL } from '../utils/constants';
 
@@ -54,8 +54,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             await clearAuth();
             set({ user: null, token: null, isAuthenticated: false });
           }
-        }).catch(() => {
-          // Hors-ligne : on garde la session locale
+        }).catch((err: unknown) => {
+          if (__DEV__) console.warn('[AuthStore] Background token check failed:', err);
         });
       } else {
         set({ isLoading: false });

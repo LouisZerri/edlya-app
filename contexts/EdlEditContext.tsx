@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'react';
-import { ElementEtat, ElementType, LocalPhoto , CleType, CompteurType } from '../types';
-import { PieceNode, CompteurNode, CleNode, ElementNode } from '../types/graphql';
-import { EdlFormData } from '../hooks/useEdlInitializer';
-import { AutoSaveStatus } from '../hooks/useEdlAutoSave';
+import type { ElementEtat, ElementType, LocalPhoto , CleType, CompteurType } from '../types';
+import type { PieceNode, CompteurNode, CleNode, ElementNode } from '../types/graphql';
+import type { EdlFormData } from '../hooks/useEdlInitializer';
+import type { AutoSaveStatus } from '../hooks/useEdlAutoSave';
 
 export interface EdlEditContextValue {
   // State (useEdlInitializer)

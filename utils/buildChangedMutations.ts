@@ -1,5 +1,5 @@
-import { ElementEtat } from '../types';
-import { PieceNode, CompteurNode, CleNode, GraphQLEdge, ElementNode } from '../types/graphql';
+import type { ElementEtat } from '../types';
+import type { PieceNode, CompteurNode, CleNode, GraphQLEdge, ElementNode } from '../types/graphql';
 import { displayDateToApi } from './format';
 
 export interface EdlSyncFormData {

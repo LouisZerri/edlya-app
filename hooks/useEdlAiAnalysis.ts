@@ -1,9 +1,10 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { ElementType, ElementEtat, LocalPhoto } from '../types';
-import { PieceNode } from '../types/graphql';
-import { usePhotoAnalysis, AnalyseResult } from './usePhotoAnalysis';
+import type { ElementType, ElementEtat, LocalPhoto } from '../types';
+import type { PieceNode } from '../types/graphql';
+import type { AnalyseResult } from './usePhotoAnalysis';
+import { usePhotoAnalysis } from './usePhotoAnalysis';
 import { useRoomAnalysis } from './useRoomAnalysis';
 import { useToastStore } from '../stores/toastStore';
 

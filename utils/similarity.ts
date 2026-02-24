@@ -1,4 +1,4 @@
-import { LogementNode } from '../types';
+import type { LogementNode } from '../types';
 
 interface LogementExtrait {
   adresse?: string;
