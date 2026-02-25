@@ -47,6 +47,7 @@ const httpLink = new HttpLink({
     const headers = {
       ...((options?.headers as Record<string, string>) || {}),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(__DEV__ ? { 'ngrok-skip-browser-warning': 'true' } : {}),
     };
     return fetch(uri, {
       ...options,

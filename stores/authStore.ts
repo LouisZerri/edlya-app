@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { User } from '../types';
 import { getToken, setToken, getUser, setUser, clearAuth } from '../utils/storage';
 import { API_URL } from '../utils/constants';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 interface AuthState {
   user: User | null;
@@ -40,23 +41,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ]);
 
       if (token && user) {
-        set({ token, user, isAuthenticated: true, isLoading: false });
+        // Vérifier que le token est encore valide AVANT de déverrouiller l'app
+        try {
+          const res = await fetch(`${API_URL}/me`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...(__DEV__ ? { 'ngrok-skip-browser-warning': 'true' } : {}),
+            },
+          });
 
-        // Vérifier en arrière-plan que le token est encore valide
-        fetch(`${API_URL}/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }).then(async (res) => {
           if (res.ok) {
             const freshUser = await res.json();
             await setUser(freshUser);
-            set({ user: freshUser });
+            set({ token, user: freshUser, isAuthenticated: true, isLoading: false });
           } else if (res.status === 401) {
             await clearAuth();
-            set({ user: null, token: null, isAuthenticated: false });
+            set({ isLoading: false });
+          } else {
+            // Serveur en erreur mais token peut-être valide → utiliser le cache
+            set({ token, user, isAuthenticated: true, isLoading: false });
           }
-        }).catch((err: unknown) => {
-          if (__DEV__) console.warn('[AuthStore] Background token check failed:', err);
-        });
+        } catch {
+          // Réseau indisponible → utiliser le cache (mode offline)
+          set({ token, user, isAuthenticated: true, isLoading: false });
+        }
       } else {
         set({ isLoading: false });
       }
@@ -70,6 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(__DEV__ ? { 'ngrok-skip-browser-warning': 'true' } : {}),
       },
       body: JSON.stringify({ email, password }),
     });
@@ -91,6 +100,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(__DEV__ ? { 'ngrok-skip-browser-warning': 'true' } : {}),
       },
       body: JSON.stringify({
         ...data,
@@ -125,29 +135,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { token } = get();
     if (!token) return;
 
-    const response = await fetch(`${API_URL}/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await fetchWithAuth(`${API_URL}/me`);
 
     if (response.ok) {
       const user = await response.json();
       await setUser(user);
       set({ user });
     }
+    // Le 401 est géré par fetchWithAuth (logout automatique)
   },
 
   updateProfile: async (data: { name: string; telephone?: string }) => {
     const { token, user } = get();
     if (!token) throw new Error('Non authentifié');
 
-    const response = await fetch(`${API_URL}/profile`, {
+    const response = await fetchWithAuth(`${API_URL}/profile`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
 

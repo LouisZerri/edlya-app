@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 interface ShareResult {
   success: boolean;
@@ -11,9 +12,19 @@ interface ShareResult {
   message?: string;
 }
 
+interface LigneDevisEmail {
+  piece: string;
+  description: string;
+  quantite: number;
+  unite: string;
+  prix_unitaire: number;
+}
+
 interface UseShareEdlReturn {
   isSharing: boolean;
   shareByEmail: (edlId: string, email: string, expireDays?: number) => Promise<ShareResult | null>;
+  shareComparatif: (edlId: string, email: string) => Promise<ShareResult | null>;
+  shareEstimations: (edlId: string, email: string, lignes: LigneDevisEmail[]) => Promise<ShareResult | null>;
   promptShareEmail: (edlId: string, defaultEmail?: string) => void;
 }
 
@@ -38,11 +49,9 @@ export function useShareEdl(): UseShareEdlReturn {
     try {
       const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
 
-      const response = await fetch(`${API_URL}/edl/${numericId}/partages`, {
+      const response = await fetchWithAuth(`${API_URL}/edl/${numericId}/partages`, {
         method: 'POST',
         headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -75,6 +84,85 @@ export function useShareEdl(): UseShareEdlReturn {
     }
   }, [token, showError, showSuccess]);
 
+  // Envoyer le comparatif par email
+  const shareComparatif = useCallback(async (
+    edlId: string,
+    email: string,
+  ): Promise<ShareResult | null> => {
+    setIsSharing(true);
+
+    try {
+      const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
+
+      const response = await fetchWithAuth(`${API_URL}/edl/${numericId}/email/comparatif`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `Erreur ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (err) {
+          if (__DEV__) console.warn('[UseShareEdl] Failed to parse error response:', err);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      showSuccess(`Comparatif envoyé à ${email}`);
+      return data;
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi');
+      return null;
+    } finally {
+      setIsSharing(false);
+    }
+  }, [showError, showSuccess]);
+
+  // Envoyer le devis estimations par email
+  const shareEstimations = useCallback(async (
+    edlId: string,
+    email: string,
+    lignes: LigneDevisEmail[],
+  ): Promise<ShareResult | null> => {
+    setIsSharing(true);
+
+    try {
+      const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
+
+      const response = await fetchWithAuth(`${API_URL}/edl/${numericId}/email/estimations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, lignes }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `Erreur ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (err) {
+          if (__DEV__) console.warn('[UseShareEdl] Failed to parse error response:', err);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      showSuccess(`Devis envoyé à ${email}`);
+      return data;
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi');
+      return null;
+    } finally {
+      setIsSharing(false);
+    }
+  }, [showError, showSuccess]);
+
   // Afficher une boîte de dialogue pour demander l'email
   const promptShareEmail = useCallback((edlId: string, defaultEmail?: string) => {
     Alert.prompt(
@@ -101,6 +189,8 @@ export function useShareEdl(): UseShareEdlReturn {
   return {
     isSharing,
     shareByEmail,
+    shareComparatif,
+    shareEstimations,
     promptShareEmail,
   };
 }

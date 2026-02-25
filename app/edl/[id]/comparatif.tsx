@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, ActivityIndicator, RefreshControl, Animated , TouchableOpacity } from 'react-native';
+import { View, Text, ActivityIndicator, RefreshControl, Animated, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Download, AlertTriangle, ArrowRight, AlertCircle, CheckCircle, Info } from 'lucide-react-native';
+import { Download, AlertTriangle, ArrowRight, AlertCircle, CheckCircle, Info, Send, X } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 import { Header, Card, Badge, Button } from '../../../components/ui';
 import { COLORS } from '../../../utils/constants';
 import type { ElementEtat, CleType } from '../../../types';
@@ -10,13 +11,19 @@ import { COMPTEUR_CONFIG, ELEMENT_ETAT_LABELS, CLE_LABELS } from '../../../types
 import { formatDate } from '../../../utils/format';
 import { useComparatif } from '../../../hooks/useComparatif';
 import { usePdfExport } from '../../../hooks/usePdfExport';
+import { useShareEdl } from '../../../hooks/useShareEdl';
 
 export default function ComparatifScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { isLoading, comparatif, loadComparatif } = useComparatif();
   const { isExporting, exportPdf } = usePdfExport();
+  const { isSharing, shareComparatif } = useShareEdl();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const [refreshing, setRefreshing] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
 
   // Page entrance animation
   const pageOpacity = useRef(new Animated.Value(0)).current;
@@ -336,7 +343,108 @@ export default function ComparatifScreen() {
           fullWidth
           variant="primary"
         />
+        <View className="h-2" />
+        <Button
+          label={isSharing ? "Envoi en cours..." : "Envoyer au locataire"}
+          onPress={() => setShowEmailModal(true)}
+          fullWidth
+          variant="secondary"
+          loading={isSharing}
+          icon={!isSharing ? <Send size={18} color={COLORS.gray[700]} /> : undefined}
+        />
       </View>
+
+      {/* Modal Email */}
+      <Modal
+        visible={showEmailModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEmailModal(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowEmailModal(false)}
+          className="flex-1 bg-black/50 justify-center items-center p-4"
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {}}
+            className="bg-white dark:bg-gray-900 rounded-2xl p-5 w-full max-w-sm"
+          >
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                Envoyer au locataire
+              </Text>
+              <TouchableOpacity onPress={() => setShowEmailModal(false)}>
+                <X size={24} color={COLORS.gray[400]} />
+              </TouchableOpacity>
+            </View>
+
+            <Text className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+              Le locataire recevra un email avec le comparatif en pièce jointe.
+            </Text>
+
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email du locataire
+            </Text>
+            <TextInput
+              value={emailInput}
+              onChangeText={setEmailInput}
+              placeholder="exemple@email.com"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              style={{
+                height: 52,
+                borderWidth: 1,
+                borderColor: isDark ? '#374151' : '#E5E7EB',
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                fontSize: 16,
+                color: isDark ? '#F9FAFB' : '#111827',
+                backgroundColor: isDark ? '#1F2937' : '#ffffff',
+                textAlignVertical: 'center',
+                marginBottom: 16,
+              }}
+            />
+
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => setShowEmailModal(false)}
+                className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-gray-600 items-center"
+              >
+                <Text className="text-gray-600 dark:text-gray-300 font-medium">Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (id && emailInput && emailInput.includes('@')) {
+                    const result = await shareComparatif(id, emailInput);
+                    if (result) {
+                      setShowEmailModal(false);
+                      setEmailInput('');
+                    }
+                  }
+                }}
+                disabled={!emailInput || !emailInput.includes('@') || isSharing}
+                className="flex-1 py-3 rounded-xl items-center flex-row justify-center"
+                style={{
+                  backgroundColor: emailInput && emailInput.includes('@') ? COLORS.primary[600] : COLORS.gray[300],
+                }}
+              >
+                {isSharing ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <>
+                    <Send size={18} color="white" />
+                    <Text className="text-white font-medium ml-2">Envoyer</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }

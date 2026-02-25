@@ -1,10 +1,11 @@
 import type { QueuedPhoto } from '../stores/photoQueueStore';
 import { usePhotoQueueStore } from '../stores/photoQueueStore';
 import { deletePersistedPhoto, getPersistedPhotoPath } from './photoFileManager';
-import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { appendFile } from './formData';
+import { fetchWithAuth } from './fetchWithAuth';
+import { getToken } from './storage';
 
 
 interface UploadResult {
@@ -12,7 +13,7 @@ interface UploadResult {
   detail?: string;
 }
 
-async function uploadQueuedPhoto(photo: QueuedPhoto, token: string): Promise<UploadResult> {
+async function uploadQueuedPhoto(photo: QueuedPhoto): Promise<UploadResult> {
   // Verify the file still exists on disk
   const filePath = await getPersistedPhotoPath(photo.id);
   if (!filePath) {
@@ -42,9 +43,8 @@ async function uploadQueuedPhoto(photo: QueuedPhoto, token: string): Promise<Upl
   formData.append('ordre', photo.ordre.toString());
 
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetchWithAuth(endpoint, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
 
@@ -61,7 +61,7 @@ async function uploadQueuedPhoto(photo: QueuedPhoto, token: string): Promise<Upl
 }
 
 export async function processPhotoQueue(): Promise<void> {
-  const { token } = useAuthStore.getState();
+  const token = await getToken();
   if (!token) return;
 
   const store = usePhotoQueueStore.getState();
@@ -74,7 +74,7 @@ export async function processPhotoQueue(): Promise<void> {
   for (const photo of pending) {
     store.updateStatus(photo.id, 'uploading');
 
-    const result = await uploadQueuedPhoto(photo, token);
+    const result = await uploadQueuedPhoto(photo);
 
     if (result.success) {
       store.removeFromQueue(photo.id);

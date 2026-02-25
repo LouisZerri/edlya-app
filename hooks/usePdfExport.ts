@@ -4,6 +4,8 @@ import * as Sharing from 'expo-sharing';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { getToken } from '../utils/storage';
 
 type PdfType = 'edl' | 'comparatif' | 'estimations';
 
@@ -81,11 +83,9 @@ export function usePdfExport(): UsePdfExportReturn {
 
       // Sur Web, télécharger directement via le navigateur
       if (Platform.OS === 'web') {
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
           method,
           headers: {
-            'ngrok-skip-browser-warning': 'true',
-            'Authorization': `Bearer ${token}`,
             ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
           },
           ...(body ? { body } : {}),
@@ -117,11 +117,9 @@ export function usePdfExport(): UsePdfExportReturn {
         const FileSystem = await import('expo-file-system/legacy');
         const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
           method: 'POST',
           headers: {
-            'ngrok-skip-browser-warning': 'true',
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body,
@@ -162,12 +160,18 @@ export function usePdfExport(): UsePdfExportReturn {
         const FileSystem = await import('expo-file-system/legacy');
         const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
+        const currentToken = await getToken();
         const downloadResult = await FileSystem.downloadAsync(url, fileUri, {
           headers: {
-            'ngrok-skip-browser-warning': 'true',
-            'Authorization': `Bearer ${token}`,
+            ...(currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}),
+            ...(__DEV__ ? { 'ngrok-skip-browser-warning': 'true' } : {}),
           },
         });
+
+        if (downloadResult.status === 401) {
+          await useAuthStore.getState().logout();
+          throw new Error('Session expirée, veuillez vous reconnecter');
+        }
 
         if (downloadResult.status !== 200) {
           throw new Error(`Erreur lors du téléchargement (${downloadResult.status})`);

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 interface DegradationPhoto {
   id: string;
@@ -228,11 +229,9 @@ export function useEstimations(): UseEstimationsReturn {
         ? edlId.split('/').pop()
         : edlId;
 
-      const response = await fetch(`${API_URL}/ai/estimations/${numericId}`, {
+      const response = await fetchWithAuth(`${API_URL}/ai/estimations/${numericId}`, {
         method: 'POST',
         headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -282,11 +281,9 @@ export function useEstimations(): UseEstimationsReturn {
         ? edlId.split('/').pop()
         : edlId;
 
-      const response = await fetch(`${API_URL}/ai/estimations/${numericId}/refresh`, {
+      const response = await fetchWithAuth(`${API_URL}/ai/estimations/${numericId}/refresh`, {
         method: 'POST',
         headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });

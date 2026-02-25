@@ -6,6 +6,8 @@ import { useNetworkStore } from '../stores/networkStore';
 import { usePhotoQueueStore } from '../stores/photoQueueStore';
 import { persistPhoto } from '../utils/photoFileManager';
 import { compressPhoto } from '../utils/imageCompressor';
+import { getToken } from '../utils/storage';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 import type { LocalPhoto } from '../types';
 import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
@@ -102,6 +104,7 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
       }
       formData.append('ordre', photo.ordre.toString());
 
+      const currentToken = await getToken();
       const result = await new Promise<PhotoUploadResult>((resolve) => {
         const xhr = new XMLHttpRequest();
 
@@ -113,7 +116,13 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
         };
 
         xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
+          if (xhr.status === 401) {
+            useAuthStore.getState().logout();
+            resolve({
+              success: false,
+              error: 'Session expirée, veuillez vous reconnecter',
+            });
+          } else if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const response = JSON.parse(xhr.responseText);
               resolve({
@@ -145,7 +154,12 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
         };
 
         xhr.open('POST', endpoint);
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        if (currentToken) {
+          xhr.setRequestHeader('Authorization', `Bearer ${currentToken}`);
+        }
+        if (__DEV__) {
+          xhr.setRequestHeader('ngrok-skip-browser-warning', 'true');
+        }
         xhr.send(formData);
       });
 
@@ -198,8 +212,6 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
     // Local-only photo (never uploaded) — nothing to delete on server
     if (!photo.remoteId) return true;
 
-    if (!token) return false;
-
     try {
       let url: string;
 
@@ -216,16 +228,13 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
         url = `${API_URL}/upload/photo/${numericId}`;
       }
 
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetchWithAuth(url, { method: 'DELETE' });
       return response.ok;
     } catch (err) {
       if (__DEV__) console.warn('[UsePhotoUpload] Failed to delete photo from server:', err);
       return false;
     }
-  }, [token]);
+  }, []);
 
   return {
     isUploading,

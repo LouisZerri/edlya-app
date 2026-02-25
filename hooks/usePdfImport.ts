@@ -4,6 +4,7 @@ import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 interface LogementExtrait {
   adresse?: string;
@@ -125,12 +126,8 @@ export function usePdfImport(): UsePdfImportReturn {
 
       const response = await fetchWithTimeout(`${API_URL}/ai/import-pdf`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'ngrok-skip-browser-warning': 'true',
-        },
         body: formData,
-      }, 120_000);
+      }, 120_000, fetchWithAuth);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -182,11 +179,9 @@ export function usePdfImport(): UsePdfImportReturn {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'ngrok-skip-browser-warning': 'true',
         },
         body: JSON.stringify(body),
-      }, 120_000);
+      }, 120_000, fetchWithAuth);
 
       if (!response.ok) {
         const errorText = await response.text();

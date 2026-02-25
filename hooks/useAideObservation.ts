@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import { API_URL } from '../utils/constants';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 export function useAideObservation() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const token = useAuthStore(state => state.token);
 
   const ameliorerObservation = async (
     element: string,
@@ -17,12 +16,10 @@ export function useAideObservation() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/aide/ameliorer-observation`, {
+      const response = await fetchWithAuth(`${API_URL}/aide/ameliorer-observation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'ngrok-skip-browser-warning': 'true',
         },
         body: JSON.stringify({
           element,

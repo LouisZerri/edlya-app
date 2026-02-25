@@ -14,8 +14,8 @@ import { CREATE_ETAT_DES_LIEUX } from '../../graphql/mutations/edl';
 import { GET_ETATS_DES_LIEUX } from '../../graphql/queries/edl';
 import { useToastStore } from '../../stores/toastStore';
 import { apiDateToDisplay, displayDateToApi } from '../../utils/format';
-import { useAuthStore } from '../../stores/authStore';
 import { scheduleBrouillonReminder } from '../../hooks/useNotifications';
+import { fetchWithAuth } from '../../utils/fetchWithAuth';
 
 interface LogementsData {
   logements?: {
@@ -83,7 +83,6 @@ export default function CreateEdlScreen() {
   const router = useRouter();
   const { logementId } = useLocalSearchParams<{ logementId?: string }>();
   const { success, error: showError } = useToastStore();
-  const { token } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [typeHint, setTypeHint] = useState<string | null>(null);
   const [entreeActiveId, setEntreeActiveId] = useState<string | null>(null);
@@ -196,12 +195,10 @@ export default function CreateEdlScreen() {
         // Copier depuis l'entrée active si sortie + entrée détectée
         if (data.type === 'sortie' && sourceId) {
           try {
-            await fetch(`${API_URL}/edl/${id}/copier-depuis/${sourceId}`, {
+            await fetchWithAuth(`${API_URL}/edl/${id}/copier-depuis/${sourceId}`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true',
-                'Authorization': `Bearer ${token}`,
               },
             });
           } catch (err) {
@@ -210,12 +207,10 @@ export default function CreateEdlScreen() {
         } else if (data.typologie) {
           // Générer les pièces si une typologie est sélectionnée (entrée ou sortie sans entrée)
           try {
-            await fetch(`${API_URL}/edl/${id}/generer-pieces`, {
+            await fetchWithAuth(`${API_URL}/edl/${id}/generer-pieces`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true',
-                'Authorization': `Bearer ${token}`,
               },
               body: JSON.stringify({ typologie: data.typologie }),
             });

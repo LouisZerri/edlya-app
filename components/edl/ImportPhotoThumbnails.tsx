@@ -18,7 +18,10 @@ export function ImportPhotoThumbnails({ photoIndices, importId, token }: ImportP
           key={photoIdx}
           source={{
             uri: getImportPhotoUrl(importId, photoIdx, true),
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              ...(__DEV__ ? { 'ngrok-skip-browser-warning': 'true' } : {}),
+            },
           }}
           size={64}
           borderRadius={8}

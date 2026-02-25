@@ -47,7 +47,7 @@ export default function ResetPasswordScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
+          ...(__DEV__ ? { 'ngrok-skip-browser-warning': 'true' } : {}),
         },
         body: JSON.stringify({
           token,

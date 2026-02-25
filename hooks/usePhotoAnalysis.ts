@@ -5,6 +5,7 @@ import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 import type { ElementType, ElementEtat } from '../types';
 
 interface DegradationDetectee {
@@ -105,12 +106,8 @@ export function usePhotoAnalysis(): UsePhotoAnalysisReturn {
 
       const response = await fetchWithTimeout(`${API_URL}/ai/analyser-degradation`, {
         method: 'POST',
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
-        },
         body: formData,
-      }, 90_000);
+      }, 90_000, fetchWithAuth);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

@@ -1,7 +1,14 @@
 import Constants from 'expo-constants';
 
 const extra = Constants.expoConfig?.extra;
-export const BASE_URL = extra?.apiUrl || 'https://dorathy-perspectiveless-besiegingly.ngrok-free.dev';
+
+if (!extra?.apiUrl && typeof jest === 'undefined') {
+  console.warn(
+    '[Edlya] API_URL non défini — créer un .env avec API_URL=https://votre-tunnel.ngrok-free.dev (dev) ou API_URL=https://api.edlya.fr (prod). Fallback: http://localhost:8000',
+  );
+}
+
+export const BASE_URL = extra?.apiUrl ?? 'http://localhost:8000';
 
 export const API_URL = `${BASE_URL}/api`;
 export const GRAPHQL_URL = `${API_URL}/graphql`;

@@ -15,6 +15,7 @@ import { GET_ETAT_DES_LIEUX } from '../../../graphql/queries/edl';
 import { useToastStore } from '../../../stores/toastStore';
 import { useAuthStore } from '../../../stores/authStore';
 import { usePdfExport } from '../../../hooks/usePdfExport';
+import { fetchWithAuth } from '../../../utils/fetchWithAuth';
 
 // Types GraphQL
 interface EtatDesLieuxData {
@@ -286,13 +287,9 @@ export default function SignatureEdlScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/edl/${id}/signature/bailleur`, {
+      const response = await fetchWithAuth(`${API_URL}/edl/${id}/signature/bailleur`, {
         method: 'POST',
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ signature: signatureBailleur }),
       });
 
@@ -317,13 +314,9 @@ export default function SignatureEdlScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/edl/${id}/signature/locataire`, {
+      const response = await fetchWithAuth(`${API_URL}/edl/${id}/signature/locataire`, {
         method: 'POST',
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ signature: signatureLocataire }),
       });
 

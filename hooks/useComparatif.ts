@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 interface CompteurComparatif {
   type: string;
@@ -154,11 +155,9 @@ export function useComparatif(): UseComparatifReturn {
         ? edlId.split('/').pop()
         : edlId;
 
-      const response = await fetch(`${API_URL}/edl/${numericId}/comparatif`, {
+      const response = await fetchWithAuth(`${API_URL}/edl/${numericId}/comparatif`, {
         method: 'GET',
         headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });

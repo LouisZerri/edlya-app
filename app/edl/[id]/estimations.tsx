@@ -43,7 +43,7 @@ export default function EstimationsScreen() {
   const { isLoading, estimations, generateEstimations } = useEstimations();
   const devis = useDevis();
   const { isExporting, exportPdf } = usePdfExport();
-  const { isSharing, shareByEmail } = useShareEdl();
+  const { isSharing, shareEstimations } = useShareEdl();
   const { data: edlData } = useQuery<GetEdlDetailData>(GET_ETAT_DES_LIEUX, {
     variables: { id: `/api/etat_des_lieuxes/${id}` },
     fetchPolicy: 'cache-first',
@@ -755,7 +755,14 @@ export default function EstimationsScreen() {
               <TouchableOpacity
                 onPress={async () => {
                   if (id && emailInput && emailInput.includes('@')) {
-                    const result = await shareByEmail(id, emailInput);
+                    const lignesEmail = devis.lignes.map(l => ({
+                      piece: l.piece,
+                      description: l.description,
+                      quantite: l.quantite,
+                      unite: l.unite,
+                      prix_unitaire: l.prix_unitaire,
+                    }));
+                    const result = await shareEstimations(id, emailInput, lignesEmail);
                     if (result) {
                       setShowEmailModal(false);
                       setEmailInput('');

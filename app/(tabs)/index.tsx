@@ -9,6 +9,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { GET_USER_STATS } from '../../graphql/queries/stats';
 import { GET_RECENT_EDL } from '../../graphql/queries/edl';
 import { API_URL } from '../../utils/constants';
+import { fetchWithAuth } from '../../utils/fetchWithAuth';
 
 interface StatsData {
   logements?: { totalCount: number };
@@ -66,11 +67,7 @@ export default function HomeScreen() {
   const fetchDashboardData = useCallback(async () => {
     if (!token) return;
     try {
-      const response = await fetch(`${API_URL}/stats/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetchWithAuth(`${API_URL}/stats/dashboard`);
       if (response.ok) {
         const data = await response.json();
         setLogementsSansEdl(data.logements_sans_edl || []);

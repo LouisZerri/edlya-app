@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { generateId } from '../utils/id';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 export interface LigneDevis {
   id: string;
@@ -127,11 +128,9 @@ export function useDevis(): UseDevisReturn {
     try {
       const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
 
-      const response = await fetch(`${API_URL}/ai/analyser-degradations/${numericId}`, {
+      const response = await fetchWithAuth(`${API_URL}/ai/analyser-degradations/${numericId}`, {
         method: 'POST',
         headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -185,12 +184,7 @@ export function useDevis(): UseDevisReturn {
     if (!token || isSuggestionsLoaded) return;
 
     try {
-      const response = await fetch(`${API_URL}/couts-reparation`, {
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetchWithAuth(`${API_URL}/couts-reparation`);
 
       if (!response.ok) throw new Error('Erreur chargement suggestions');
 
