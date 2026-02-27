@@ -38,7 +38,8 @@ export default function CreateLogementScreen() {
   const [loading, setLoading] = useState(false);
 
   const [createLogement] = useMutation(CREATE_LOGEMENT, {
-    refetchQueries: [{ query: GET_LOGEMENTS }],
+    refetchQueries: [{ query: GET_LOGEMENTS, variables: { first: 20 } }],
+    awaitRefetchQueries: true,
   });
 
   const { control, handleSubmit, setValue, formState: { errors } } = useForm<LogementForm>({

@@ -5,14 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Input, Button } from '../../components/ui';
+import { Input, Button, PasswordRules } from '../../components/ui';
 import { useAuthStore } from '../../stores/authStore';
 import { useToastStore } from '../../stores/toastStore';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Minimum 2 caractères'),
   email: z.email({ message: 'Email invalide' }),
-  password: z.string().min(6, 'Minimum 6 caractères'),
+  password: z.string()
+    .min(8, 'Minimum 8 caractères')
+    .regex(/[A-Z]/, 'Une majuscule requise')
+    .regex(/[a-z]/, 'Une minuscule requise')
+    .regex(/[0-9]/, 'Un chiffre requis')
+    .regex(/[^a-zA-Z0-9]/, 'Un caractère spécial requis'),
   confirmPassword: z.string(),
   telephone: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -29,10 +34,12 @@ export default function RegisterScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { control, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
+  const { control, handleSubmit, formState: { errors }, watch } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: '', email: '', password: '', confirmPassword: '', telephone: '' },
   });
+
+  const passwordValue = watch('password');
 
   const onSubmit = async (data: RegisterForm) => {
     setError('');
@@ -139,6 +146,8 @@ export default function RegisterScreen() {
                 />
               )}
             />
+
+            <PasswordRules password={passwordValue} />
 
             <Controller
               control={control}

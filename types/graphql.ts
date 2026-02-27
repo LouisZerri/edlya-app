@@ -71,7 +71,6 @@ export interface LogementNode {
   type?: string;
   surface?: number;
   nbPieces?: number;
-  photoPrincipale?: string;
   createdAt: string;
 }
 

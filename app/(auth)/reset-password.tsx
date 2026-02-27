@@ -6,13 +6,18 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Lock, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react-native';
-import { Input, Button } from '../../components/ui';
+import { Input, Button, PasswordRules } from '../../components/ui';
 import { useToastStore } from '../../stores/toastStore';
 import { API_URL, COLORS } from '../../utils/constants';
 
 const resetPasswordSchema = z.object({
-  password: z.string().min(8, 'Minimum 8 caractères'),
-  confirmPassword: z.string().min(8, 'Minimum 8 caractères'),
+  password: z.string()
+    .min(8, 'Minimum 8 caractères')
+    .regex(/[A-Z]/, 'Une majuscule requise')
+    .regex(/[a-z]/, 'Une minuscule requise')
+    .regex(/[0-9]/, 'Un chiffre requis')
+    .regex(/[^a-zA-Z0-9]/, 'Un caractère spécial requis'),
+  confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword'],
@@ -28,10 +33,12 @@ export default function ResetPasswordScreen() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState: { errors } } = useForm<ResetPasswordForm>({
+  const { control, handleSubmit, formState: { errors }, watch } = useForm<ResetPasswordForm>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { password: '', confirmPassword: '' },
   });
+
+  const passwordValue = watch('password');
 
   const onSubmit = async (data: ResetPasswordForm) => {
     if (!token) {
@@ -185,6 +192,8 @@ export default function ResetPasswordScreen() {
                 />
               )}
             />
+
+            <PasswordRules password={passwordValue} />
 
             <Controller
               control={control}

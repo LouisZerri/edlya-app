@@ -13,7 +13,6 @@ export const GET_LOGEMENTS = gql`
           type
           surface
           nbPieces
-          photoPrincipale
           createdAt
         }
         cursor
@@ -39,7 +38,6 @@ export const GET_LOGEMENT = gql`
       surface
       nbPieces
       description
-      photoPrincipale
       createdAt
       etatDesLieux {
         totalCount

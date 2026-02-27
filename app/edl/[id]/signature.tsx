@@ -215,7 +215,7 @@ const SignatureBox = memo(({
 export default function SignatureEdlScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { success, error: showError } = useToastStore();
+  const { success, error: showError, warning } = useToastStore();
   const token = useAuthStore(state => state.token);
   const { isExporting, exportPdf } = usePdfExport();
   const numericId = id?.includes('/') ? id.split('/').pop()! : id;
@@ -325,9 +325,15 @@ export default function SignatureEdlScreen() {
         throw new Error(errorData.error || `Erreur ${response.status}`);
       }
 
+      const result = await response.json();
+
       setLocataireSaved(true);
       await refetch();
       success('Signature locataire enregistrée — État des lieux signé !');
+
+      if (result.warning) {
+        setTimeout(() => warning(result.warning), 1500);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur lors de la sauvegarde';
       showError(msg);

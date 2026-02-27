@@ -97,7 +97,8 @@ export default function CreateEdlScreen() {
   })) || [];
 
   const [createEdl] = useMutation<CreateEdlData>(CREATE_ETAT_DES_LIEUX, {
-    refetchQueries: [{ query: GET_ETATS_DES_LIEUX }],
+    refetchQueries: [{ query: GET_ETATS_DES_LIEUX, variables: { first: 20 } }],
+    awaitRefetchQueries: true,
   });
 
   const [fetchLogement] = useLazyQuery<LogementDetailData>(GET_LOGEMENT);

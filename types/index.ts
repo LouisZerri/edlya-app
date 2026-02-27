@@ -17,7 +17,6 @@ export interface Logement {
   surface?: number;
   nbPieces?: number;
   description?: string;
-  photoPrincipale?: string;
   createdAt: string;
 }
 
