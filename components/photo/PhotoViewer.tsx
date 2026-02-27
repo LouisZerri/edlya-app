@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -47,6 +47,23 @@ export function PhotoViewer({
   // Animation values for swipe-to-dismiss
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
+
+  // Gérer le StatusBar et reset des animations
+  useEffect(() => {
+    if (visible) {
+      StatusBar.setBarStyle('light-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('black');
+      }
+    } else {
+      StatusBar.setBarStyle('dark-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('transparent');
+      }
+      translateY.setValue(0);
+      opacity.setValue(1);
+    }
+  }, [visible]);
 
   // Update current index when initialIndex changes (when modal opens)
   const onLayout = useCallback(() => {
@@ -146,20 +163,18 @@ export function PhotoViewer({
     setCaptionEditorVisible(false);
   };
 
-  const currentPhoto = photos[currentIndex];
+  const currentPhoto = photos.length > 0 ? photos[currentIndex] ?? photos[0] : null;
   const hasCoords = currentPhoto?.latitude && currentPhoto?.longitude;
 
-  if (!visible || photos.length === 0) return null;
-
+  // Toujours rendre le Modal pour qu'il puisse jouer son animation de fermeture
   return (
     <Modal
       visible={visible}
       animationType="fade"
-      transparent={false}
+      transparent
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <StatusBar barStyle="light-content" backgroundColor="black" />
       <Animated.View
         style={[
           styles.container,
@@ -189,36 +204,38 @@ export function PhotoViewer({
         </View>
 
         {/* Photos */}
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleScroll}
-          contentOffset={{ x: initialIndex * SCREEN_WIDTH, y: 0 }}
-          style={styles.scrollView}
-        >
-          {photos.map((photo) => (
-            <View key={photo.id} style={styles.imageContainer}>
-              <ScrollView
-                maximumZoomScale={4}
-                minimumZoomScale={1}
-                showsHorizontalScrollIndicator={false}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.zoomContainer}
-                centerContent
-              >
-                <Image
-                  source={{ uri: photo.localUri }}
-                  style={styles.image}
-                  contentFit="contain"
-                  cachePolicy="disk"
-                  transition={200}
-                />
-              </ScrollView>
-            </View>
-          ))}
-        </ScrollView>
+        {photos.length > 0 && (
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleScroll}
+            contentOffset={{ x: initialIndex * SCREEN_WIDTH, y: 0 }}
+            style={styles.scrollView}
+          >
+            {photos.map((photo) => (
+              <View key={photo.id} style={styles.imageContainer}>
+                <ScrollView
+                  maximumZoomScale={4}
+                  minimumZoomScale={1}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.zoomContainer}
+                  centerContent
+                >
+                  <Image
+                    source={{ uri: photo.localUri }}
+                    style={styles.image}
+                    contentFit="contain"
+                    cachePolicy="disk"
+                    transition={200}
+                  />
+                </ScrollView>
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Pagination dots */}
         {photos.length > 1 && photos.length <= 8 && (
@@ -236,42 +253,46 @@ export function PhotoViewer({
         )}
 
         {/* Footer */}
-        <SafeAreaView edges={['bottom']} style={styles.footer}>
-          {/* Caption */}
-          <TouchableOpacity
-            onPress={() => setCaptionEditorVisible(true)}
-            style={styles.captionContainer}
-          >
-            <Text
-              style={[
-                styles.caption,
-                !currentPhoto?.legende && styles.captionPlaceholder,
-              ]}
+        {currentPhoto && (
+          <SafeAreaView edges={['bottom']} style={styles.footer}>
+            {/* Caption */}
+            <TouchableOpacity
+              onPress={() => setCaptionEditorVisible(true)}
+              style={styles.captionContainer}
             >
-              {currentPhoto?.legende || 'Ajouter une legende...'}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.caption,
+                  !currentPhoto.legende && styles.captionPlaceholder,
+                ]}
+              >
+                {currentPhoto.legende || 'Ajouter une legende...'}
+              </Text>
+            </TouchableOpacity>
 
-          {/* Metadata */}
-          <View style={styles.metadata}>
-            {hasCoords && (
-              <View style={styles.metaItem}>
-                <MapPin size={14} color={COLORS.gray[400]} />
-                <Text style={styles.metaText}>
-                  {currentPhoto.latitude?.toFixed(4)}, {currentPhoto.longitude?.toFixed(4)}
-                </Text>
-              </View>
-            )}
-          </View>
-        </SafeAreaView>
+            {/* Metadata */}
+            <View style={styles.metadata}>
+              {hasCoords && (
+                <View style={styles.metaItem}>
+                  <MapPin size={14} color={COLORS.gray[400]} />
+                  <Text style={styles.metaText}>
+                    {currentPhoto.latitude?.toFixed(4)}, {currentPhoto.longitude?.toFixed(4)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </SafeAreaView>
+        )}
 
         {/* Caption Editor */}
-        <PhotoCaptionEditor
-          visible={captionEditorVisible}
-          currentCaption={currentPhoto?.legende || ''}
-          onSave={handleCaptionSave}
-          onClose={() => setCaptionEditorVisible(false)}
-        />
+        {currentPhoto && (
+          <PhotoCaptionEditor
+            visible={captionEditorVisible}
+            currentCaption={currentPhoto.legende || ''}
+            onSave={handleCaptionSave}
+            onClose={() => setCaptionEditorVisible(false)}
+          />
+        )}
       </Animated.View>
     </Modal>
   );

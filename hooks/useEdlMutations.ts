@@ -437,10 +437,12 @@ export function useEdlMutations({
       showError('Veuillez entrer un nom');
       return;
     }
+    const piece = dataRef.current.localPieces.find(p => p.id === pieceId);
+    const currentCount = piece?.elements?.edges?.length ?? 0;
     try {
       const result = await createElement({
         variables: {
-          input: { piece: pieceId, nom: name.trim(), type, etat: 'bon' },
+          input: { piece: pieceId, nom: name.trim(), type, etat: 'bon', ordre: currentCount },
         },
       });
       const newElement = (result.data as CreateElementData)?.createElement?.element;

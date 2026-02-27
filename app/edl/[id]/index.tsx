@@ -1,9 +1,9 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { View, Text, RefreshControl, Alert, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, RefreshControl, Alert, TouchableOpacity, Animated, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { Edit, Pen, BarChart3, Download, User, Zap, Key, DoorOpen, Trash2, Camera, CheckCircle, ChevronDown, ChevronUp, MessageSquare, ChevronRight } from 'lucide-react-native';
+import { Edit, Pen, BarChart3, Download, Share2, User, Zap, Key, DoorOpen, Trash2, Camera, CheckCircle, ChevronDown, ChevronUp, MessageSquare, ChevronRight } from 'lucide-react-native';
 import { Header, Card, Badge, RemoteThumbnail, ConfirmSheet } from '../../../components/ui';
 import { GET_ETAT_DES_LIEUX, GET_ETATS_DES_LIEUX } from '../../../graphql/queries/edl';
 import { DELETE_ETAT_DES_LIEUX, UPDATE_ETAT_DES_LIEUX } from '../../../graphql/mutations/edl';
@@ -13,6 +13,7 @@ import { COLORS, BASE_URL, UPLOADS_URL } from '../../../utils/constants';
 import { formatDate } from '../../../utils/format';
 import { useToastStore } from '../../../stores/toastStore';
 import { usePdfExport } from '../../../hooks/usePdfExport';
+import { useShareEdl } from '../../../hooks/useShareEdl';
 import { cancelEdlReminders, scheduleTermineReminder } from '../../../hooks/useNotifications';
 import type { GetEdlDetailData, PieceNode, CompteurNode, CleNode, ElementNode, PhotoNode, GraphQLEdge } from '../../../types/graphql';
 
@@ -51,6 +52,7 @@ export default function EdlDetailScreen() {
   const router = useRouter();
   const { success, error: showError } = useToastStore();
   const { isExporting, exportPdf } = usePdfExport();
+  const { isSharing, shareByEmail } = useShareEdl();
   const [refreshing, setRefreshing] = useState(false);
   const [expandedPieces, setExpandedPieces] = useState<string[]>([]);
   const [showStatutConfirm, setShowStatutConfirm] = useState(false);
@@ -96,6 +98,51 @@ export default function EdlDetailScreen() {
         },
       ]
     );
+  };
+
+  const handleShare = () => {
+    if (!edl || !id) return;
+    const numericId = id.includes('/') ? id.split('/').pop()! : id;
+    const defaultEmail = edl.locataireEmail || '';
+
+    if (Platform.OS === 'ios') {
+      Alert.prompt(
+        'Partager par email',
+        'Entrez l\'adresse email du destinataire',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Envoyer',
+            onPress: (email?: string) => {
+              if (email && email.includes('@')) {
+                shareByEmail(numericId, email);
+              } else {
+                showError('Email invalide');
+              }
+            },
+          },
+        ],
+        'plain-text',
+        defaultEmail,
+      );
+    } else {
+      // Android : pas de Alert.prompt, envoyer directement à l'email du locataire
+      if (defaultEmail) {
+        Alert.alert(
+          'Partager par email',
+          `Envoyer l'état des lieux à ${defaultEmail} ?`,
+          [
+            { text: 'Annuler', style: 'cancel' },
+            {
+              text: 'Envoyer',
+              onPress: () => shareByEmail(numericId, defaultEmail),
+            },
+          ],
+        );
+      } else {
+        showError('Aucun email de locataire renseigné');
+      }
+    }
   };
 
   useFocusEffect(
@@ -277,9 +324,18 @@ export default function EdlDetailScreen() {
               onPress: () => id && exportPdf(id, 'edl', { logement: edl?.logement?.nom, locataire: edl?.locataireNom, type: edl?.type }),
               disabled: isExporting,
             },
+            {
+              key: 'share',
+              icon: <Share2 size={20} color={COLORS.red[600]} />,
+              iconBg: 'bg-red-50 dark:bg-red-900/30',
+              title: isSharing ? 'Envoi en cours...' : 'Partager',
+              subtitle: 'Envoyer par email avec le PDF',
+              onPress: handleShare,
+              disabled: isSharing,
+            },
           ]
             .filter(Boolean)
-            .map((action, index, _arr) => {
+            .map((action, index) => {
               if (!action || typeof action === 'boolean') return null;
               return (
                 <TouchableOpacity
