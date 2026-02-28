@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { getReadableError } from '../utils/getReadableError';
 
 interface DegradationPhoto {
   id: string;
@@ -258,8 +259,7 @@ export function useEstimations(): UseEstimationsReturn {
       setEstimations(transformed);
       return transformed;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur lors de la génération des estimations';
-      showError(msg);
+      showError(getReadableError(err, 'Erreur lors de la génération des estimations. Veuillez réessayer.'));
       return null;
     } finally {
       setIsLoading(false);
@@ -310,8 +310,7 @@ export function useEstimations(): UseEstimationsReturn {
       setEstimations(transformed);
       return transformed;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur lors du rafraîchissement';
-      showError(msg);
+      showError(getReadableError(err, 'Erreur lors du rafraîchissement. Veuillez réessayer.'));
       return null;
     } finally {
       setIsLoading(false);

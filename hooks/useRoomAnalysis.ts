@@ -5,6 +5,7 @@ import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { getReadableError } from '../utils/getReadableError';
 import type { ElementType, ElementEtat } from '../types';
 
 interface DetectedElement {
@@ -97,7 +98,7 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
 
       return data.analyse as RoomAnalysisResult;
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'analyse de la pièce');
+      showError(getReadableError(err, 'Erreur lors de l\'analyse de la pièce. Veuillez réessayer.'));
       return null;
     } finally {
       setIsAnalyzing(false);
@@ -159,7 +160,7 @@ export function useRoomAnalysis(): UseRoomAnalysisReturn {
       showSuccess(`${data.elements_crees?.length || 0} éléments détectés et ajoutés`);
       return data as AutoFillResult;
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'auto-remplissage');
+      showError(getReadableError(err, 'Erreur lors de l\'auto-remplissage. Veuillez réessayer.'));
       return null;
     } finally {
       setIsAnalyzing(false);

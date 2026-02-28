@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { getReadableError } from '../utils/getReadableError';
 
 interface CompteurComparatif {
   type: string;
@@ -308,8 +309,7 @@ export function useComparatif(): UseComparatifReturn {
       setComparatif(result);
       return result;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur lors du chargement du comparatif';
-      showError(msg);
+      showError(getReadableError(err, 'Erreur lors du chargement du comparatif. Veuillez réessayer.'));
       return null;
     } finally {
       setIsLoading(false);

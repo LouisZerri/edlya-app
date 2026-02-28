@@ -6,6 +6,7 @@ import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { getReadableError } from '../utils/getReadableError';
 import type { ElementType, ElementEtat } from '../types';
 
 interface DegradationDetectee {
@@ -122,7 +123,7 @@ export function usePhotoAnalysis(): UsePhotoAnalysisReturn {
 
       return data.analyse as AnalyseResult;
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'analyse');
+      showError(getReadableError(err, 'Erreur lors de l\'analyse. Veuillez réessayer.'));
       return null;
     } finally {
       setIsAnalyzing(false);

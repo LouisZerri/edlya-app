@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { getReadableError } from '../utils/getReadableError';
 import { getToken } from '../utils/storage';
 
 type PdfType = 'edl' | 'comparatif' | 'estimations';
@@ -190,7 +191,7 @@ export function usePdfExport(): UsePdfExportReturn {
         }
       }
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'export PDF');
+      showError(getReadableError(err, 'Erreur lors de l\'export PDF. Veuillez réessayer.'));
     } finally {
       setIsExporting(false);
     }

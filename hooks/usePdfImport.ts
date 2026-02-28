@@ -5,6 +5,7 @@ import { API_URL } from '../utils/constants';
 import { appendFile } from '../utils/formData';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { getReadableError } from '../utils/getReadableError';
 
 interface LogementExtrait {
   adresse?: string;
@@ -142,7 +143,7 @@ export function usePdfImport(): UsePdfImportReturn {
 
       return data as ImportResult;
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'import');
+      showError(getReadableError(err, 'Erreur lors de l\'import. Veuillez réessayer.'));
       return null;
     } finally {
       setIsImporting(false);
@@ -206,7 +207,7 @@ export function usePdfImport(): UsePdfImportReturn {
 
       return result as CreateEdlResult;
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de la création');
+      showError(getReadableError(err, 'Erreur lors de la création. Veuillez réessayer.'));
       return null;
     } finally {
       setIsCreating(false);

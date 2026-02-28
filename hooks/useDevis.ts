@@ -4,6 +4,7 @@ import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { generateId } from '../utils/id';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { getReadableError } from '../utils/getReadableError';
 
 export interface LigneDevis {
   id: string;
@@ -172,8 +173,7 @@ export function useDevis(): UseDevisReturn {
 
       return true;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur lors de l\'analyse IA';
-      showError(msg);
+      showError(getReadableError(err, 'Erreur lors de l\'analyse IA. Veuillez réessayer.'));
       return false;
     } finally {
       setIsAnalyzing(false);

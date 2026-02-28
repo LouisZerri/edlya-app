@@ -4,6 +4,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { API_URL } from '../utils/constants';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { getReadableError } from '../utils/getReadableError';
 
 interface ShareResult {
   success: boolean;
@@ -49,7 +51,7 @@ export function useShareEdl(): UseShareEdlReturn {
     try {
       const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
 
-      const response = await fetchWithAuth(`${API_URL}/edl/${numericId}/partages`, {
+      const response = await fetchWithTimeout(`${API_URL}/edl/${numericId}/partages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,7 +61,7 @@ export function useShareEdl(): UseShareEdlReturn {
           email,
           expireDays,
         }),
-      });
+      }, 90_000, fetchWithAuth);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -77,7 +79,7 @@ export function useShareEdl(): UseShareEdlReturn {
       showSuccess(`Email envoyé à ${email}`);
       return data;
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi');
+      showError(getReadableError(err, 'Erreur lors de l\'envoi. Veuillez réessayer.'));
       return null;
     } finally {
       setIsSharing(false);
@@ -94,11 +96,11 @@ export function useShareEdl(): UseShareEdlReturn {
     try {
       const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
 
-      const response = await fetchWithAuth(`${API_URL}/edl/${numericId}/email/comparatif`, {
+      const response = await fetchWithTimeout(`${API_URL}/edl/${numericId}/email/comparatif`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
-      });
+      }, 90_000, fetchWithAuth);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -116,7 +118,7 @@ export function useShareEdl(): UseShareEdlReturn {
       showSuccess(`Comparatif envoyé à ${email}`);
       return data;
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi');
+      showError(getReadableError(err, 'Erreur lors de l\'envoi. Veuillez réessayer.'));
       return null;
     } finally {
       setIsSharing(false);
@@ -134,11 +136,11 @@ export function useShareEdl(): UseShareEdlReturn {
     try {
       const numericId = edlId.includes('/') ? edlId.split('/').pop() : edlId;
 
-      const response = await fetchWithAuth(`${API_URL}/edl/${numericId}/email/estimations`, {
+      const response = await fetchWithTimeout(`${API_URL}/edl/${numericId}/email/estimations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, lignes }),
-      });
+      }, 90_000, fetchWithAuth);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -156,7 +158,7 @@ export function useShareEdl(): UseShareEdlReturn {
       showSuccess(`Devis envoyé à ${email}`);
       return data;
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi');
+      showError(getReadableError(err, 'Erreur lors de l\'envoi. Veuillez réessayer.'));
       return null;
     } finally {
       setIsSharing(false);
