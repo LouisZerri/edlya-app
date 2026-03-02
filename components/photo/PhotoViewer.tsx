@@ -17,6 +17,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Trash2, MapPin } from 'lucide-react-native';
 import type { LocalPhoto } from '../../types';
+import { useColorScheme } from 'nativewind';
 import { COLORS } from '../../utils/constants';
 import { PhotoCaptionEditor } from './PhotoCaptionEditor';
 
@@ -39,6 +40,7 @@ export function PhotoViewer({
   onUpdateCaption,
   onDelete,
 }: PhotoViewerProps) {
+  const { colorScheme } = useColorScheme();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [captionEditorVisible, setCaptionEditorVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -56,7 +58,7 @@ export function PhotoViewer({
         StatusBar.setBackgroundColor('black');
       }
     } else {
-      StatusBar.setBarStyle('dark-content');
+      StatusBar.setBarStyle(colorScheme === 'dark' ? 'light-content' : 'dark-content');
       if (Platform.OS === 'android') {
         StatusBar.setBackgroundColor('transparent');
       }

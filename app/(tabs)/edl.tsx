@@ -425,7 +425,7 @@ export default function EdlScreen() {
           renderSectionHeader={renderSectionHeader}
           keyExtractor={item => item.id}
           stickySectionHeadersEnabled={false}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
           initialNumToRender={10}
           maxToRenderPerBatch={5}
           windowSize={5}
@@ -442,7 +442,7 @@ export default function EdlScreen() {
           data={filteredEdls}
           renderItem={renderItem}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
           initialNumToRender={10}
           maxToRenderPerBatch={5}
           windowSize={5}

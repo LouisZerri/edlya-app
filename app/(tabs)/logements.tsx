@@ -324,7 +324,7 @@ export default function LogementsScreen() {
           data={filteredLogements}
           renderItem={renderItem}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
           initialNumToRender={10}
           maxToRenderPerBatch={5}
           windowSize={5}
