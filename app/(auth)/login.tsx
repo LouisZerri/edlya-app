@@ -11,7 +11,7 @@ import { useToastStore } from '../../stores/toastStore';
 
 const loginSchema = z.object({
   email: z.email({ message: 'Email invalide' }),
-  password: z.string().min(6, 'Minimum 6 caractères'),
+  password: z.string().min(1, 'Mot de passe requis'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -20,7 +20,6 @@ export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore(state => state.login);
   const { success, error: showError } = useToastStore();
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { control, handleSubmit, formState: { errors } } = useForm<LoginForm>({
@@ -29,7 +28,6 @@ export default function LoginScreen() {
   });
 
   const onSubmit = async (data: LoginForm) => {
-    setError('');
     setLoading(true);
     try {
       await login(data.email, data.password);
@@ -37,7 +35,6 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Erreur de connexion';
-      setError(message);
       showError(message);
     } finally {
       setLoading(false);
@@ -69,13 +66,7 @@ export default function LoginScreen() {
 
             <Text className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Connexion</Text>
 
-            {error ? (
-              <View className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4">
-                <Text className="text-red-700 dark:text-red-300 text-sm">{error}</Text>
-              </View>
-            ) : null}
-
-            <Controller
+<Controller
               control={control}
               name="email"
               render={({ field: { onChange, value } }) => (

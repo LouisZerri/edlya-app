@@ -104,7 +104,7 @@ export function LogementSelector({
           </Card>
         ) : (
           <>
-            {logements.length > 0 && (
+            {logements.length > 0 && extractedData?.logement && (
               <Text className="text-gray-500 dark:text-gray-400 text-sm mb-3">Ou sélectionnez un logement existant :</Text>
             )}
             {logements.filter(l => !logementCreated || l.id !== logementCreated.id).map((logement) => {

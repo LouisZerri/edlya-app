@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Identifiants incorrects');
+      throw new Error('Email ou mot de passe incorrect');
     }
 
     const { token } = await response.json();
