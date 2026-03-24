@@ -2,7 +2,7 @@
   "expo": {
     "name": "Edlya",
     "slug": "edlya-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "edlya",
     "orientation": "portrait",
     "icon": "./assets/edlya-icon.png",

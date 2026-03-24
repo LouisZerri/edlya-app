@@ -2,6 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = 'auth_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user_data';
 
 // Token → SecureStore (chiffré)
@@ -27,6 +28,32 @@ export async function removeToken(): Promise<void> {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
   } catch (err) {
     if (__DEV__) console.warn('[Storage] Failed to remove token:', err);
+  }
+}
+
+// Refresh Token → SecureStore (chiffré)
+export async function getRefreshToken(): Promise<string | null> {
+  try {
+    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  } catch (err) {
+    if (__DEV__) console.warn('[Storage] Failed to get refresh token:', err);
+    return null;
+  }
+}
+
+export async function setRefreshToken(token: string): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+  } catch (err) {
+    if (__DEV__) console.warn('[Storage] Failed to set refresh token:', err);
+  }
+}
+
+export async function removeRefreshToken(): Promise<void> {
+  try {
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  } catch (err) {
+    if (__DEV__) console.warn('[Storage] Failed to remove refresh token:', err);
   }
 }
 
@@ -58,5 +85,29 @@ export async function removeUser(): Promise<void> {
 }
 
 export async function clearAuth(): Promise<void> {
-  await Promise.all([removeToken(), removeUser()]);
+  await Promise.all([removeToken(), removeRefreshToken(), removeUser()]);
+}
+
+export async function clearAllLocalData(): Promise<void> {
+  await Promise.all([
+    removeToken(),
+    removeRefreshToken(),
+    removeUser(),
+    AsyncStorage.removeItem('apollo_cache_persist'),
+    AsyncStorage.removeItem('offline_mutation_queue'),
+    AsyncStorage.removeItem('pinned_logements'),
+    AsyncStorage.removeItem('edl_notification_ids'),
+  ]);
+
+  // Supprimer les photos locales
+  try {
+    const { deleteAsync, getInfoAsync } = await import('expo-file-system/legacy');
+    const photoDir = (await import('expo-file-system/legacy')).documentDirectory + 'edlya_photos/';
+    const info = await getInfoAsync(photoDir);
+    if (info.exists) {
+      await deleteAsync(photoDir, { idempotent: true });
+    }
+  } catch {
+    // Ignorer si le dossier n'existe pas
+  }
 }

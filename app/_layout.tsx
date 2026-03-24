@@ -10,13 +10,14 @@ import { useAuthStore } from '../stores/authStore';
 import { useNetworkStore } from '../stores/networkStore';
 import { useToastStore } from '../stores/toastStore';
 import { useThemeStore } from '../stores/themeStore';
+import { useSettingsStore } from '../stores/settingsStore';
 import { ToastContainer, OfflineBanner } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { processQueue as processMutationQueue } from '../utils/offlineSyncManager';
 import { processPhotoQueue } from '../utils/photoSyncManager';
 import { getQueueLength } from '../utils/offlineMutationQueue';
 import { usePhotoQueueStore } from '../stores/photoQueueStore';
-import { COLORS, API_URL } from '../utils/constants';
+import { COLORS, API_URL, BASE_URL } from '../utils/constants';
 import { initializeNotifications, useNotificationNavigation } from '../hooks/useNotifications';
 import OnboardingScreen, { hasSeenOnboarding } from './onboarding';
 import '../global.css';
@@ -123,6 +124,7 @@ export default function RootLayout() {
   const isLoading = useAuthStore(state => state.isLoading);
   const [cacheReady, setCacheReady] = useState(false);
   const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
+  const [userVerified, setUserVerified] = useState<boolean | null>(null);
   const { colorScheme, setColorScheme } = useColorScheme();
   const themePreference = useThemeStore(state => state.preference);
   const initializeTheme = useThemeStore(state => state.initialize);
@@ -134,6 +136,7 @@ export default function RootLayout() {
       initializeTheme(),
       hasSeenOnboarding(),
       initializeNotifications(),
+      useSettingsStore.getState().initialize(),
     ]).then(([, , , seen]) => {
       // Apply saved theme immediately on startup
       const pref = useThemeStore.getState().preference;
@@ -145,10 +148,32 @@ export default function RootLayout() {
 
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
-  // Re-check onboarding flag when user logs in
+  // Re-check onboarding flag and verification status when user logs in
   useEffect(() => {
     if (isAuthenticated) {
       hasSeenOnboarding().then(setOnboardingSeen);
+      // Check verification status
+      (async () => {
+        try {
+          const { getToken } = require('../utils/storage');
+          const token = await getToken();
+          if (!token) return;
+          const res = await fetch(`${API_URL}/me`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...(__DEV__ ? { 'ngrok-skip-browser-warning': 'true' } : {}),
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setUserVerified(data.isVerified ?? true);
+          }
+        } catch {
+          setUserVerified(true); // En cas d'erreur, ne pas bloquer
+        }
+      })();
+    } else {
+      setUserVerified(null);
     }
   }, [isAuthenticated]);
 
@@ -175,11 +200,27 @@ export default function RootLayout() {
     );
   }
 
+  // Onboarding pas encore vu → afficher l'onboarding (avec slide activation si pas vérifié)
   if (isAuthenticated && onboardingSeen === false) {
     return (
       <SafeAreaProvider>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <OnboardingScreen onComplete={() => setOnboardingSeen(true)} />
+        <OnboardingScreen onComplete={() => {
+          setOnboardingSeen(true);
+          setUserVerified(true);
+        }} />
+      </SafeAreaProvider>
+    );
+  }
+
+  // Onboarding vu mais pas vérifié → afficher juste le slide d'activation
+  if (isAuthenticated && onboardingSeen === true && userVerified === false) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <OnboardingScreen onComplete={() => {
+          setUserVerified(true);
+        }} />
       </SafeAreaProvider>
     );
   }

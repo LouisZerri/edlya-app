@@ -3,12 +3,13 @@ import { View, Text, TouchableOpacity, ScrollView, Alert, Platform } from 'react
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LogOut, Save, HelpCircle, Sun, Moon, Smartphone, ChevronRight, Mail, Phone, Shield } from 'lucide-react-native';
+import { LogOut, Save, HelpCircle, Sun, Moon, Smartphone, ChevronRight, Mail, Phone, Shield, MapPin } from 'lucide-react-native';
 import { Header, Card, Input, Button, FaqModal } from '../../components/ui';
 import { useAuthStore } from '../../stores/authStore';
 import type { ThemePreference } from '../../stores/themeStore';
 import { useThemeStore } from '../../stores/themeStore';
 import { useToastStore } from '../../stores/toastStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { COLORS } from '../../utils/constants';
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
@@ -32,6 +33,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user, logout, updateProfile } = useAuthStore();
   const { preference, setPreference } = useThemeStore();
+  const { gpsEnabled, setGpsEnabled } = useSettingsStore();
   const { success, error: showError } = useToastStore();
 
   const [name, setName] = useState(user?.name || '');
@@ -41,7 +43,7 @@ export default function SettingsScreen() {
   const [showFaq, setShowFaq] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
 
-  const appVersion = Constants.expoConfig?.version || '1.0.0';
+  const appVersion = Constants.expoConfig?.version || '1.0.1';
 
   useEffect(() => {
     if (user) {
@@ -211,6 +213,28 @@ export default function SettingsScreen() {
                 );
               })}
             </View>
+          </Card>
+
+          {/* Confidentialité */}
+          <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2 px-1 tracking-wide">CONFIDENTIALITÉ</Text>
+          <Card className="mb-5">
+            <TouchableOpacity
+              onPress={() => setGpsEnabled(!gpsEnabled)}
+              className="flex-row items-center"
+            >
+              <View className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-full items-center justify-center">
+                <MapPin size={20} color={COLORS.blue[600]} />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text className="font-medium text-gray-800 dark:text-gray-200">Géolocalisation des photos</Text>
+                <Text className="text-sm text-gray-500 dark:text-gray-400">
+                  {gpsEnabled ? 'Les coordonnées GPS sont ajoutées aux photos' : 'Aucune donnée GPS transmise'}
+                </Text>
+              </View>
+              <View className={`w-12 h-7 rounded-full justify-center ${gpsEnabled ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                <View className={`w-5 h-5 bg-white rounded-full shadow ${gpsEnabled ? 'ml-6' : 'ml-1'}`} />
+              </View>
+            </TouchableOpacity>
           </Card>
 
           {/* Aide */}

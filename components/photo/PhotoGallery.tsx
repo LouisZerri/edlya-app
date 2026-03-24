@@ -13,6 +13,7 @@ import { useColorScheme } from 'nativewind';
 import type { LocalPhoto } from '../../types';
 import { COLORS, DARK_COLORS } from '../../utils/constants';
 import { generateId } from '../../utils/id';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { PhotoViewer } from './PhotoViewer';
 import { useLocation } from '../../hooks/useLocation';
@@ -81,11 +82,13 @@ export function PhotoGallery({
     if (!hasPermissions) return;
 
     try {
+      const gpsEnabled = useSettingsStore.getState().gpsEnabled;
+
       const options: ImagePicker.ImagePickerOptions = {
         mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.8,
-        exif: true,
+        exif: gpsEnabled,
       };
 
       const result = useCamera
@@ -99,7 +102,7 @@ export function PhotoGallery({
         let latitude: number | undefined;
         let longitude: number | undefined;
 
-        if (!useCamera && asset.exif) {
+        if (gpsEnabled && !useCamera && asset.exif) {
           const exif = asset.exif as Record<string, unknown>;
           if (exif.GPSLatitude && exif.GPSLongitude) {
             latitude = exif.GPSLatitude as number;
@@ -126,7 +129,7 @@ export function PhotoGallery({
         }
 
         // Try GPS location in background (fire-and-forget, never blocks UI)
-        if (useCamera) {
+        if (useCamera && gpsEnabled) {
           getCurrentLocation()
             .then(location => {
               if (location) {

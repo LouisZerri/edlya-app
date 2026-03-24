@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { User } from '../types';
-import { getToken, setToken, getUser, setUser, clearAuth } from '../utils/storage';
+import { getToken, setToken, setRefreshToken, getUser, setUser, clearAuth } from '../utils/storage';
 import { API_URL } from '../utils/constants';
 import { fetchWithAuth } from '../utils/fetchWithAuth';
 
@@ -85,12 +85,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error('Email ou mot de passe incorrect');
+      throw new Error(error.message || 'Email ou mot de passe incorrect');
     }
 
-    const { token } = await response.json();
-    await setToken(token);
-    set({ token, isAuthenticated: true });
+    const data = await response.json();
+    await setToken(data.token);
+    if (data.refresh_token) {
+      await setRefreshToken(data.refresh_token);
+    }
+    set({ token: data.token, isAuthenticated: true });
 
     await get().fetchUser();
   },
@@ -127,7 +130,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    await clearAuth();
+    const { clearAllLocalData } = await import('../utils/storage');
+    await clearAllLocalData();
+    // Vider le cache Apollo
+    try {
+      const { apolloClient } = await import('../graphql/client');
+      await apolloClient.clearStore();
+    } catch {
+      // Ignorer si le client n'est pas initialisé
+    }
+    // Vider la queue de photos
+    try {
+      const { usePhotoQueueStore } = await import('./photoQueueStore');
+      usePhotoQueueStore.getState().clearQueue();
+    } catch {
+      // Ignorer
+    }
     set({ user: null, token: null, isAuthenticated: false });
   },
 

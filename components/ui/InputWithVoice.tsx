@@ -15,11 +15,11 @@ interface SpeechRecognitionModule {
     requestPermissionsAsync: () => Promise<{ granted: boolean }>;
     start: (config: { lang: string; interimResults: boolean; continuous: boolean }) => void;
     stop: () => void;
+    addListener: (
+      event: string,
+      handler: (data: { results?: Array<{ transcript?: string }>; isFinal?: boolean }) => void,
+    ) => SpeechSubscription;
   };
-  addSpeechRecognitionListener: (
-    event: string,
-    handler: (data: { results?: Array<{ transcript?: string }>; isFinal?: boolean }) => void,
-  ) => SpeechSubscription;
 }
 
 interface InputWithVoiceProps extends Omit<TextInputProps, 'onChangeText'> {
@@ -120,7 +120,7 @@ export function InputWithVoice({
       return;
     }
 
-    const { ExpoSpeechRecognitionModule, addSpeechRecognitionListener } = speechModule;
+    const { ExpoSpeechRecognitionModule } = speechModule;
 
     try {
       const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
@@ -135,7 +135,7 @@ export function InputWithVoice({
       subscriptionsRef.current.forEach(sub => sub?.remove?.());
       subscriptionsRef.current = [];
 
-      const resultSub = addSpeechRecognitionListener('result', (event) => {
+      const resultSub = ExpoSpeechRecognitionModule.addListener('result', (event) => {
         const text = event.results?.[0]?.transcript || '';
         if (event.isFinal && text) {
           if (appendMode && value) {
@@ -149,13 +149,13 @@ export function InputWithVoice({
       });
       subscriptionsRef.current.push(resultSub);
 
-      const errorSub = addSpeechRecognitionListener('error', () => {
+      const errorSub = ExpoSpeechRecognitionModule.addListener('error', () => {
         setIsListening(false);
         setVoiceError('Erreur de reconnaissance');
       });
       subscriptionsRef.current.push(errorSub);
 
-      const endSub = addSpeechRecognitionListener('end', () => {
+      const endSub = ExpoSpeechRecognitionModule.addListener('end', () => {
         setIsListening(false);
       });
       subscriptionsRef.current.push(endSub);

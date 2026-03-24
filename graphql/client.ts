@@ -24,10 +24,25 @@ export const cache = new InMemoryCache({
   },
 });
 
-const errorLink = new ErrorLink(({ error }) => {
+const errorLink = new ErrorLink(({ error, forward, operation }) => {
   if (ServerError.is(error) && error.statusCode === 401) {
-    import('../stores/authStore').then(({ useAuthStore }) => {
-      useAuthStore.getState().logout();
+    import('../utils/tokenRefresh').then(({ refreshAccessToken }) => {
+      refreshAccessToken().then((newToken) => {
+        if (newToken) {
+          // Mettre à jour le header et rejouer la requête
+          operation.setContext(({ headers = {} }: { headers?: Record<string, string> }) => ({
+            headers: {
+              ...headers,
+              authorization: `Bearer ${newToken}`,
+            },
+          }));
+          forward(operation);
+        } else {
+          import('../stores/authStore').then(({ useAuthStore }) => {
+            useAuthStore.getState().logout();
+          });
+        }
+      });
     });
   }
 });

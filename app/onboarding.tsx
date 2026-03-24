@@ -1,9 +1,10 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { View, Text, Dimensions, TouchableOpacity, FlatList, Animated, StyleSheet } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, FlatList, Animated, StyleSheet, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Home, FileText, Upload, Shield } from 'lucide-react-native';
+import { Home, FileText, Upload, Shield, Key } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS } from '../utils/constants';
+import { COLORS, API_URL } from '../utils/constants';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -94,6 +95,7 @@ interface Slide {
   emoji?: string;
   title: string;
   subtitle: string;
+  isActivation?: boolean;
 }
 
 const slides: Slide[] = [
@@ -128,6 +130,13 @@ const slides: Slide[] = [
     title: 'Travaillez hors-ligne',
     subtitle: 'Réalisez vos EDL même sans connexion. Vos données se synchronisent automatiquement dès le retour du réseau.',
   },
+  {
+    icon: <Key size={40} color="#fff" />,
+    iconBg: COLORS.primary[600],
+    title: 'Activez votre compte',
+    subtitle: 'Entrez le code d\'activation qui vous a été fourni pour accéder à l\'application.',
+    isActivation: true,
+  },
 ];
 
 export async function hasSeenOnboarding(): Promise<boolean> {
@@ -154,7 +163,26 @@ interface OnboardingScreenProps {
 
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activationCode, setActivationCode] = useState('');
+  const [activationError, setActivationError] = useState('');
+  const [activationLoading, setActivationLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const flatListRef = useRef<FlatList>(null);
+
+  // Vérifier si l'utilisateur est déjà vérifié
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetchWithAuth(`${API_URL}/me`);
+        if (res.ok) {
+          const data = await res.json();
+          setIsVerified(data.isVerified ?? false);
+        }
+      } catch {
+        setIsVerified(false);
+      }
+    })();
+  }, []);
 
   const handleComplete = useCallback(async () => {
     await markOnboardingSeen();
@@ -162,12 +190,48 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   }, [onComplete]);
 
   const handleNext = useCallback(() => {
+    const currentSlide = slides[activeIndex];
+    if (currentSlide.isActivation) {
+      return; // Le bouton d'activation gère ça
+    }
     if (activeIndex < slides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
-    } else {
-      handleComplete();
     }
-  }, [activeIndex, handleComplete]);
+  }, [activeIndex]);
+
+  const handleActivate = useCallback(async () => {
+    if (!activationCode.trim()) {
+      setActivationError('Veuillez entrer votre code');
+      return;
+    }
+
+    setActivationError('');
+    setActivationLoading(true);
+
+    try {
+      const res = await fetchWithAuth(`${API_URL}/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: activationCode.trim().toUpperCase() }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setIsVerified(true);
+        await handleComplete();
+      } else {
+        setActivationError(data.error || 'Code invalide');
+      }
+    } catch {
+      setActivationError('Erreur de connexion');
+    } finally {
+      setActivationLoading(false);
+    }
+  }, [activationCode, handleComplete]);
+
+  // Si déjà vérifié, le slide d'activation est remplacé par "Commencer"
+  const effectiveSlides = isVerified ? slides.filter(s => !s.isActivation) : slides;
 
   const renderSlide = useCallback(({ item }: { item: Slide }) => (
     <View style={{ width: SCREEN_WIDTH }} className="flex-1 items-center justify-center px-10">
@@ -187,71 +251,138 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       <Text className="text-base text-gray-500 dark:text-gray-400 text-center leading-6">
         {item.subtitle}
       </Text>
-    </View>
-  ), []);
 
-  const isLast = activeIndex === slides.length - 1;
+      {item.isActivation && (
+        <View className="w-full mt-8">
+          <TextInput
+            value={activationCode}
+            onChangeText={(text) => {
+              setActivationCode(text.toUpperCase());
+              setActivationError('');
+            }}
+            placeholder="XXXXXXXX"
+            placeholderTextColor={COLORS.gray[400]}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={8}
+            style={{
+              backgroundColor: '#fff',
+              borderWidth: 2,
+              borderColor: activationError ? COLORS.red[500] : COLORS.gray[200],
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              fontSize: 20,
+              textAlign: 'center',
+              letterSpacing: 4,
+              fontWeight: '600',
+              color: COLORS.gray[900],
+            }}
+          />
+          {activationError ? (
+            <Text style={{ color: COLORS.red[600], fontSize: 14, marginTop: 8, textAlign: 'center' }}>
+              {activationError}
+            </Text>
+          ) : null}
+        </View>
+      )}
+    </View>
+  ), [activationCode, activationError]);
+
+  const isLast = activeIndex === effectiveSlides.length - 1;
+  const isActivationSlide = effectiveSlides[activeIndex]?.isActivation;
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
       {activeIndex === 0 && <Confetti />}
-      <View className="flex-row justify-end px-4 pt-2">
-        {!isLast && (
-          <TouchableOpacity onPress={handleComplete} className="py-2 px-3">
-            <Text className="text-sm text-gray-400">Passer</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <FlatList
-        ref={flatListRef}
-        data={slides}
-        renderItem={renderSlide}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => i.toString()}
-        getItemLayout={(_, index) => ({
-          length: SCREEN_WIDTH,
-          offset: SCREEN_WIDTH * index,
-          index,
-        })}
-        onMomentumScrollEnd={(e) => {
-          const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-          setActiveIndex(index);
-        }}
-      />
-
-      {/* Dots + Button */}
-      <View className="px-6 pb-6">
-        {/* Dots */}
-        <View className="flex-row items-center justify-center mb-8">
-          {slides.map((_, i) => (
-            <View
-              key={i}
-              style={{
-                width: i === activeIndex ? 24 : 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: i === activeIndex ? COLORS.primary[600] : COLORS.gray[300],
-                marginHorizontal: 4,
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
+        <View className="flex-row justify-end px-4 pt-2">
+          {!isLast && !isActivationSlide && (
+            <TouchableOpacity
+              onPress={() => {
+                // Passer va au dernier slide avant activation (ou compléter si vérifié)
+                if (isVerified) {
+                  handleComplete();
+                } else {
+                  flatListRef.current?.scrollToIndex({ index: effectiveSlides.length - 1, animated: true });
+                }
               }}
-            />
-          ))}
+              className="py-2 px-3"
+            >
+              <Text className="text-sm text-gray-400">Passer</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Button */}
-        <TouchableOpacity
-          onPress={handleNext}
-          style={{ backgroundColor: COLORS.primary[600] }}
-          className="py-4 rounded-xl"
-          activeOpacity={0.8}
-        >
-          <Text className="text-white font-semibold text-base text-center">
-            {isLast ? 'Commencer' : 'Suivant'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <FlatList
+          ref={flatListRef}
+          data={effectiveSlides}
+          renderItem={renderSlide}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          scrollEnabled={!isActivationSlide}
+          keyExtractor={(_, i) => i.toString()}
+          getItemLayout={(_, index) => ({
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * index,
+            index,
+          })}
+          onMomentumScrollEnd={(e) => {
+            const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+            setActiveIndex(index);
+          }}
+        />
+
+        {/* Dots + Button */}
+        <View className="px-6 pb-6">
+          {/* Dots */}
+          <View className="flex-row items-center justify-center mb-8">
+            {effectiveSlides.map((_, i) => (
+              <View
+                key={i}
+                style={{
+                  width: i === activeIndex ? 24 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: i === activeIndex ? COLORS.primary[600] : COLORS.gray[300],
+                  marginHorizontal: 4,
+                }}
+              />
+            ))}
+          </View>
+
+          {/* Button */}
+          {isActivationSlide ? (
+            <TouchableOpacity
+              onPress={handleActivate}
+              disabled={activationLoading}
+              style={{ backgroundColor: activationLoading ? COLORS.gray[400] : COLORS.primary[600] }}
+              className="py-4 rounded-xl flex-row items-center justify-center"
+              activeOpacity={0.8}
+            >
+              {activationLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="text-white font-semibold text-base text-center">
+                  Activer mon compte
+                </Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={isLast ? handleComplete : handleNext}
+              style={{ backgroundColor: COLORS.primary[600] }}
+              className="py-4 rounded-xl"
+              activeOpacity={0.8}
+            >
+              <Text className="text-white font-semibold text-base text-center">
+                {isLast ? 'Commencer' : 'Suivant'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
